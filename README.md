@@ -8,5 +8,6 @@ this is because taichi_c_api.dll and taichi_unity.dll in Assets/Plugins/X86_64 a
 ## How to stream to quest3?
 -install meta quest link
 -connect to PC，then open quest link on VR headset
--open unity project, set open-XR plugin
+-open unity project, set open-XR plugin(not the oculus plugin!!!)
 -click “play”, then you can see the scene in VR headset
+-make sure you have enabled all the settings in the "beta" tab in the meta quest link app
