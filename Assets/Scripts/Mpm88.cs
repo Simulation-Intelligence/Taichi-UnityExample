@@ -4,7 +4,8 @@ using Taichi;
 using UnityEngine.Rendering;
 using System.Linq;
 
-public class Mpm88 : MonoBehaviour {
+public class Mpm88 : MonoBehaviour
+{
     private Mesh _Mesh;
     private MeshFilter _MeshFilter;
 
@@ -29,9 +30,11 @@ public class Mpm88 : MonoBehaviour {
     int NParticles = 60000;
 
     // Start is called before the first frame update
-    void Start() {
+    void Start()
+    {
         var kernels = mpm88Module.GetAllKernels().ToDictionary(x => x.Name);
-        if (kernels.Count > 0) {
+        if (kernels.Count > 0)
+        {
             _Kernel_subsetep_reset_grid = kernels["substep_reset_grid"];
             _Kernel_substep_p2g = kernels["substep_p2g"];
             _Kernel_substep_update_grid_v = kernels["substep_update_grid_v"];
@@ -39,7 +42,8 @@ public class Mpm88 : MonoBehaviour {
             _Kernel_init_particles = kernels["init_particles"];
         }
         var cgraphs = mpm88Module.GetAllComputeGrpahs().ToDictionary(x => x.Name);
-        if (cgraphs.Count > 0) {
+        if (cgraphs.Count > 0)
+        {
             _Compute_Graph_g_init = cgraphs["init"];
             _Compute_Graph_g_update = cgraphs["update"];
         }
@@ -54,24 +58,25 @@ public class Mpm88 : MonoBehaviour {
         grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid).ElemShape(2).Build();
         grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid).Build();
 
-        if (_Compute_Graph_g_init != null) {
+        if (_Compute_Graph_g_init != null)
+        {
             _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
             {
                 { "x", x },
                 { "v", v },
                 { "J", J },
             });
-        } else {
+        }
+        else
+        {
             //kernel initialize
         }
 
         _MeshFilter = GetComponent<MeshFilter>();
         _Mesh = new Mesh();
-        var layout = new VertexAttributeDescriptor[] {
-            new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 0),
-        };
         int[] indices = new int[NParticles];
-        for (int i = 0; i < NParticles; ++i) {
+        for (int i = 0; i < NParticles; ++i)
+        {
             indices[i] = i;
         }
         Vector3[] vertices = new Vector3[NParticles];
@@ -86,8 +91,10 @@ public class Mpm88 : MonoBehaviour {
     }
 
     // Update is called once per frame
-    void Update() {
-        if (_Compute_Graph_g_update != null) {
+    void Update()
+    {
+        if (_Compute_Graph_g_update != null)
+        {
             _Compute_Graph_g_update.LaunchAsync(new Dictionary<string, object>
             {
                 {"v", v},

@@ -8,6 +8,7 @@ public class Mpm3D : MonoBehaviour
 {
     private Mesh _Mesh;
     private MeshFilter _MeshFilter;
+
     public AotModuleAsset Mpm3DModule;
     private Kernel _Kernel_subsetep_reset_grid;
     private Kernel _Kernel_substep_p2g;
@@ -50,12 +51,12 @@ public class Mpm3D : MonoBehaviour
 
         //Taichi Allocate memory,hostwrite are not considered
         pos = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
-        x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(2).Build();
-        v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(2).Build();
-        C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(2, 2).Build();
+        x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
+        v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
+        C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         J = new NdArray<float>(NParticles);
-        grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid).ElemShape(2).Build();
-        grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid).Build();
+        grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
+        grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
 
         if (_Compute_Graph_g_init != null)
         {
@@ -73,9 +74,6 @@ public class Mpm3D : MonoBehaviour
 
         _MeshFilter = GetComponent<MeshFilter>();
         _Mesh = new Mesh();
-        var layout = new VertexAttributeDescriptor[] {
-            new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 0),
-        };
         int[] indices = new int[NParticles];
         for (int i = 0; i < NParticles; ++i)
         {
@@ -108,7 +106,7 @@ public class Mpm3D : MonoBehaviour
                 {"pos",pos}
             });
         }
-        pos.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
+        x.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
         Runtime.Submit();
     }
 }
