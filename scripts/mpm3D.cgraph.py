@@ -91,8 +91,7 @@ def compile_mpm3D(arch, save_compute_graph,run=False):
     @ti.kernel
     def substep_g2p(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),
                     C: ti.types.ndarray(ndim=1), J: ti.types.ndarray(ndim=1),
-                    grid_v: ti.types.ndarray(ndim=3),
-                    pos: ti.types.ndarray(ndim=1)):
+                    grid_v: ti.types.ndarray(ndim=3)):
         for p in x:
             Xp = x[p] / dx
             base = int(Xp - 0.5)
@@ -148,10 +147,6 @@ def compile_mpm3D(arch, save_compute_graph,run=False):
                                 'grid_m',
                                 ti.f32,
                                 ndim=3)
-    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                            'pos',
-                            ndim=1,
-                            dtype=ti.types.vector(3, ti.f32))
 
     g_init_builder = ti.graph.GraphBuilder()
     g_init_builder.dispatch(init_particles, sym_x, sym_v, sym_J)
@@ -163,8 +158,7 @@ def compile_mpm3D(arch, save_compute_graph,run=False):
     substep.dispatch(substep_p2g, sym_x, sym_v, sym_C, sym_J, sym_grid_v,
                         sym_grid_m)
     substep.dispatch(substep_update_grid_v, sym_grid_v, sym_grid_m)
-    substep.dispatch(substep_g2p, sym_x, sym_v, sym_C, sym_J, sym_grid_v,
-                        sym_pos)
+    substep.dispatch(substep_g2p, sym_x, sym_v, sym_C, sym_J, sym_grid_v)
 
     for i in range(N_ITER):
         g_update_builder.append(substep)
@@ -172,11 +166,6 @@ def compile_mpm3D(arch, save_compute_graph,run=False):
     g_init = g_init_builder.compile()
     g_update = g_update_builder.compile()
 
-    # GGUI only supports vec3 vertex so we need an extra `pos` here
-    # This is not necessary if you're not going to render it using GGUI.
-    # Let's keep this hack here so that the shaders serialized by this
-    # script can be loaded and rendered in the provided script in taichi-aot-demo.
-    pos = ti.Vector.ndarray(3, ti.f32, n_particles)
     x = ti.Vector.ndarray(3, ti.f32, shape=(n_particles))
     v = ti.Vector.ndarray(3, ti.f32, shape=(n_particles))
 
@@ -192,7 +181,7 @@ def compile_mpm3D(arch, save_compute_graph,run=False):
                 substep_reset_grid(grid_v,grid_m)
                 substep_p2g(x,v,C,J,grid_v,grid_m)
                 substep_update_grid_v(grid_v,grid_m)
-                substep_g2p(x,v,C,J,grid_v,pos)
+                substep_g2p(x,v,C,J,grid_v)
             gui.circles(T(x.to_numpy()),radius=1.5,color=0x66CCFF)
             gui.show()
     mod = ti.aot.Module(arch)

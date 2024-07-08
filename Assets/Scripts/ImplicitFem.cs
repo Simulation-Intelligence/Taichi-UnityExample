@@ -5,7 +5,8 @@ using Taichi;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class ImplicitFem : MonoBehaviour {
+public class ImplicitFem : MonoBehaviour
+{
 
     private MeshFilter _MeshFilter;
     private Mesh _Mesh;
@@ -52,23 +53,29 @@ public class ImplicitFem : MonoBehaviour {
     public NdArray<float> dot_ans;
     public NdArray<float> r_2_scalar;
 
-    List<float> LoadVector3Array(string fname) {
+    List<float> LoadVector3Array(string fname)
+    {
         List<float> rv = new List<float>();
         var asset = Resources.Load<TextAsset>($"Data/ImplicitFem/{fname}");
         using (var stream = new MemoryStream(asset.bytes))
-        using (var br = new BinaryReader(stream)) {
-            while (br.BaseStream.Position != br.BaseStream.Length) {
+        using (var br = new BinaryReader(stream))
+        {
+            while (br.BaseStream.Position != br.BaseStream.Length)
+            {
                 rv.Add(br.ReadSingle());
             }
         }
         return rv;
     }
-    List<int> LoadIntArray(string fname) {
+    List<int> LoadIntArray(string fname)
+    {
         List<int> rv = new List<int>();
         var asset = Resources.Load<TextAsset>($"Data/ImplicitFem/{fname}");
         using (var stream = new MemoryStream(asset.bytes))
-        using (var br = new BinaryReader(stream)) {
-            while (br.BaseStream.Position != br.BaseStream.Length) {
+        using (var br = new BinaryReader(stream))
+        {
+            while (br.BaseStream.Position != br.BaseStream.Length)
+            {
                 rv.Add(br.ReadInt32());
             }
         }
@@ -77,9 +84,11 @@ public class ImplicitFem : MonoBehaviour {
 
 
 
-    void Start() {
+    void Start()
+    {
         var kernels = ImplicitFemModule.GetAllKernels().ToDictionary(x => x.Name);
-        if (kernels.Count > 0) {
+        if (kernels.Count > 0)
+        {
             _Kernel_GetForce = kernels["get_force"];
             _Kernel_Init = kernels["init"];
             _Kernel_FloorBound = kernels["floor_bound"];
@@ -97,7 +106,8 @@ public class ImplicitFem : MonoBehaviour {
             _Kernel_UpdateBetaR2 = kernels["update_beta_r_2"];
         }
         var cgraphs = ImplicitFemModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
-        if (cgraphs.Count > 0) {
+        if (cgraphs.Count > 0)
+        {
             _Compute_Graph_g_init = cgraphs["init"];
             _Compute_Graph_g_substep = cgraphs["substep"];
         }
@@ -144,7 +154,8 @@ public class ImplicitFem : MonoBehaviour {
         vertices.CopyFromArray(verticesData);
 
         Bounds bounds = new Bounds();
-        for (int i = 0; i < vertexCount; ++i) {
+        for (int i = 0; i < vertexCount; ++i)
+        {
             bounds.Expand(oxData[i]);
         }
 
@@ -160,7 +171,8 @@ public class ImplicitFem : MonoBehaviour {
         _Mesh.SetIndexBufferParams(indicesData.Length, IndexFormat.UInt32);
         _Mesh.SetIndexBufferData(indicesData, 0, 0, indicesData.Length);
         _Mesh.subMeshCount = 1;
-        _Mesh.SetSubMesh(0, new SubMeshDescriptor {
+        _Mesh.SetSubMesh(0, new SubMeshDescriptor
+        {
             baseVertex = 0,
             bounds = bounds,
             firstVertex = 0,
@@ -174,7 +186,8 @@ public class ImplicitFem : MonoBehaviour {
         _Mesh.UploadMeshData(false);
         _MeshFilter.mesh = _Mesh;
 
-        if (_Compute_Graph_g_init != null) {
+        if (_Compute_Graph_g_init != null)
+        {
             _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object> {
                 { "hes_edge", hes_edge },
                 { "hes_vert", hes_vert },
@@ -188,25 +201,32 @@ public class ImplicitFem : MonoBehaviour {
                 { "W", W },
                 { "c2e", c2e },
             });
-        } else {
+        }
+        else
+        {
             // Run the initialization kernels.
             _Kernel_ClearField.LaunchAsync();
             _Kernel_Init.LaunchAsync(x, v, f, ox, vertices);
             _Kernel_GetMatrix.LaunchAsync(c2e, vertices);
         }
 
-        if (SystemInfo.supportsGyroscope) {
+        if (SystemInfo.supportsGyroscope)
+        {
             Input.gyro.enabled = true;
         }
     }
 
-    void Update() {
+    void Update()
+    {
         float g_x, g_y, g_z;
-        if (SystemInfo.supportsGyroscope) {
+        if (SystemInfo.supportsGyroscope)
+        {
             g_x = Vector3.Dot(Input.gyro.gravity, Vector3.left) * 9.8f;
             g_y = Vector3.Dot(Input.gyro.gravity, Vector3.up) * 9.8f;
             g_z = 0.0f;
-        } else {
+        }
+        else
+        {
             g_x = -(Input.mousePosition.x / Screen.width * 2.0f - 1.0f) * 9.8f;
             g_y = (Input.mousePosition.y / Screen.height * 2.0f - 1.0f) * 9.8f;
             g_z = 0.0f;
@@ -214,7 +234,8 @@ public class ImplicitFem : MonoBehaviour {
 
         const float DT = 7.5e-3f;
 
-        if (_Compute_Graph_g_substep != null) {
+        if (_Compute_Graph_g_substep != null)
+        {
             _Compute_Graph_g_substep.LaunchAsync(new Dictionary<string, object> {
                 { "x", x },
                 { "f", f },
@@ -243,11 +264,14 @@ public class ImplicitFem : MonoBehaviour {
                 { "dt", DT },
             });
 
-        } else {
+        }
+        else
+        {
             const int NUM_SUBSTEPS = 2;
             const int CG_ITERS = 8;
 
-            for (int i = 0; i < NUM_SUBSTEPS; ++i) {
+            for (int i = 0; i < NUM_SUBSTEPS; ++i)
+            {
                 _Kernel_GetForce.LaunchAsync(x, f, vertices, g_x, g_y, g_z);
                 _Kernel_GetB.LaunchAsync(v, b, f);
                 _Kernel_MatMulEdge.LaunchAsync(mul_ans, v, edges);
@@ -255,7 +279,8 @@ public class ImplicitFem : MonoBehaviour {
                 _Kernel_NdArrayToNdArray.LaunchAsync(p0, r0);
                 _Kernel_Dot2Scalar.LaunchAsync(r0, r0);
                 _Kernel_InitR2.LaunchAsync();
-                for (int j = 0; j < CG_ITERS; ++j) {
+                for (int j = 0; j < CG_ITERS; ++j)
+                {
                     _Kernel_MatMulEdge.LaunchAsync(mul_ans, p0, edges);
                     _Kernel_Dot2Scalar.LaunchAsync(p0, mul_ans);
                     _Kernel_UpdateAlpha.LaunchAsync(alpha_scalar);

@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "com.clap.clap": {
+      "version": "file:E:/Unity Download/CLAPUnity/CLAPUnity",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "com.meta.xr.mrutilitykit": {
       "version": "66.0.0",
       "depth": 1,

@@ -15,8 +15,6 @@ public class Mpm3D : MonoBehaviour
     private Kernel _Kernel_substep_update_grid_v;
     private Kernel _Kernel_substep_g2p;
     private Kernel _Kernel_init_particles;
-
-    public NdArray<float> pos;
     public NdArray<float> x;
     public NdArray<float> v;
     public NdArray<float> C;
@@ -27,7 +25,11 @@ public class Mpm3D : MonoBehaviour
     private ComputeGraph _Compute_Graph_g_init;
     private ComputeGraph _Compute_Graph_g_update;
 
-    int NParticles = 60000;
+    public float g_x = 0.0f;
+    public float g_y = -9.8f;
+    public float g_z = 0.0f;
+
+    int NParticles = 10000;
 
     // Start is called before the first frame update
     void Start()
@@ -50,7 +52,6 @@ public class Mpm3D : MonoBehaviour
         int n_grid = 128;
 
         //Taichi Allocate memory,hostwrite are not considered
-        pos = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
@@ -70,6 +71,7 @@ public class Mpm3D : MonoBehaviour
         else
         {
             //kernel initialize
+            _Kernel_init_particles.LaunchAsync(x, v, J);
         }
 
         _MeshFilter = GetComponent<MeshFilter>();
@@ -102,11 +104,45 @@ public class Mpm3D : MonoBehaviour
                 {"x",x},
                 {"C",C},
                 {"J",J},
-                {"grid_v",grid_v},
-                {"pos",pos}
+                {"grid_v",grid_v}
             });
+        }
+        else
+        {
+            //kernel update
+            const int NUM_SUBSTEPS = 50;
+            for (int i = 0; i < NUM_SUBSTEPS; i++)
+            {
+                _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m);
+                _Kernel_substep_p2g.LaunchAsync(x, v, C, J, grid_v, grid_m);
+                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, g_x, g_y, g_z);
+                _Kernel_substep_g2p.LaunchAsync(x, v, C, J, grid_v);
+            }
         }
         x.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
         Runtime.Submit();
+    }
+
+    public void Reset()
+    {
+        if (_Compute_Graph_g_init != null)
+        {
+            _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
+            {
+                { "x", x },
+                { "v", v },
+                { "J", J },
+            });
+        }
+        else
+        {
+            //kernel initialize
+            _Kernel_init_particles.LaunchAsync(x, v, J);
+        }
+    }
+
+    public void SetGravity(float y)
+    {
+        g_y = y;
     }
 }
