@@ -46,9 +46,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
     @ti.kernel 
     def substep_reset_grid(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3)):
-        for i, j, k in grid_m:
-            grid_v[i, j, k] = [0, 0, 0]
-            grid_m[i, j, k] = 0
+        for I in ti.grouped(grid_m):
+            grid_v[I] = [0, 0, 0]
+            grid_m[I] = 0
 
     @ti.kernel
     def substep_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),
@@ -72,7 +72,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     @ti.kernel
     def substep_calculate_signed_distance_field(obstacle_pos: ti.types.ndarray(ndim=1), obstacle_velocity: ti.types.ndarray(ndim=1),  sdf: ti.types.ndarray(ndim=3), grid_obstacle_vel: ti.types.ndarray(ndim=3),obstacle_radius:float):
         for I in ti.grouped(sdf):
-            pos=I*dx
+            pos=I*dx+dx*0.5
             sdf[I] = (pos - obstacle_pos[0]).norm() - obstacle_radius
             grid_obstacle_vel[I] = obstacle_velocity[0]
             cond = (I < bound)  | (I > n_grid - bound) 

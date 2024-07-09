@@ -40,7 +40,7 @@ public class Mpm3D : MonoBehaviour
     public float g_z = 0.0f;
 
     public Sphere sphere;
-    int NParticles = 60000;
+    int NParticles = 65536;
 
     // Start is called before the first frame update
     void Start()
@@ -61,7 +61,7 @@ public class Mpm3D : MonoBehaviour
             _Compute_Graph_g_init = cgraphs["init"];
             _Compute_Graph_g_update = cgraphs["update"];
         }
-        int n_grid = 128;
+        int n_grid = 64;
 
         //Taichi Allocate memory,hostwrite are not considered
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
