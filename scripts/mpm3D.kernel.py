@@ -75,7 +75,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             pos=I*dx+dx*0.5
             sdf[I] = (pos - obstacle_pos[0]).norm() - obstacle_radius
             grid_obstacle_vel[I] = obstacle_velocity[0]
-            cond = (I < bound)  | (I > n_grid - bound) 
             
 
     @ti.kernel
@@ -89,6 +88,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 grid_v[I] = grid_obstacle_vel[I]
             cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
             grid_v[I] = ti.select(cond, 0, grid_v[I])
+            sdf[I]=1
+            grid_obstacle_vel[I]=[0,0,0]
 
 
 

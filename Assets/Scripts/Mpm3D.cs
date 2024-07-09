@@ -32,6 +32,8 @@ public class Mpm3D : MonoBehaviour
 
     private float[] sphere_velocities;
 
+    private Bounds bounds;
+
     private ComputeGraph _Compute_Graph_g_init;
     private ComputeGraph _Compute_Graph_g_update;
 
@@ -108,6 +110,8 @@ public class Mpm3D : MonoBehaviour
         _Mesh.MarkModified();
         _Mesh.UploadMeshData(false);
         _MeshFilter.mesh = _Mesh;
+
+        bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.25f, Vector3.one * 0.5f);
     }
 
     // Update is called once per frame
@@ -137,7 +141,10 @@ public class Mpm3D : MonoBehaviour
             {
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m);
                 _Kernel_substep_p2g.LaunchAsync(x, v, C, J, grid_v, grid_m);
-                _Kernel_substep_calculate_signed_distance_field.LaunchAsync(obstacle_pos, obstacle_velocity, sdf, grid_obstacle_vel, obstacle_radius);
+                if (intersectwith(sphere.gameObject))
+                {
+                    _Kernel_substep_calculate_signed_distance_field.LaunchAsync(obstacle_pos, obstacle_velocity, sdf, grid_obstacle_vel, obstacle_radius);
+                }
                 _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, grid_obstacle_vel, g_x, g_y, g_z);
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, J, grid_v);
             }
@@ -181,5 +188,15 @@ public class Mpm3D : MonoBehaviour
         obstacle_pos.CopyFromArray(sphere_positions);
         obstacle_velocity.CopyFromArray(sphere_velocities);
         obstacle_radius = sphere.Radius;
+    }
+    bool intersectwith(GameObject o)
+    {
+        Bounds b = new(o.transform.position, o.transform.localScale);
+
+        if (b == null)
+        {
+            return false;
+        }
+        return bounds.Intersects(b);
     }
 }
