@@ -12,6 +12,7 @@ public class Mpm3D : MonoBehaviour
     public AotModuleAsset Mpm3DModule;
     private Kernel _Kernel_subsetep_reset_grid;
     private Kernel _Kernel_substep_p2g;
+    private Kernel _Kernel_substep_calculate_signed_distance_field;
     private Kernel _Kernel_substep_update_grid_v;
     private Kernel _Kernel_substep_g2p;
     private Kernel _Kernel_init_particles;
@@ -21,6 +22,15 @@ public class Mpm3D : MonoBehaviour
     public NdArray<float> J;
     public NdArray<float> grid_v;
     public NdArray<float> grid_m;
+    public NdArray<float> obstacle_pos;
+    public NdArray<float> obstacle_velocity;
+    public float obstacle_radius = 0.2f;
+    public NdArray<float> sdf;
+    public NdArray<float> grid_obstacle_vel;
+
+    private float[] sphere_positions;
+
+    private float[] sphere_velocities;
 
     private ComputeGraph _Compute_Graph_g_init;
     private ComputeGraph _Compute_Graph_g_update;
@@ -29,7 +39,8 @@ public class Mpm3D : MonoBehaviour
     public float g_y = -9.8f;
     public float g_z = 0.0f;
 
-    int NParticles = 10000;
+    public Sphere sphere;
+    int NParticles = 60000;
 
     // Start is called before the first frame update
     void Start()
@@ -39,6 +50,7 @@ public class Mpm3D : MonoBehaviour
         {
             _Kernel_subsetep_reset_grid = kernels["substep_reset_grid"];
             _Kernel_substep_p2g = kernels["substep_p2g"];
+            _Kernel_substep_calculate_signed_distance_field = kernels["substep_calculate_signed_distance_field"];
             _Kernel_substep_update_grid_v = kernels["substep_update_grid_v"];
             _Kernel_substep_g2p = kernels["substep_g2p"];
             _Kernel_init_particles = kernels["init_particles"];
@@ -58,7 +70,12 @@ public class Mpm3D : MonoBehaviour
         J = new NdArray<float>(NParticles);
         grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
-
+        sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
+        grid_obstacle_vel = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
+        obstacle_pos = new NdArrayBuilder<float>().Shape(1).ElemShape(3).HostWrite(true).Build();
+        obstacle_velocity = new NdArrayBuilder<float>().Shape(1).ElemShape(3).HostWrite(true).Build();
+        sphere_positions = new float[3];
+        sphere_velocities = new float[3];
         if (_Compute_Graph_g_init != null)
         {
             _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
@@ -86,6 +103,7 @@ public class Mpm3D : MonoBehaviour
         var index = indices.ToArray();
         _Mesh.vertices = vertices;
         _Mesh.SetIndices(indices, MeshTopology.Points, 0);
+        _Mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 114514f);
         _Mesh.name = "Mpm3D";
         _Mesh.MarkModified();
         _Mesh.UploadMeshData(false);
@@ -95,6 +113,7 @@ public class Mpm3D : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        UpdateObstacle();
         if (_Compute_Graph_g_update != null)
         {
             _Compute_Graph_g_update.LaunchAsync(new Dictionary<string, object>
@@ -104,7 +123,10 @@ public class Mpm3D : MonoBehaviour
                 {"x",x},
                 {"C",C},
                 {"J",J},
-                {"grid_v",grid_v}
+                {"grid_v",grid_v},
+                {"g_x",g_x},
+                {"g_y",g_y},
+                {"g_z",g_z},
             });
         }
         else
@@ -115,7 +137,8 @@ public class Mpm3D : MonoBehaviour
             {
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m);
                 _Kernel_substep_p2g.LaunchAsync(x, v, C, J, grid_v, grid_m);
-                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, g_x, g_y, g_z);
+                _Kernel_substep_calculate_signed_distance_field.LaunchAsync(obstacle_pos, obstacle_velocity, sdf, grid_obstacle_vel, obstacle_radius);
+                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, grid_obstacle_vel, g_x, g_y, g_z);
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, J, grid_v);
             }
         }
@@ -144,5 +167,19 @@ public class Mpm3D : MonoBehaviour
     public void SetGravity(float y)
     {
         g_y = y;
+    }
+    void UpdateObstacle()
+    {
+        Vector3 pos = sphere.Position;
+        Vector3 vel = sphere.Velocity;
+        sphere_positions[0] = pos.x - _MeshFilter.transform.position.x;
+        sphere_positions[1] = pos.y - _MeshFilter.transform.position.y;
+        sphere_positions[2] = pos.z - _MeshFilter.transform.position.z;
+        sphere_velocities[0] = vel.x;
+        sphere_velocities[1] = vel.y;
+        sphere_velocities[2] = vel.z;
+        obstacle_pos.CopyFromArray(sphere_positions);
+        obstacle_velocity.CopyFromArray(sphere_velocities);
+        obstacle_radius = sphere.Radius;
     }
 }

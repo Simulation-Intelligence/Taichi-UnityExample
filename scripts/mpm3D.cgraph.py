@@ -41,7 +41,7 @@ def compile_mpm3D(arch, save_compute_graph,run=False):
     p_rho = 1
     p_vol = (dx * 0.5) ** 2
     p_mass = p_vol * p_rho
-    gravity = 9.8
+    (gx,gy,gz) = (0,-9.8,0)
     bound = 3
     E = 400
 
@@ -79,12 +79,12 @@ def compile_mpm3D(arch, save_compute_graph,run=False):
                 grid_m[base + offset] += weight * p_mass
 
     @ti.kernel
-    def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3),
-                              grid_m: ti.types.ndarray(ndim=3)):
+    def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),gx:float,gy:float,gz:float):
         for I in ti.grouped(grid_m):
             if grid_m[I] > 0:
                 grid_v[I] /= grid_m[I]
-            grid_v[I][1] -= dt * gravity
+            gravity = ti.Vector([gx,gy,gz])
+            grid_v[I] += dt * gravity
             cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
             grid_v[I] = ti.select(cond, 0, grid_v[I])
 
@@ -147,6 +147,9 @@ def compile_mpm3D(arch, save_compute_graph,run=False):
                                 'grid_m',
                                 ti.f32,
                                 ndim=3)
+    sym_gx = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'g_x', ti.f32)
+    sym_gy = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'g_y', ti.f32)
+    sym_gz = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'g_z', ti.f32)
 
     g_init_builder = ti.graph.GraphBuilder()
     g_init_builder.dispatch(init_particles, sym_x, sym_v, sym_J)
@@ -157,7 +160,8 @@ def compile_mpm3D(arch, save_compute_graph,run=False):
     substep.dispatch(substep_reset_grid, sym_grid_v, sym_grid_m)
     substep.dispatch(substep_p2g, sym_x, sym_v, sym_C, sym_J, sym_grid_v,
                         sym_grid_m)
-    substep.dispatch(substep_update_grid_v, sym_grid_v, sym_grid_m)
+    substep.dispatch(substep_update_grid_v, sym_grid_v, sym_grid_m, sym_gx,
+                        sym_gy, sym_gz)
     substep.dispatch(substep_g2p, sym_x, sym_v, sym_C, sym_J, sym_grid_v)
 
     for i in range(N_ITER):
@@ -180,7 +184,7 @@ def compile_mpm3D(arch, save_compute_graph,run=False):
             for i in range(50):
                 substep_reset_grid(grid_v,grid_m)
                 substep_p2g(x,v,C,J,grid_v,grid_m)
-                substep_update_grid_v(grid_v,grid_m)
+                substep_update_grid_v(grid_v,grid_m,gx,gy,gz)
                 substep_g2p(x,v,C,J,grid_v)
             gui.circles(T(x.to_numpy()),radius=1.5,color=0x66CCFF)
             gui.show()
