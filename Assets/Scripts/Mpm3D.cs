@@ -42,7 +42,7 @@ public class Mpm3D : MonoBehaviour
     public float g_z = 0.0f;
 
     public Sphere sphere;
-    int NParticles = 65536;
+    public int NParticles = 524288;
 
     // Start is called before the first frame update
     void Start()

@@ -143,8 +143,6 @@ PlayerSettings:
   preloadedAssets:
   - {fileID: 11400000, guid: 99f539c16d43a764d85c2f52d4abd590, type: 2}
   - {fileID: 0}
-  - {fileID: 3146783687449088576, guid: dd3b397981f0054479a82aec31d6e5ef, type: 2}
-  - {fileID: 2985590243554017227, guid: afc8bba3f5aaae543a334e5b25693025, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -840,11 +838,11 @@ PlayerSettings:
   apiCompatibilityLevel: 6
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: 
+  cloudProjectId: 15ac67db-fdbe-46e6-845d-8e481484b77e
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: 
-  organizationId: 
+  projectName: Taichi-UnityExample
+  organizationId: wechat_os_qy06qzkr9c0f4-3gyilduhjri
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

@@ -29,21 +29,22 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     if ti.lang.impl.current_cfg().arch != arch:
         return
 
-    dim, n_grid, steps, dt = 3, 64, 25, 1e-4
-    n_particles = n_grid**dim // 2 ** (dim - 1)
-    dx = 0.5 / n_grid
+    dim, n_grid, steps, dt,cube_size ,particle_per_grid= 3, 64, 25, 1e-4,0.2,8
+    n_particles  = int((((n_grid*cube_size)**dim) *particle_per_grid))
+    print(n_particles)
+    dx = 1/n_grid
 
-    p_rho = 1
-    p_vol = (dx * 0.5) ** 2
-    p_mass = p_vol * p_rho
+    p_rho = 1000
+    p_vol = dx** 3
+    p_mass = p_vol * p_rho/particle_per_grid    
     gx=0
-    allowed_cfl = 0.2
+    allowed_cfl = 0.5
     v_allowed = dx * allowed_cfl / dt
     gy=-9.8
     gz=0
     bound = 3
-    E = 1000  # Young's modulus for snow
-    nu = 0.2  # Poisson's ratio
+    E = 10000  # Young's modulus for snow
+    nu = 0.3  # Poisson's ratio
     mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # Lame parameters
 
     neighbour = (3,) * dim
@@ -64,14 +65,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
 
             dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
-            h = ti.exp(10 * (1.0 - J[p]))
+            #h = ti.exp(10 * (1.0 - J[p]))
+            h=1
             mu, la = mu_0 * h, lambda_0 * h
 
             U, sig, V = ti.svd(dg[p])
             J_new = 1.0
             for d in ti.static(range(dim)):
                 new_sig = sig[d, d]
-                new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2), 1 + 6e-3)
+                new_sig = ti.min(ti.max(sig[d, d], 1 - 0.1), 1 + 0.1)
                 J[p] *= sig[d, d] / new_sig
                 sig[d, d] = new_sig
                 J_new *= new_sig
@@ -90,11 +92,20 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 grid_m[base + offset] += weight * p_mass
 
     @ti.kernel
-    def substep_calculate_signed_distance_field(obstacle_pos: ti.types.ndarray(ndim=1), obstacle_velocity: ti.types.ndarray(ndim=1),  sdf: ti.types.ndarray(ndim=3), grid_obstacle_vel: ti.types.ndarray(ndim=3),obstacle_radius:float):
+    def substep_calculate_signed_distance_field(obstacle_pos: ti.types.ndarray(ndim=1), obstacle_velocity: ti.types.ndarray(ndim=1),  sdf: ti.types.ndarray(ndim=3), grid_obstacle_vel: ti.types.ndarray(ndim=3),obstacle_radius:ti.types.ndarray(ndim=1)):
         for I in ti.grouped(sdf):
             pos = I * dx + dx * 0.5
-            sdf[I] = (pos - obstacle_pos[0]).norm() - obstacle_radius
-            grid_obstacle_vel[I] = obstacle_velocity[0]
+            min_dist = float('inf')
+            min_vel = ti.Vector([0.0, 0.0, 0.0])
+
+            for j in obstacle_pos:
+                dist = (pos - obstacle_pos[j]).norm() - obstacle_radius[j]
+                if dist < min_dist:
+                    min_dist = dist
+                    min_vel = obstacle_velocity[j]
+
+            sdf[I] = min_dist
+            grid_obstacle_vel[I] = min_vel
 
     @ti.kernel
     def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),sdf: ti.types.ndarray(ndim=3),grid_obstacle_vel:ti.types.ndarray(ndim=3),gx:float,gy:float,gz:float):
@@ -137,7 +148,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     @ti.kernel
     def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), J: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1)):
         for i in range(x.shape[0]):
-            x[i] = [ti.random() * 0.2 + 0.1, ti.random() * 0.2 + 0.1, ti.random() * 0.2 + 0.1]
+            x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size, ti.random() * cube_size+0.001 + (0.5-cube_size/2)]
             J[i] = 1
             dg[i] = ti.Matrix.identity(float, dim)
 
@@ -154,7 +165,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     obstacle_velocity = ti.Vector.ndarray(3, ti.f32, shape=(1))
     obstacle_pos[0] = ti.Vector([0.25, 0.25, 0.25])
     obstacle_velocity[0] = ti.Vector([0.1, 0.1, 0.1])
-    obstacle_radius = 0.0
+    obstacle_radius = ti.ndarray(ti.f32, shape=(1))
+    obstacle_radius[0] = 0
 
     def substep():
         substep_reset_grid(grid_v, grid_m)
@@ -167,11 +179,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod = ti.aot.Module(arch)
         mod.add_kernel(substep_reset_grid, template_args={'grid_v': grid_v, 'grid_m': grid_m})
         mod.add_kernel(substep_p2g, template_args={'x': x, 'v': v, 'C': C, 'J': J, 'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})
-        mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'obstacle_velocity': obstacle_velocity, 'sdf': sdf, 'grid_obstacle_vel': grid_obstacle_vel})
+        mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'obstacle_velocity': obstacle_velocity, 'sdf': sdf, 'grid_obstacle_vel': grid_obstacle_vel, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'grid_obstacle_vel': grid_obstacle_vel})
         mod.add_kernel(substep_g2p, template_args={'x': x, 'v': v, 'C': C, 'J': J,'grid_v': grid_v})
         mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'J': J, 'dg': dg})
-        mod.archive("Assets/Resources/TaichiModules/mpm3DSolid.kernel.tcm")
+        mod.archive("Assets/Resources/TaichiModules/mpm3DPlastic.kernel.tcm")
         print("AOT done")
 
     if run:

@@ -25,13 +25,15 @@ public class Mpm3DSolid : MonoBehaviour
     public NdArray<float> grid_m;
     public NdArray<float> obstacle_pos;
     public NdArray<float> obstacle_velocity;
-    public float obstacle_radius = 0.2f;
+    public NdArray<float> obstacle_radius;
     public NdArray<float> sdf;
     public NdArray<float> grid_obstacle_vel;
 
     private float[] sphere_positions;
 
     private float[] sphere_velocities;
+
+    private float[] sphere_radii;
 
     private Bounds bounds;
 
@@ -42,8 +44,8 @@ public class Mpm3DSolid : MonoBehaviour
     public float g_y = -9.8f;
     public float g_z = 0.0f;
 
-    public Sphere sphere;
-    int NParticles = 65536;
+    public Sphere[] sphere;
+    public int NParticles = 524288;
 
     // Start is called before the first frame update
     void Start()
@@ -76,10 +78,12 @@ public class Mpm3DSolid : MonoBehaviour
         grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         grid_obstacle_vel = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
-        obstacle_pos = new NdArrayBuilder<float>().Shape(1).ElemShape(3).HostWrite(true).Build();
-        obstacle_velocity = new NdArrayBuilder<float>().Shape(1).ElemShape(3).HostWrite(true).Build();
-        sphere_positions = new float[3];
-        sphere_velocities = new float[3];
+        obstacle_pos = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
+        obstacle_velocity = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
+        obstacle_radius = new NdArrayBuilder<float>().Shape(sphere.Length).HostWrite(true).Build();
+        sphere_positions = new float[3 * sphere.Length];
+        sphere_velocities = new float[3 * sphere.Length];
+        sphere_radii = new float[sphere.Length];
         if (_Compute_Graph_g_init != null)
         {
             _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
@@ -113,7 +117,7 @@ public class Mpm3DSolid : MonoBehaviour
         _Mesh.UploadMeshData(false);
         _MeshFilter.mesh = _Mesh;
 
-        bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.25f, Vector3.one * 0.5f);
+        bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
     }
 
     // Update is called once per frame
@@ -143,7 +147,7 @@ public class Mpm3DSolid : MonoBehaviour
             {
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m);
                 _Kernel_substep_p2g.LaunchAsync(x, v, C, J, dg, grid_v, grid_m);
-                if (intersectwith(sphere.gameObject))
+                if (Intersectwith(sphere))
                 {
                     _Kernel_substep_calculate_signed_distance_field.LaunchAsync(obstacle_pos, obstacle_velocity, sdf, grid_obstacle_vel, obstacle_radius);
                 }
@@ -179,26 +183,37 @@ public class Mpm3DSolid : MonoBehaviour
     }
     void UpdateObstacle()
     {
-        Vector3 pos = sphere.Position;
-        Vector3 vel = sphere.Velocity;
-        sphere_positions[0] = pos.x - _MeshFilter.transform.position.x;
-        sphere_positions[1] = pos.y - _MeshFilter.transform.position.y;
-        sphere_positions[2] = pos.z - _MeshFilter.transform.position.z;
-        sphere_velocities[0] = vel.x;
-        sphere_velocities[1] = vel.y;
-        sphere_velocities[2] = vel.z;
+        for (int i = 0; i < sphere.Length; i++)
+        {
+            Vector3 curpos = sphere[i].Position;
+            Vector3 velocity = sphere[i].Velocity;
+            sphere_positions[i * 3] = curpos.x - _MeshFilter.transform.position.x;
+            sphere_positions[i * 3 + 1] = curpos.y - _MeshFilter.transform.position.y;
+            sphere_positions[i * 3 + 2] = curpos.z - _MeshFilter.transform.position.z;
+            sphere_velocities[i * 3] = velocity.x;
+            sphere_velocities[i * 3 + 1] = velocity.y;
+            sphere_velocities[i * 3 + 2] = velocity.z;
+            sphere_radii[i] = sphere[i].Radius;
+        }
         obstacle_pos.CopyFromArray(sphere_positions);
         obstacle_velocity.CopyFromArray(sphere_velocities);
-        obstacle_radius = sphere.Radius;
+        obstacle_radius.CopyFromArray(sphere_radii);
     }
-    bool intersectwith(GameObject o)
+    bool Intersectwith(Sphere[] o)
     {
-        Bounds b = new(o.transform.position, o.transform.localScale);
-
-        if (b == null)
+        for (int i = 0; i < o.Length; i++)
         {
-            return false;
+            Bounds b = new(o[i].transform.position, o[i].transform.localScale);
+
+            if (b == null)
+            {
+                continue;
+            }
+            if (bounds.Intersects(b))
+            {
+                return true;
+            }
         }
-        return bounds.Intersects(b);
+        return false;
     }
 }
