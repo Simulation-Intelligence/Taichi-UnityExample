@@ -71,7 +71,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             J_new = 1.0
             for d in ti.static(range(dim)):
                 new_sig = sig[d, d]
-                new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2), 1 + 6e-3)
+                #new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2), 1 + 6e-3)
                 sig[d, d] = new_sig
                 J_new *= new_sig
             dg[p] = U @ sig @ V.transpose()
@@ -176,7 +176,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'grid_obstacle_vel': grid_obstacle_vel})
         mod.add_kernel(substep_g2p, template_args={'x': x, 'v': v, 'C': C, 'grid_v': grid_v})
         mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'dg': dg})
-        mod.archive("Assets/Resources/TaichiModules/mpm3DPlastic.kernel.tcm")
+        mod.archive("Assets/Resources/TaichiModules/mpm3DVonmises.kernel.tcm")
         print("AOT done")
 
     if run:

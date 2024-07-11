@@ -56,8 +56,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             grid_m[I] = 0
 
     @ti.kernel
-    def substep_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),
-                    J: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3)):
+    def substep_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3)):
         for p in x:
             Xp = x[p] / dx
             base = int(Xp - 0.5)
@@ -65,7 +64,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
 
             dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
-            #h = ti.exp(10 * (1.0 - J[p]))
             h=1
             mu, la = mu_0 * h, lambda_0 * h
 
@@ -74,7 +72,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             for d in ti.static(range(dim)):
                 new_sig = sig[d, d]
                 #new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2), 1 + 6e-3)
-                J[p] *= sig[d, d] / new_sig
                 sig[d, d] = new_sig
                 J_new *= new_sig
             dg[p] = U @ sig @ V.transpose()
@@ -123,8 +120,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             grid_obstacle_vel[I] = [0,0,0]
 
     @ti.kernel
-    def substep_g2p(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),
-                    J: ti.types.ndarray(ndim=1),grid_v: ti.types.ndarray(ndim=3)):
+    def substep_g2p(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),grid_v: ti.types.ndarray(ndim=3)):
         for p in x:
             Xp = x[p] / dx
             base = int(Xp - 0.5)
@@ -142,20 +138,17 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 new_C += 4 * weight * g_v.outer_product(dpos) / dx**2
             v[p] = new_v
             x[p] += dt * v[p]
-            J[p] *= 1 + dt * new_C.trace()
             C[p] = new_C
 
     @ti.kernel
-    def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), J: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1)):
+    def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1)):
         for i in range(x.shape[0]):
-            x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size, ti.random() * cube_size+0.001 + (0.5-cube_size/2)]
-            J[i] = 1
+            x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size+ (0.5-cube_size/2), ti.random() * cube_size+0.001 + (0.5-cube_size/2)]
             dg[i] = ti.Matrix.identity(float, dim)
 
     x = ti.Vector.ndarray(3, ti.f32, shape=(n_particles))
     v = ti.Vector.ndarray(3, ti.f32, shape=(n_particles))
     C = ti.Matrix.ndarray(3, 3, ti.f32, shape=(n_particles))
-    J = ti.ndarray(ti.f32, shape=(n_particles))
     dg = ti.Matrix.ndarray(3, 3, ti.f32, shape=(n_particles))
     grid_v = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
@@ -170,25 +163,25 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
     def substep():
         substep_reset_grid(grid_v, grid_m)
-        substep_p2g(x, v, C, J, dg, grid_v, grid_m)
+        substep_p2g(x, v, C,  dg, grid_v, grid_m)
         substep_calculate_signed_distance_field(obstacle_pos, obstacle_velocity ,sdf,grid_obstacle_vel,obstacle_radius)
         substep_update_grid_v(grid_v, grid_m,sdf,grid_obstacle_vel,gx,gy,gz)
-        substep_g2p(x, v, C, J,  grid_v)
+        substep_g2p(x, v, C,  grid_v)
 
     def run_aot():
         mod = ti.aot.Module(arch)
         mod.add_kernel(substep_reset_grid, template_args={'grid_v': grid_v, 'grid_m': grid_m})
-        mod.add_kernel(substep_p2g, template_args={'x': x, 'v': v, 'C': C, 'J': J, 'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})
+        mod.add_kernel(substep_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'obstacle_velocity': obstacle_velocity, 'sdf': sdf, 'grid_obstacle_vel': grid_obstacle_vel, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'grid_obstacle_vel': grid_obstacle_vel})
-        mod.add_kernel(substep_g2p, template_args={'x': x, 'v': v, 'C': C, 'J': J,'grid_v': grid_v})
-        mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'J': J, 'dg': dg})
+        mod.add_kernel(substep_g2p, template_args={'x': x, 'v': v, 'C': C, 'grid_v': grid_v})
+        mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'dg': dg})
         mod.archive("Assets/Resources/TaichiModules/mpm3DElastic.kernel.tcm")
         print("AOT done")
 
     if run:
         gui = ti.GUI('MPM3D', res=(800, 800))
-        init_particles(x, v, J, dg)
+        init_particles(x, v, dg)
         while gui.running and not gui.get_event(gui.ESCAPE):
             for i in range(50):
                 substep()

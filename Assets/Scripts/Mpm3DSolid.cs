@@ -19,7 +19,6 @@ public class Mpm3DSolid : MonoBehaviour
     public NdArray<float> x;
     public NdArray<float> v;
     public NdArray<float> C;
-    public NdArray<float> J;
     public NdArray<float> dg;
     public NdArray<float> grid_v;
     public NdArray<float> grid_m;
@@ -72,7 +71,6 @@ public class Mpm3DSolid : MonoBehaviour
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-        J = new NdArray<float>(NParticles);
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
@@ -89,14 +87,13 @@ public class Mpm3DSolid : MonoBehaviour
             _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
             {
                 { "x", x },
-                { "v", v },
-                { "J", J },
+                { "v", v }
             });
         }
         else
         {
             //kernel initialize
-            _Kernel_init_particles.LaunchAsync(x, v, J, dg);
+            _Kernel_init_particles.LaunchAsync(x, v, dg);
         }
 
         _MeshFilter = GetComponent<MeshFilter>();
@@ -132,7 +129,6 @@ public class Mpm3DSolid : MonoBehaviour
                 {"grid_m",grid_m},
                 {"x",x},
                 {"C",C},
-                {"J",J},
                 {"grid_v",grid_v},
                 {"g_x",g_x},
                 {"g_y",g_y},
@@ -146,13 +142,13 @@ public class Mpm3DSolid : MonoBehaviour
             for (int i = 0; i < NUM_SUBSTEPS; i++)
             {
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m);
-                _Kernel_substep_p2g.LaunchAsync(x, v, C, J, dg, grid_v, grid_m);
+                _Kernel_substep_p2g.LaunchAsync(x, v, C, dg, grid_v, grid_m);
                 if (Intersectwith(sphere))
                 {
                     _Kernel_substep_calculate_signed_distance_field.LaunchAsync(obstacle_pos, obstacle_velocity, sdf, grid_obstacle_vel, obstacle_radius);
                 }
                 _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, grid_obstacle_vel, g_x, g_y, g_z);
-                _Kernel_substep_g2p.LaunchAsync(x, v, C, J, grid_v);
+                _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v);
             }
         }
         x.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
@@ -167,13 +163,12 @@ public class Mpm3DSolid : MonoBehaviour
             {
                 { "x", x },
                 { "v", v },
-                { "J", J },
             });
         }
         else
         {
             //kernel initialize
-            _Kernel_init_particles.LaunchAsync(x, v, J);
+            _Kernel_init_particles.LaunchAsync(x, v);
         }
     }
 
