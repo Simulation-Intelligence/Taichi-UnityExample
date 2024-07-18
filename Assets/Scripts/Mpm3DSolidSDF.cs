@@ -5,8 +5,10 @@ using UnityEngine.Rendering;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using Meta.WitAi.CallbackHandlers;
+using UnityEngine.UIElements;
 
-public class Mpm3DSolid : MonoBehaviour
+public class Mpm3DSolidSDF : MonoBehaviour
 {
     private Mesh _Mesh;
     private MeshFilter _MeshFilter;
@@ -23,6 +25,8 @@ public class Mpm3DSolid : MonoBehaviour
     private Kernel _Kernel_substep_apply_Von_Mises_plasticity;
     private Kernel _Kernel_substep_apply_Drucker_Prager_plasticity;
     private Kernel _Kernel_substep_apply_clamp_plasticity;
+    // new added
+    private Kernel _Kernel_substep_calculate_hand_sdf;
 
 
     public enum PlasticityType
@@ -56,6 +60,16 @@ public class Mpm3DSolid : MonoBehaviour
     public NdArray<float> sdf;
     public NdArray<float> grid_obstacle_vel;
 
+    public NdArray<float> skeleton_segments;
+    public NdArray<float> hand_sdf;
+    public NdArray<float> skeleton_capsule_radius;
+
+
+
+
+    private float[] hand_skeleton_segments;
+    private float[] _skeleton_capsule_radius;
+
     private float[] sphere_positions;
 
     private float[] sphere_velocities;
@@ -75,10 +89,14 @@ public class Mpm3DSolid : MonoBehaviour
     [Header("Obstacle")]
     [SerializeField]
     private Sphere[] sphere;
+
     [SerializeField]
-    private float delta_radius = 0.01f;
-
-
+    private OVRHand[] oculus_hands;
+    [SerializeField]
+    private OVRSkeleton[] oculus_skeletons;
+    [SerializeField]
+    private float Skeleton_capsule_radius = 0.01f;
+    private int skeleton_num_capsules;
     private int NParticles => (int)(n_grid * n_grid * n_grid * cube_size * cube_size * cube_size * particle_per_grid);
     private float dx => 1 / n_grid;
 
@@ -116,6 +134,9 @@ public class Mpm3DSolid : MonoBehaviour
             _Kernel_substep_apply_Drucker_Prager_plasticity = kernels1["substep_apply_Drucker_Prager_plasticity"];
             _Kernel_substep_apply_clamp_plasticity = kernels1["substep_apply_clamp_plasticity"];
             _Kernel_init_particles = kernels1["init_particles"];
+
+            // new added
+            _Kernel_substep_calculate_hand_sdf = kernels1["substep_calculate_hand_sdf"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -141,6 +162,19 @@ public class Mpm3DSolid : MonoBehaviour
         sphere_positions = new float[3 * sphere.Length];
         sphere_velocities = new float[3 * sphere.Length];
         sphere_radii = new float[sphere.Length];
+
+        // new added
+        skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
+        hand_sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
+        skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules).HostWrite(true).Build(); // use a consistent radius for all capsules (at now)
+        skeleton_num_capsules = oculus_skeletons[0].Bones.Count();
+        hand_skeleton_segments = new float[skeleton_num_capsules * 6];
+        _skeleton_capsule_radius = new float[skeleton_num_capsules];
+        for (int i = 0; i < skeleton_num_capsules; i++)
+        {
+            _skeleton_capsule_radius[i] = Skeleton_capsule_radius;
+        }
+        skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
         if (_Compute_Graph_g_init != null)
         {
             _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
@@ -174,11 +208,14 @@ public class Mpm3DSolid : MonoBehaviour
         _MeshFilter.mesh = _Mesh;
 
         bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
+
     }
 
     // Update is called once per frame
     void Update()
     {
+        UpdateHandSDF();
+
         UpdateObstacle();
         if (_Compute_Graph_g_update != null)
         {
@@ -213,6 +250,10 @@ public class Mpm3DSolid : MonoBehaviour
                 if (Intersectwith(sphere))
                 {
                     _Kernel_substep_calculate_signed_distance_field.LaunchAsync(obstacle_pos, obstacle_velocity, sdf, grid_obstacle_vel, obstacle_radius, colide_factor, dx, dt);
+                }
+                if (IntersectwithHand(oculus_hands))
+                {
+                    _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, hand_sdf, skeleton_capsule_radius, dx);
                 }
                 _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, grid_obstacle_vel, g.x, g.y, g.z, v_allowed, dt);
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt);
@@ -269,12 +310,40 @@ public class Mpm3DSolid : MonoBehaviour
             sphere_velocities[i * 3] = velocity.x;
             sphere_velocities[i * 3 + 1] = velocity.y;
             sphere_velocities[i * 3 + 2] = velocity.z;
-            sphere_radii[i] = sphere[i].Radius - delta_radius;
+            sphere_radii[i] = sphere[i].Radius;
         }
         obstacle_pos.CopyFromArray(sphere_positions);
         obstacle_velocity.CopyFromArray(sphere_velocities);
         obstacle_radius.CopyFromArray(sphere_radii);
     }
+
+    void UpdateHandSDF()
+    {
+        // use left hand first
+        if (oculus_hands[0].IsTracked && oculus_hands[0].HandConfidence == OVRHand.TrackingConfidence.High)
+        {
+            int numBones = oculus_skeletons[0].Bones.Count();
+            UnityEngine.Debug.Log(numBones);
+            if (numBones > 0)
+            {
+                for (int i = 0; i < numBones; i++)
+                {
+                    var bone = oculus_skeletons[0].Bones[i];
+                    Vector3 start = bone.Transform.position;
+                    Vector3 end = bone.Transform.parent.position;
+
+                    hand_skeleton_segments[i * 6] = start.x;
+                    hand_skeleton_segments[i * 6 + 1] = start.y;
+                    hand_skeleton_segments[i * 6 + 2] = start.z;
+                    hand_skeleton_segments[i * 6 + 3] = end.x;
+                    hand_skeleton_segments[i * 6 + 4] = end.y;
+                    hand_skeleton_segments[i * 6 + 5] = end.z;
+                }
+                skeleton_segments.CopyFromArray(hand_skeleton_segments);
+            }
+        }
+    }
+
     bool Intersectwith(Sphere[] o)
     {
         for (int i = 0; i < o.Length; i++)
@@ -291,5 +360,9 @@ public class Mpm3DSolid : MonoBehaviour
             }
         }
         return false;
+    }
+    bool IntersectwithHand(OVRHand[] hands)
+    {
+        return true;
     }
 }
