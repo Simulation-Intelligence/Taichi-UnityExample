@@ -255,15 +255,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         c1 = w.dot(v)
         c2 = v.dot(v)
         if c1 <= 0:
-            tangent = point - start
+            normal_vector = point - start
         elif c1 >= c2:
-            tangent = point - end
+            normal_vector = point - end
         else:
             b = c1 / c2
             Pb = start + b * v
-            tangent = point - Pb
-        return tangent
-
+            normal_vector = point - Pb
+        return normal_vector
+    
     @ti.func
     def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
                               sx: ti.f32, sy: ti.f32, sz: ti.f32,
