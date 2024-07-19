@@ -64,9 +64,6 @@ public class Mpm3DSolidSDF : MonoBehaviour
     public NdArray<float> hand_sdf;
     public NdArray<float> skeleton_capsule_radius;
 
-
-
-
     private float[] hand_skeleton_segments;
     private float[] _skeleton_capsule_radius;
 
@@ -96,7 +93,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
     private OVRSkeleton[] oculus_skeletons;
     [SerializeField]
     private float Skeleton_capsule_radius = 0.01f;
-    private int skeleton_num_capsules;
+    private int skeleton_num_capsules = 24; // use default 24
     private int NParticles => (int)(n_grid * n_grid * n_grid * cube_size * cube_size * cube_size * particle_per_grid);
     private float dx => 1 / n_grid;
 
@@ -164,10 +161,11 @@ public class Mpm3DSolidSDF : MonoBehaviour
         sphere_radii = new float[sphere.Length];
 
         // new added
+        UnityEngine.Debug.Log("Num of bones at start: " + oculus_skeletons[0].Bones.Count());
         skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
         hand_sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules).HostWrite(true).Build(); // use a consistent radius for all capsules (at now)
-        skeleton_num_capsules = oculus_skeletons[0].Bones.Count();
+        //skeleton_num_capsules = oculus_skeletons[0].Bones.Count();
         hand_skeleton_segments = new float[skeleton_num_capsules * 6];
         _skeleton_capsule_radius = new float[skeleton_num_capsules];
         for (int i = 0; i < skeleton_num_capsules; i++)
@@ -208,7 +206,6 @@ public class Mpm3DSolidSDF : MonoBehaviour
         _MeshFilter.mesh = _Mesh;
 
         bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
-
     }
 
     // Update is called once per frame
@@ -323,7 +320,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
         if (oculus_hands[0].IsTracked && oculus_hands[0].HandConfidence == OVRHand.TrackingConfidence.High)
         {
             int numBones = oculus_skeletons[0].Bones.Count();
-            UnityEngine.Debug.Log(numBones);
+            UnityEngine.Debug.Log("Num of Bones while tracking: " + numBones);
             if (numBones > 0)
             {
                 for (int i = 0; i < numBones; i++)
