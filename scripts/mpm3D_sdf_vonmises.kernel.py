@@ -244,7 +244,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             dg[i] = ti.Matrix.identity(float, dim)
     
     @ti.func
-    def calculate_point_segment_tangent(px: ti.f32, py: ti.f32, pz: ti.f32,
+    def calculate_point_segment_normal(px: ti.f32, py: ti.f32, pz: ti.f32,
                                         sx: ti.f32, sy: ti.f32, sz: ti.f32,
                                         ex: ti.f32, ey: ti.f32, ez: ti.f32) -> ti.Vector:
         point = ti.Vector([px, py, pz])
@@ -263,7 +263,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             Pb = start + b * v
             normal_vector = point - Pb
         return normal_vector
-    
+
     @ti.func
     def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
                               sx: ti.f32, sy: ti.f32, sz: ti.f32,
