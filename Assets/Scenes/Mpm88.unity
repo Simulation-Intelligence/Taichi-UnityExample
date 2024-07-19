@@ -1350,7 +1350,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _confidenceBehavior: 1
   _systemGestureBehavior: 1
-  _renderPhysicsCapsules: 0
+  _renderPhysicsCapsules: 1
   _skeletonMaterial: {fileID: 0}
   _capsuleMaterial: {fileID: 0}
   _systemGestureMaterial: {fileID: 0}
@@ -1647,7 +1647,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Mpm3DModule: {fileID: -8196383504532815311, guid: 2a39ca03f0df2bf4ba31ce41ed31d216, type: 3}
-  plasticityType: 0
+  plasticityType: 2
   stressType: 0
   g: {x: 0, y: -9.8, z: 0}
   n_grid: 64
@@ -1655,6 +1655,7 @@ MonoBehaviour:
   cube_size: 0.2
   particle_per_grid: 8
   allowed_cfl: 0.5
+  obstacleType: 1
   sphere:
   - {fileID: 1300250346}
   - {fileID: 1736624407}

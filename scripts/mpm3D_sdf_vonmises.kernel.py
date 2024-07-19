@@ -112,28 +112,25 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 grid_m[base + offset] += weight * p_mass
     
     @ti.kernel
-    def substep_calculate_signed_distance_field(obstacle_pos: ti.types.ndarray(ndim=1), obstacle_velocity: ti.types.ndarray(ndim=1),  
-                                                sdf: ti.types.ndarray(ndim=3), grid_obstacle_vel: ti.types.ndarray(ndim=3),
-                                                obstacle_radius:ti.types.ndarray(ndim=1),
-                                                k:ti.f32,dx:ti.f32,dt:ti.f32):
+    def substep_calculate_signed_distance_field(obstacle_pos: ti.types.ndarray(ndim=1),
+                                                sdf: ti.types.ndarray(ndim=3), obstacle_normals: ti.types.ndarray(ndim=3),
+                                                obstacle_radius:ti.types.ndarray(ndim=1),dx:ti.f32,dt:ti.f32):
         for I in ti.grouped(sdf):
             pos = I * dx + dx * 0.5
             min_dist = float('inf')
-            min_vel = ti.Vector([0.0, 0.0, 0.0])
-            
+            norm= ti.Vector([0.0, 0.0, 0.0])
             for j in obstacle_pos:
                 dist = (pos - obstacle_pos[j]).norm() - obstacle_radius[j]
                 if dist < min_dist:
                     min_dist = dist
                     norm= (pos-obstacle_pos[j]).normalized()
-                    min_vel = norm*(-dist)/dt*k
 
             sdf[I] = min_dist
-            grid_obstacle_vel[I] = min_vel
+            obstacle_normals[I] = norm
 
     @ti.kernel
     def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),sdf: ti.types.ndarray(ndim=3),
-                              grid_obstacle_vel:ti.types.ndarray(ndim=3),gx:float,gy:float,gz:float,
+                              obstacle_normals:ti.types.ndarray(ndim=3),gx:float,gy:float,gz:float,k:float,
                               v_allowed:ti.f32,dt:ti.f32):
         for I in ti.grouped(grid_m):
             if grid_m[I] > 0:
@@ -141,12 +138,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             gravity = ti.Vector([gx,gy,gz])
             grid_v[I] += dt * gravity
             if sdf[I] <= 0:
-                grid_v[I] = grid_obstacle_vel[I]
+                grid_v[I] = obstacle_normals[I] * (-sdf[I]) / dt * k
             cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
             grid_v[I] = ti.select(cond, 0, grid_v[I])
             grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
             sdf[I] = 1
-            grid_obstacle_vel[I] = [0,0,0]
+            obstacle_normals[I] = [0,0,0]
 
     @ti.kernel
     def substep_g2p(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),grid_v: ti.types.ndarray(ndim=3),
@@ -243,26 +240,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size, ti.random() * cube_size+0.001 + (0.5-cube_size/2)]
             dg[i] = ti.Matrix.identity(float, dim)
     
-    @ti.func
-    def calculate_point_segment_normal(px: ti.f32, py: ti.f32, pz: ti.f32,
-                                        sx: ti.f32, sy: ti.f32, sz: ti.f32,
-                                        ex: ti.f32, ey: ti.f32, ez: ti.f32) -> ti.Vector:
-        point = ti.Vector([px, py, pz])
-        start = ti.Vector([sx, sy, sz])
-        end = ti.Vector([ex, ey, ez])
-        v = end - start
-        w = point - start
-        c1 = w.dot(v)
-        c2 = v.dot(v)
-        if c1 <= 0:
-            normal_vector = point - start
-        elif c1 >= c2:
-            normal_vector = point - end
-        else:
-            b = c1 / c2
-            Pb = start + b * v
-            normal_vector = point - Pb
-        return normal_vector
 
     @ti.func
     def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
@@ -275,37 +252,43 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         w = point - start
         c1 = w.dot(v)
         c2 = v.dot(v)
-        distance = 0.0
+        distance = ti.Vector([0.0, 0.0, 0.0])
         if c1 <= 0:
-            distance = (point - start).norm()
+            distance = (point - start)
         elif c1 >= c2:
-            distance = (point - end).norm()
+            distance = (point - end)
         else:
             b = c1 / c2
             Pb = start + b * v
-            distance = (point - Pb).norm()
+            distance = (point - Pb)
         return distance
     
     @ti.kernel
     def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2), 
                                    hand_sdf: ti.types.ndarray(ndim=3),
+                                   obstacle_normals: ti.types.ndarray(ndim=3),
                                    skeleton_capsule_radius: ti.types.ndarray(ndim=1),
                                    dx:ti.f32):
         #if (skeleton_segments.shape[0] != 0):
         for I in ti.grouped(hand_sdf):
             pos = I * dx + dx * 0.5
             min_dist = float('inf')
+            norm= ti.Vector([0.0, 0.0, 0.0])
             
             for i in range(skeleton_segments.shape[0]):
                 sx, sy, sz = skeleton_segments[i, 0][0], skeleton_segments[i, 0][1], skeleton_segments[i, 0][2]
                 ex, ey, ez = skeleton_segments[i, 1][0], skeleton_segments[i, 1][1], skeleton_segments[i, 1][2]
-                dist = calculate_point_segment_distance(pos[0], pos[1], pos[2], sx, sy, sz, ex, ey, ez)-skeleton_capsule_radius[i]
-                if dist < min_dist:
-                    min_dist = dist
+                dist= calculate_point_segment_distance(pos[0], pos[1], pos[2], sx, sy, sz, ex, ey, ez)
+                distance=dist.norm()-skeleton_capsule_radius[i]
+                if distance < min_dist:
+                    min_dist = distance
+                    norm = dist.normalized()
             hand_sdf[I] = min_dist
+            obstacle_normals[I] = norm
     
     # store distance for all nodes
     hand_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
+    obstacle_normals = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     skeleton_segments = ti.Vector.ndarray(3, ti.f32, shape=(24, 2))
     skeleton_capsule_radius = ti.ndarray(ti.f32, shape=(24))
     
@@ -313,7 +296,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     v = ti.Vector.ndarray(3, ti.f32, shape=(n_particles))
     C = ti.Matrix.ndarray(3, 3, ti.f32, shape=(n_particles))
     dg = ti.Matrix.ndarray(3, 3, ti.f32, shape=(n_particles))
-    J = ti.ndarray(ti.f32, shape=(n_particles))
     grid_v = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
     sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
@@ -329,9 +311,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_reset_grid(grid_v, grid_m)
         substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
-        substep_calculate_signed_distance_field(obstacle_pos, obstacle_velocity ,sdf,grid_obstacle_vel,obstacle_radius,k,dx,dt)
-        substep_calculate_hand_sdf(skeleton_segments, hand_sdf, skeleton_capsule_radius, dx)
-        substep_update_grid_v(grid_v, grid_m,sdf,grid_obstacle_vel,gx,gy,gz,v_allowed,dt)
+        substep_calculate_signed_distance_field(obstacle_pos,sdf,grid_obstacle_vel,obstacle_radius,dx,dt)
+        substep_calculate_hand_sdf(skeleton_segments, hand_sdf,obstacle_normals, skeleton_capsule_radius, dx)
+        substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals,gx,gy,gz,k,v_allowed,dt)
         substep_g2p(x, v, C,  grid_v, dx, dt)
         substep_apply_Von_Mises_plasticity(dg, mu_0, SigY)
         substep_apply_clamp_plasticity(dg, 0.1,0.1)
@@ -347,10 +329,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_apply_Von_Mises_plasticity, template_args={'dg': dg})
         mod.add_kernel(substep_apply_clamp_plasticity, template_args={'dg': dg,})
         mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'dg': dg})
-        mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'obstacle_velocity': obstacle_velocity, 'sdf': sdf, 'grid_obstacle_vel': grid_obstacle_vel, 'obstacle_radius': obstacle_radius})
-        mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'grid_obstacle_vel': grid_obstacle_vel})
+        mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
+        mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals})
         
-        mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'hand_sdf': hand_sdf, 'skeleton_capsule_radius': skeleton_capsule_radius})
+        mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'skeleton_capsule_radius': skeleton_capsule_radius})
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DVonmisesSDF.kernel.tcm")
         print("AOT done")
@@ -366,7 +348,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             ])
         segments_np = np.array(segments_list, dtype=np.float32)
         skeleton_segments.from_numpy(segments_np)
-        substep_calculate_hand_sdf(skeleton_segments, hand_sdf, skeleton_capsule_radius, dx)
+        substep_calculate_hand_sdf(skeleton_segments, hand_sdf, obstacle_normals,skeleton_capsule_radius, dx)
         print(hand_sdf.to_numpy())
         
         gui = ti.GUI('MPM3D', res=(800, 800))
@@ -376,7 +358,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 substep()
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    # run_aot()
+    run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph
