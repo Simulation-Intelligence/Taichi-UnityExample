@@ -244,6 +244,27 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             dg[i] = ti.Matrix.identity(float, dim)
     
     @ti.func
+    def calculate_point_segment_tangent(px: ti.f32, py: ti.f32, pz: ti.f32,
+                                        sx: ti.f32, sy: ti.f32, sz: ti.f32,
+                                        ex: ti.f32, ey: ti.f32, ez: ti.f32) -> ti.Vector:
+        point = ti.Vector([px, py, pz])
+        start = ti.Vector([sx, sy, sz])
+        end = ti.Vector([ex, ey, ez])
+        v = end - start
+        w = point - start
+        c1 = w.dot(v)
+        c2 = v.dot(v)
+        if c1 <= 0:
+            tangent = point - start
+        elif c1 >= c2:
+            tangent = point - end
+        else:
+            b = c1 / c2
+            Pb = start + b * v
+            tangent = point - Pb
+        return tangent
+
+    @ti.func
     def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
                               sx: ti.f32, sy: ti.f32, sz: ti.f32,
                               ex: ti.f32, ey: ti.f32, ez: ti.f32) -> ti.f32:
@@ -285,7 +306,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     # store distance for all nodes
     hand_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
-    skeleton_segments = ti.Vector.ndarray(3,ti.f32, shape=(22, 2))
+    skeleton_segments = ti.Vector.ndarray(3, ti.f32, shape=(24, 2))
     skeleton_capsule_radius = ti.ndarray(ti.f32, shape=(24))
     
     x = ti.Vector.ndarray(3, ti.f32, shape=(n_particles))
@@ -346,7 +367,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         segments_np = np.array(segments_list, dtype=np.float32)
         skeleton_segments.from_numpy(segments_np)
         substep_calculate_hand_sdf(skeleton_segments, hand_sdf, skeleton_capsule_radius, dx)
-        print(hand_sdf)
         print(hand_sdf.to_numpy())
         
         gui = ti.GUI('MPM3D', res=(800, 800))
@@ -356,7 +376,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 substep()
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    run_aot()
+    # run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph
