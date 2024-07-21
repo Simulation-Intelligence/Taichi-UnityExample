@@ -131,7 +131,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     @ti.kernel
     def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),sdf: ti.types.ndarray(ndim=3),
                               obstacle_normals:ti.types.ndarray(ndim=3),gx:float,gy:float,gz:float,k:float,
-                              v_allowed:ti.f32,dt:ti.f32):
+                              v_allowed:ti.f32,dt:ti.f32,n_grid:ti.i32):
         for I in ti.grouped(grid_m):
             if grid_m[I] > 0:
                 grid_v[I] /= grid_m[I]
@@ -237,10 +237,14 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     @ti.kernel
     def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1),cube_size:ti.f32):
         for i in range(x.shape[0]):
-            x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size, ti.random() * cube_size+0.001 + (0.5-cube_size/2)]
+            x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size+ (0.5-cube_size/2), ti.random() * cube_size+(0.5-cube_size/2)]
             dg[i] = ti.Matrix.identity(float, dim)
     
-
+    @ti.kernel
+    def substep_get_max_speed(v: ti.types.ndarray(ndim=1),max_speed: ti.types.ndarray(ndim=1)):
+        for I in ti.grouped(v):
+            max_speed[0] = ti.atomic_max(max_speed[0], v[I].norm())
+    
     @ti.func
     def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
                               sx: ti.f32, sy: ti.f32, sz: ti.f32,
@@ -305,6 +309,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     obstacle_pos[0] = ti.Vector([0.25, 0.25, 0.25])
     obstacle_velocity[0] = ti.Vector([0.1, 0.1, 0.1])
     obstacle_radius = ti.ndarray(ti.f32, shape=(1))
+    max_speed = ti.ndarray(ti.f32, shape=(1))
     obstacle_radius[0] = 0
     
     def substep():
@@ -313,11 +318,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
         substep_calculate_signed_distance_field(obstacle_pos,sdf,grid_obstacle_vel,obstacle_radius,dx,dt)
         substep_calculate_hand_sdf(skeleton_segments, hand_sdf,obstacle_normals, skeleton_capsule_radius, dx)
-        substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals,gx,gy,gz,k,v_allowed,dt)
+        substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals,gx,gy,gz,k,v_allowed,dt,n_grid)
         substep_g2p(x, v, C,  grid_v, dx, dt)
         substep_apply_Von_Mises_plasticity(dg, mu_0, SigY)
         substep_apply_clamp_plasticity(dg, 0.1,0.1)
         substep_apply_Drucker_Prager_plasticity(dg, lambda_0, mu_0, alpha)
+        substep_get_max_speed(v, max_speed)
 
     def run_aot():
         mod = ti.aot.Module(arch)
@@ -331,6 +337,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'dg': dg})
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals})
+        mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'max_speed': max_speed})
         
         mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'skeleton_capsule_radius': skeleton_capsule_radius})
         

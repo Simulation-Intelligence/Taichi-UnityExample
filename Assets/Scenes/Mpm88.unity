@@ -898,7 +898,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2168138017581604072, guid: f54012181eacade4ea242c65f804720f, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2464299262102516848, guid: f54012181eacade4ea242c65f804720f, type: 3}
       propertyPath: m_OcclusionCulling
@@ -1010,11 +1010,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6112363070437718551, guid: f54012181eacade4ea242c65f804720f, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8907808972874319056, guid: f54012181eacade4ea242c65f804720f, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 2483171111766613643, guid: f54012181eacade4ea242c65f804720f, type: 3}
@@ -1343,7 +1343,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 731838791}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 54c16b381e28e8d479237771d234dbae, type: 3}
   m_Name: 
@@ -1647,14 +1647,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Mpm3DModule: {fileID: -8196383504532815311, guid: 2a39ca03f0df2bf4ba31ce41ed31d216, type: 3}
-  plasticityType: 2
+  plasticityType: 0
   stressType: 0
   g: {x: 0, y: -9.8, z: 0}
-  n_grid: 64
-  dt: 0.0001
-  cube_size: 0.2
-  particle_per_grid: 8
+  n_grid: 32
+  max_dt: 0.0002
+  frame_time: 0.001
+  cube_size: 0.5
+  particle_per_grid: 4
   allowed_cfl: 0.5
+  use_correct_cfl: 1
   obstacleType: 1
   sphere:
   - {fileID: 1300250346}
@@ -1667,8 +1669,8 @@ MonoBehaviour:
   - {fileID: 588067682}
   Skeleton_capsule_radius: 0.01
   E: 10000
-  SigY: 1000
-  nu: 0.3
+  SigY: 500
+  nu: 0.4
   colide_factor: 0.5
   p_rho: 1000
   min_clamp: 0.1
@@ -1734,8 +1736,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 2, y: 1, z: 1}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2513,7 +2515,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1320054679}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 54c16b381e28e8d479237771d234dbae, type: 3}
   m_Name: 

@@ -16,17 +16,10 @@ public class Mpm3DSolidSDF : MonoBehaviour
     [Header("MpM Engine")]
     [SerializeField]
     private AotModuleAsset Mpm3DModule;
-    private Kernel _Kernel_subsetep_reset_grid;
-    private Kernel _Kernel_substep_neohookean_p2g;
-    private Kernel _Kernel_substep_Kirchhoff_p2g;
-    private Kernel _Kernel_substep_calculate_signed_distance_field;
-    private Kernel _Kernel_substep_update_grid_v;
-    private Kernel _Kernel_substep_g2p;
-    private Kernel _Kernel_substep_apply_Von_Mises_plasticity;
-    private Kernel _Kernel_substep_apply_Drucker_Prager_plasticity;
-    private Kernel _Kernel_substep_apply_clamp_plasticity;
-    // new added
-    private Kernel _Kernel_substep_calculate_hand_sdf;
+    private Kernel _Kernel_subsetep_reset_grid, _Kernel_substep_neohookean_p2g, _Kernel_substep_Kirchhoff_p2g,
+    _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_update_grid_v, _Kernel_substep_g2p,
+     _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity,
+     _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed;
 
 
     public enum PlasticityType
@@ -53,31 +46,11 @@ public class Mpm3DSolidSDF : MonoBehaviour
     [SerializeField]
     private StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
-    private NdArray<float> x;
-    public NdArray<float> v;
-    public NdArray<float> C;
-    public NdArray<float> dg;
-    public NdArray<float> grid_v;
-    public NdArray<float> grid_m;
-    public NdArray<float> obstacle_pos;
-    public NdArray<float> obstacle_velocity;
-    public NdArray<float> obstacle_radius;
-    public NdArray<float> sdf;
-    public NdArray<float> grid_obstacle_vel;
+    private NdArray<float> x, v, C, dg, grid_v, grid_m, obstacle_pos, obstacle_velocity, obstacle_radius, sdf;
 
-    public NdArray<float> skeleton_segments;
-    public NdArray<float> hand_sdf;
-    public NdArray<float> obstacle_norms;
-    public NdArray<float> skeleton_capsule_radius;
+    public NdArray<float> skeleton_segments, hand_sdf, obstacle_norms, skeleton_capsule_radius, max_v;
 
-    private float[] hand_skeleton_segments;
-    private float[] _skeleton_capsule_radius;
-
-    private float[] sphere_positions;
-
-    private float[] sphere_velocities;
-
-    private float[] sphere_radii;
+    private float[] hand_skeleton_segments, _skeleton_capsule_radius, sphere_positions, sphere_velocities, sphere_radii;
 
     private Bounds bounds;
 
@@ -88,7 +61,15 @@ public class Mpm3DSolidSDF : MonoBehaviour
     [SerializeField]
     private Vector3 g = new(0, -9.8f, 0);
     [SerializeField]
-    private float n_grid = 64, dt = 1e-4f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f;
+    private int n_grid = 32;
+    [SerializeField]
+    private float max_dt = 1e-4f, frame_time = 0.005f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f;
+    [SerializeField]
+    bool use_correct_cfl = false;
+
+
+
+    private Vector3 scale;
     [Header("Obstacle")]
     [SerializeField]
     private ObstacleType obstacleType = ObstacleType.Sphere;
@@ -102,26 +83,16 @@ public class Mpm3DSolidSDF : MonoBehaviour
     [SerializeField]
     private float Skeleton_capsule_radius = 0.01f;
     private int skeleton_num_capsules = 24; // use default 24
-    private int NParticles => (int)(n_grid * n_grid * n_grid * cube_size * cube_size * cube_size * particle_per_grid);
-    private float dx => 1 / n_grid;
+    private int NParticles;
+    private float dx, p_vol, p_mass, v_allowed;
 
-    private float p_vol => dx * dx * dx;
-
-    private float p_mass => p_vol * p_rho / particle_per_grid;
-
-    private float v_allowed => allowed_cfl * dx / dt;
     [Header("Scalars")]
     [SerializeField]
     private float E = 1e4f;
     [SerializeField]
     private float SigY = 1000, nu = 0.3f, colide_factor = 0.5f, p_rho = 1000, min_clamp = 0.1f, max_clamp = 0.1f, friction_angle = 30;
 
-    private float mu => E / (2 * (1 + nu));
-    private float lambda => E * nu / ((1 + nu) * (1 - 2 * nu));
-
-    private float sin_phi => Mathf.Sin(friction_angle * Mathf.Deg2Rad);
-
-    private float alpha => Mathf.Sqrt(2.0f / 3.0f) * 2 * sin_phi / (3 - sin_phi);
+    private float mu, lambda, sin_phi, alpha;
 
     // Start is called before the first frame update
     void Start()
@@ -142,6 +113,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
 
             // new added
             _Kernel_substep_calculate_hand_sdf = kernels1["substep_calculate_hand_sdf"];
+            _Kernel_substep_get_max_speed = kernels1["substep_get_max_speed"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -150,7 +122,18 @@ public class Mpm3DSolidSDF : MonoBehaviour
             _Compute_Graph_g_init = cgraphs["init"];
             _Compute_Graph_g_update = cgraphs["update"];
         }
-        int n_grid = 64;
+
+        //initialize
+        NParticles = (int)(n_grid * n_grid * n_grid * cube_size * cube_size * cube_size * particle_per_grid);
+        dx = 1.0f / n_grid;
+        scale = transform.localScale;
+        p_vol = dx * dx * dx;
+        p_mass = p_vol * p_rho / particle_per_grid * scale.x * scale.y * scale.z;
+        mu = E / (2 * (1 + nu));
+        lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
+        v_allowed = allowed_cfl * dx / max_dt;
+        sin_phi = Mathf.Sin(friction_angle * Mathf.Deg2Rad);
+        alpha = Mathf.Sqrt(2.0f / 3.0f) * 2 * sin_phi / (3 - sin_phi);
 
         //Taichi Allocate memory,hostwrite are not considered
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
@@ -160,10 +143,10 @@ public class Mpm3DSolidSDF : MonoBehaviour
         grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
-        grid_obstacle_vel = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         obstacle_pos = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
         obstacle_velocity = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
         obstacle_radius = new NdArrayBuilder<float>().Shape(sphere.Length).HostWrite(true).Build();
+        max_v = new NdArrayBuilder<float>().Shape(1).HostRead(true).Build();
         sphere_positions = new float[3 * sphere.Length];
         sphere_velocities = new float[3 * sphere.Length];
         sphere_radii = new float[sphere.Length];
@@ -174,12 +157,13 @@ public class Mpm3DSolidSDF : MonoBehaviour
         hand_sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build(); // use a consistent radius for all capsules (at now)
         obstacle_norms = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
+
         //skeleton_num_capsules = oculus_skeletons[0].Bones.Count();
         hand_skeleton_segments = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         _skeleton_capsule_radius = new float[skeleton_num_capsules * oculus_skeletons.Length];
         for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
         {
-            _skeleton_capsule_radius[i] = Skeleton_capsule_radius;
+            _skeleton_capsule_radius[i] = Skeleton_capsule_radius / scale.x;
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
         if (_Compute_Graph_g_init != null)
@@ -237,9 +221,10 @@ public class Mpm3DSolidSDF : MonoBehaviour
         else
         {
             //kernel update
-            const int NUM_SUBSTEPS = 50;
-            for (int i = 0; i < NUM_SUBSTEPS; i++)
+            float dt = max_dt, time_left = frame_time;
+            while (time_left > 0)
             {
+                time_left -= dt;
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m);
                 switch (stressType)
                 {
@@ -267,7 +252,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
                         }
                         break;
                 }
-                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, obstacle_norms, g.x, g.y, g.z, colide_factor, v_allowed, dt);
+                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, obstacle_norms, g.x / scale.x, g.y / scale.y, g.z / scale.z, colide_factor, v_allowed, dt, n_grid);
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt);
                 switch (plasticityType)
                 {
@@ -282,6 +267,15 @@ public class Mpm3DSolidSDF : MonoBehaviour
                         break;
                     case PlasticityType.Elastic:
                         break;
+                }
+                if (use_correct_cfl)
+                {
+                    v_allowed = float.MaxValue;
+                    _Kernel_substep_get_max_speed.LaunchAsync(v, max_v);
+                    float[] max_speed = new float[1];
+                    max_v.CopyToArray(max_speed);
+                    dt = Mathf.Min(max_dt, dx * allowed_cfl / max_speed[0]);
+                    dt = Mathf.Min(dt, time_left);
                 }
             }
         }
@@ -316,13 +310,13 @@ public class Mpm3DSolidSDF : MonoBehaviour
         {
             Vector3 curpos = sphere[i].Position;
             Vector3 velocity = sphere[i].Velocity;
-            sphere_positions[i * 3] = curpos.x - _MeshFilter.transform.position.x;
-            sphere_positions[i * 3 + 1] = curpos.y - _MeshFilter.transform.position.y;
-            sphere_positions[i * 3 + 2] = curpos.z - _MeshFilter.transform.position.z;
+            sphere_positions[i * 3] = (curpos.x - _MeshFilter.transform.position.x) / scale.x;
+            sphere_positions[i * 3 + 1] = (curpos.y - _MeshFilter.transform.position.y) / scale.y;
+            sphere_positions[i * 3 + 2] = (curpos.z - _MeshFilter.transform.position.z) / scale.z;
             sphere_velocities[i * 3] = velocity.x;
             sphere_velocities[i * 3 + 1] = velocity.y;
             sphere_velocities[i * 3 + 2] = velocity.z;
-            sphere_radii[i] = sphere[i].Radius;
+            sphere_radii[i] = sphere[i].Radius / scale.x;
         }
         obstacle_pos.CopyFromArray(sphere_positions);
         obstacle_velocity.CopyFromArray(sphere_velocities);
@@ -345,12 +339,12 @@ public class Mpm3DSolidSDF : MonoBehaviour
                         var bone = oculus_skeletons[i].Bones[j];
                         Vector3 start = bone.Transform.position;
                         Vector3 end = bone.Transform.parent.position;
-                        hand_skeleton_segments[init + j * 6] = start.x - _MeshFilter.transform.position.x;
-                        hand_skeleton_segments[init + j * 6 + 1] = start.y - _MeshFilter.transform.position.y;
-                        hand_skeleton_segments[init + j * 6 + 2] = start.z - _MeshFilter.transform.position.z;
-                        hand_skeleton_segments[init + j * 6 + 3] = end.x - _MeshFilter.transform.position.x;
-                        hand_skeleton_segments[init + j * 6 + 4] = end.y - _MeshFilter.transform.position.y;
-                        hand_skeleton_segments[init + j * 6 + 5] = end.z - _MeshFilter.transform.position.z;
+                        hand_skeleton_segments[init + j * 6] = (start.x - _MeshFilter.transform.position.x) / scale.x;
+                        hand_skeleton_segments[init + j * 6 + 1] = (start.y - _MeshFilter.transform.position.y) / scale.y;
+                        hand_skeleton_segments[init + j * 6 + 2] = (start.z - _MeshFilter.transform.position.z) / scale.z;
+                        hand_skeleton_segments[init + j * 6 + 3] = (end.x - _MeshFilter.transform.position.x) / scale.x;
+                        hand_skeleton_segments[init + j * 6 + 4] = (end.y - _MeshFilter.transform.position.y) / scale.y;
+                        hand_skeleton_segments[init + j * 6 + 5] = (end.z - _MeshFilter.transform.position.z) / scale.z;
                     }
                     skeleton_segments.CopyFromArray(hand_skeleton_segments);
                 }
