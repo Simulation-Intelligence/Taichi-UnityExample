@@ -48,9 +48,9 @@ public class Mpm3DSolidSDF : MonoBehaviour
     private Kernel _Kernel_init_particles;
     private NdArray<float> x, v, C, dg, grid_v, grid_m, obstacle_pos, obstacle_velocity, obstacle_radius, sdf;
 
-    public NdArray<float> skeleton_segments, hand_sdf, obstacle_norms, skeleton_capsule_radius, max_v;
+    public NdArray<float> skeleton_segments, skeleton_velocities, hand_sdf, obstacle_norms, skeleton_capsule_radius, max_v;
 
-    private float[] hand_skeleton_segments, _skeleton_capsule_radius, sphere_positions, sphere_velocities, sphere_radii;
+    private float[] hand_skeleton_segments, hand_skeleton_segments_prev, hand_skeleton_velocities, _skeleton_capsule_radius, sphere_positions, sphere_velocities, sphere_radii;
 
     private Bounds bounds;
 
@@ -154,12 +154,15 @@ public class Mpm3DSolidSDF : MonoBehaviour
         // new added
         UnityEngine.Debug.Log("Num of bones at start: " + oculus_skeletons[0].Bones.Count());
         skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
+        skeleton_velocities = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats
         hand_sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build(); // use a consistent radius for all capsules (at now)
         obstacle_norms = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
 
         //skeleton_num_capsules = oculus_skeletons[0].Bones.Count();
         hand_skeleton_segments = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
+        hand_skeleton_segments_prev = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
+        hand_skeleton_velocities = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         _skeleton_capsule_radius = new float[skeleton_num_capsules * oculus_skeletons.Length];
         for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
         {
@@ -221,7 +224,25 @@ public class Mpm3DSolidSDF : MonoBehaviour
         else
         {
             //kernel update
+
             float dt = max_dt, time_left = frame_time;
+            switch (obstacleType)
+            {
+                case ObstacleType.Sphere:
+                    UpdateSphereSDF();
+                    if (Intersectwith(sphere))
+                    {
+                        _Kernel_substep_calculate_signed_distance_field.LaunchAsync(obstacle_pos, sdf, obstacle_norms, obstacle_radius, dx, dt);
+                    }
+                    break;
+                case ObstacleType.Hand:
+                    UpdateHandSDF();
+                    if (IntersectwithHand(oculus_hands))
+                    {
+                        _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, sdf, obstacle_norms, obstacle_velocity, skeleton_capsule_radius, dx);
+                    }
+                    break;
+            }
             while (time_left > 0)
             {
                 time_left -= dt;
@@ -235,24 +256,8 @@ public class Mpm3DSolidSDF : MonoBehaviour
                         _Kernel_substep_Kirchhoff_p2g.LaunchAsync(x, v, C, dg, grid_v, grid_m, mu, lambda, p_vol, p_mass, dx, dt);
                         break;
                 }
-                switch (obstacleType)
-                {
-                    case ObstacleType.Sphere:
-                        UpdateSphereSDF();
-                        if (Intersectwith(sphere))
-                        {
-                            _Kernel_substep_calculate_signed_distance_field.LaunchAsync(obstacle_pos, sdf, obstacle_norms, obstacle_radius, dx, dt);
-                        }
-                        break;
-                    case ObstacleType.Hand:
-                        UpdateHandSDF();
-                        if (IntersectwithHand(oculus_hands))
-                        {
-                            _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, sdf, obstacle_norms, skeleton_capsule_radius, dx);
-                        }
-                        break;
-                }
-                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, obstacle_norms, g.x / scale.x, g.y / scale.y, g.z / scale.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid);
+
+                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, obstacle_norms, obstacle_velocity, g.x / scale.x, g.y / scale.y, g.z / scale.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid);
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt);
                 switch (plasticityType)
                 {
@@ -345,8 +350,23 @@ public class Mpm3DSolidSDF : MonoBehaviour
                         hand_skeleton_segments[init + j * 6 + 3] = (end.x - _MeshFilter.transform.position.x) / scale.x;
                         hand_skeleton_segments[init + j * 6 + 4] = (end.y - _MeshFilter.transform.position.y) / scale.y;
                         hand_skeleton_segments[init + j * 6 + 5] = (end.z - _MeshFilter.transform.position.z) / scale.z;
+
+                        hand_skeleton_velocities[init + j * 6] = (start.x - hand_skeleton_segments_prev[init + j * 6]) / frame_time;
+                        hand_skeleton_velocities[init + j * 6 + 1] = (start.y - hand_skeleton_segments_prev[init + j * 6 + 1]) / frame_time;
+                        hand_skeleton_velocities[init + j * 6 + 2] = (start.z - hand_skeleton_segments_prev[init + j * 6 + 2]) / frame_time;
+                        hand_skeleton_velocities[init + j * 6 + 3] = (end.x - hand_skeleton_segments_prev[init + j * 6 + 3]) / frame_time;
+                        hand_skeleton_velocities[init + j * 6 + 4] = (end.y - hand_skeleton_segments_prev[init + j * 6 + 4]) / frame_time;
+                        hand_skeleton_velocities[init + j * 6 + 5] = (end.z - hand_skeleton_segments_prev[init + j * 6 + 5]) / frame_time;
+
+                        hand_skeleton_segments_prev[init + j * 6] = start.x;
+                        hand_skeleton_segments_prev[init + j * 6 + 1] = start.y;
+                        hand_skeleton_segments_prev[init + j * 6 + 2] = start.z;
+                        hand_skeleton_segments_prev[init + j * 6 + 3] = end.x;
+                        hand_skeleton_segments_prev[init + j * 6 + 4] = end.y;
+                        hand_skeleton_segments_prev[init + j * 6 + 5] = end.z;
                     }
                     skeleton_segments.CopyFromArray(hand_skeleton_segments);
+                    skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
                 }
             }
         }

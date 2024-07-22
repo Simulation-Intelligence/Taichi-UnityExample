@@ -133,8 +133,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             obstacle_normals[I] = norm
 
     @ti.kernel
-    def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),sdf: ti.types.ndarray(ndim=3),
-                              obstacle_normals:ti.types.ndarray(ndim=3),gx:float,gy:float,gz:float,k:float,damping:float,friction_k:float,
+    def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
+                              sdf: ti.types.ndarray(ndim=3),
+                              obstacle_normals:ti.types.ndarray(ndim=3),
+                              obstacle_velocities:ti.types.ndarray(ndim=3),
+                              gx:float,gy:float,gz:float,k:float,damping:float,friction_k:float,
                               v_allowed:ti.f32,dt:ti.f32,n_grid:ti.i32):
         for I in ti.grouped(grid_m):
             if grid_m[I] > 0:
@@ -145,9 +148,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             grid_v[I] *= ti.exp(-damping * dt)
             if sdf[I] <= 0:
                 d=-sdf[I]
-                normal_v = grid_v[I].dot(obstacle_normals[I]) * obstacle_normals[I]
+                rel_v=grid_v[I]-obstacle_velocities[I]
+                normal_v = rel_v.dot(obstacle_normals[I]) * obstacle_normals[I]
                 delta_v =obstacle_normals[I] *d / dt * k-normal_v
-                tangent_direction = (grid_v[I] - normal_v).normalized()
+                tangent_direction = (rel_v - normal_v).normalized()
                 friction_force = friction_k * delta_v
                 grid_v[I] += delta_v-friction_force*tangent_direction
                 #grid_v[I] = obstacle_normals[I] * min((-sdf[I]) / dt * k,5)
@@ -262,11 +266,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def substep_get_max_speed(v: ti.types.ndarray(ndim=1),max_speed: ti.types.ndarray(ndim=1)):
         for I in ti.grouped(v):
             max_speed[0] = ti.atomic_max(max_speed[0], v[I].norm())
+    @ti.dataclass
+    class DistanceResult:
+        distance: ti.types.vector(3, ti.f32)
+        b: ti.f32
     
     @ti.func
     def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
                                          sx: ti.f32, sy: ti.f32, sz: ti.f32,
-                                         ex: ti.f32, ey: ti.f32, ez: ti.f32) -> ti.f32:
+                                         ex: ti.f32, ey: ti.f32, ez: ti.f32) -> DistanceResult:
         point = ti.Vector([px, py, pz])
         start = ti.Vector([sx, sy, sz])
         end = ti.Vector([ex, ey, ez])
@@ -274,21 +282,25 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         w = point - start
         c1 = w.dot(v)
         c2 = v.dot(v)
+        b=0.0
         distance = ti.Vector([0.0, 0.0, 0.0])
         if c1 <= 0:
             distance = (point - start)
         elif c1 >= c2:
             distance = (point - end)
+            b=1
         else:
             b = c1 / c2
             Pb = start + b * v
             distance = (point - Pb)
-        return distance
+        return DistanceResult(distance=distance, b=b)
     
     @ti.kernel
     def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2), 
+                                   skeleton_velocities: ti.types.ndarray(ndim=2),
                                    hand_sdf: ti.types.ndarray(ndim=3),
                                    obstacle_normals: ti.types.ndarray(ndim=3),
+                                   obstacle_velocities: ti.types.ndarray(ndim=3),
                                    skeleton_capsule_radius: ti.types.ndarray(ndim=1),
                                    dx:ti.f32):
         #if (skeleton_segments.shape[0] != 0):
@@ -300,11 +312,14 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             for i in range(skeleton_segments.shape[0]):
                 sx, sy, sz = skeleton_segments[i, 0][0], skeleton_segments[i, 0][1], skeleton_segments[i, 0][2]
                 ex, ey, ez = skeleton_segments[i, 1][0], skeleton_segments[i, 1][1], skeleton_segments[i, 1][2]
-                dist= calculate_point_segment_distance(pos[0], pos[1], pos[2], sx, sy, sz, ex, ey, ez)
+                result = calculate_point_segment_distance(pos[0], pos[1], pos[2], sx, sy, sz, ex, ey, ez)
+                dist = result.distance
+                r=result.b
                 distance=dist.norm()-skeleton_capsule_radius[i]
                 if distance < min_dist:
                     min_dist = distance
                     norm = dist.normalized()
+                    obstacle_velocities[I] = skeleton_velocities[i,0]*(1-r)+skeleton_velocities[i,1]*r
             hand_sdf[I] = min_dist
             obstacle_normals[I] = norm
     
@@ -391,6 +406,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     hand_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
     obstacle_normals = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     skeleton_segments = ti.Vector.ndarray(3, ti.f32, shape=(24, 2))
+    skeleton_velocities = ti.Vector.ndarray(3, ti.f32, shape=(24, 2))
     skeleton_capsule_radius = ti.ndarray(ti.f32, shape=(24))
     hash_table = ti.ndarray(ti.i32, shape=(n_grid, n_grid, n_grid, skeleton_segments.shape[0]))
     segments_count_per_cell = ti.ndarray(ti.i32, shape=(n_grid, n_grid, n_grid))
@@ -402,11 +418,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     grid_v = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
     sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
-    grid_obstacle_vel = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     obstacle_pos = ti.Vector.ndarray(3, ti.f32, shape=(1))
-    obstacle_velocity = ti.Vector.ndarray(3, ti.f32, shape=(1))
+    obstacle_velocities = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     obstacle_pos[0] = ti.Vector([0.25, 0.25, 0.25])
-    obstacle_velocity[0] = ti.Vector([0.1, 0.1, 0.1])
     obstacle_radius = ti.ndarray(ti.f32, shape=(1))
     max_speed = ti.ndarray(ti.f32, shape=(1))
     obstacle_radius[0] = 0
@@ -415,9 +429,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_reset_grid(grid_v, grid_m)
         substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
-        substep_calculate_signed_distance_field(obstacle_pos,sdf,grid_obstacle_vel,obstacle_radius,dx,dt)
-        substep_calculate_hand_sdf(skeleton_segments, hand_sdf,obstacle_normals, skeleton_capsule_radius, dx)
-        substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid)
+        substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt)
+        substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx)
+        substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals ,obstacle_velocities,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid)
         substep_g2p(x, v, C,  grid_v, dx, dt)
         substep_apply_Von_Mises_plasticity(dg, mu_0, SigY)
         substep_apply_clamp_plasticity(dg, 0.1,0.1)
@@ -435,11 +449,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_apply_clamp_plasticity, template_args={'dg': dg,})
         mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'dg': dg})
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
-        mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals})
+        mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'max_speed': max_speed})
         
-        mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'skeleton_capsule_radius': skeleton_capsule_radius})
-        mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'hand_sdf': hand_sdf, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
+        mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius})
+        #mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'hand_sdf': hand_sdf, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DVonmisesSDF.kernel.tcm")
         print("AOT done")
@@ -460,26 +474,26 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
         # print(hand_sdf.to_numpy())
         # print hash table
-        np_segments_count_per_cell = segments_count_per_cell.to_numpy()
-        total_cells = 0
-        for x in range(n_grid):
-            for y in range(n_grid):
-                for z in range(n_grid):
-                    count = np_segments_count_per_cell[x, y, z]
-                    # print(count)
-                    if count > 0:
-                        total_cells += 1
-                        print(f"Cell ({x}, {y}, {z}) contains {count} line segments.")
-        print(f"Number of non-empty cells: {total_cells}")
+        # np_segments_count_per_cell = segments_count_per_cell.to_numpy()
+        # total_cells = 0
+        # for x in range(n_grid):
+        #     for y in range(n_grid):
+        #         for z in range(n_grid):
+        #             count = np_segments_count_per_cell[x, y, z]
+        #             # print(count)
+        #             if count > 0:
+        #                 total_cells += 1
+        #                 print(f"Cell ({x}, {y}, {z}) contains {count} line segments.")
+        # print(f"Number of non-empty cells: {total_cells}")
         
-        # gui = ti.GUI('MPM3D', res=(800, 800))
-        # init_particles(x, v, dg,cube_size)
-        # while gui.running and not gui.get_event(gui.ESCAPE):
-        #     for i in range(50):
-        #         substep()
-        #     gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
-        #     gui.show()
-    # run_aot()
+        gui = ti.GUI('MPM3D', res=(800, 800))
+        init_particles(x, v, dg,cube_size)
+        while gui.running and not gui.get_event(gui.ESCAPE):
+            for i in range(50):
+                substep()
+            gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
+            gui.show()
+    run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph
