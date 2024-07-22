@@ -1647,16 +1647,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Mpm3DModule: {fileID: -8196383504532815311, guid: 2a39ca03f0df2bf4ba31ce41ed31d216, type: 3}
-  plasticityType: 0
+  plasticityType: 2
   stressType: 0
   g: {x: 0, y: -9.8, z: 0}
-  n_grid: 32
-  max_dt: 0.0002
+  n_grid: 64
+  max_dt: 0.0001
   frame_time: 0.001
   cube_size: 0.5
   particle_per_grid: 4
   allowed_cfl: 0.5
-  use_correct_cfl: 1
+  damping: 1
+  use_correct_cfl: 0
   obstacleType: 1
   sphere:
   - {fileID: 1300250346}
@@ -1667,11 +1668,12 @@ MonoBehaviour:
   oculus_skeletons:
   - {fileID: 588067678}
   - {fileID: 588067682}
-  Skeleton_capsule_radius: 0.01
-  E: 10000
-  SigY: 500
-  nu: 0.4
-  colide_factor: 0.5
+  Skeleton_capsule_radius: 0.008
+  E: 100000
+  SigY: 10000
+  nu: 0.1
+  colide_factor: 1
+  friction_k: 0.4
   p_rho: 1000
   min_clamp: 0.1
   max_clamp: 0.1
@@ -2849,7 +2851,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1544487531
 Transform:
   m_ObjectHideFlags: 0

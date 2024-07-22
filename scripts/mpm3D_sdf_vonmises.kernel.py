@@ -44,6 +44,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     gy=-9.8
     gz=0
     k=0.5
+    friction_k=0.4
+    damping=1
     bound = 3
     E = 10000  # Young's modulus for snow
     SigY=1000
@@ -130,15 +132,29 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
     @ti.kernel
     def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),sdf: ti.types.ndarray(ndim=3),
-                              obstacle_normals:ti.types.ndarray(ndim=3),gx:float,gy:float,gz:float,k:float,
+                              obstacle_normals:ti.types.ndarray(ndim=3),gx:float,gy:float,gz:float,k:float,damping:float,friction_k:float,
                               v_allowed:ti.f32,dt:ti.f32,n_grid:ti.i32):
         for I in ti.grouped(grid_m):
             if grid_m[I] > 0:
                 grid_v[I] /= grid_m[I]
             gravity = ti.Vector([gx,gy,gz])
             grid_v[I] += dt * gravity
+            #damping
+            grid_v[I] *= ti.exp(-damping * dt)
             if sdf[I] <= 0:
-                grid_v[I] = obstacle_normals[I] * (-sdf[I]) / dt * k
+                d=-sdf[I]
+                normal_v = grid_v[I].dot(obstacle_normals[I]) * obstacle_normals[I]
+                delta_v =obstacle_normals[I] *d / dt * k-normal_v
+                tangent_direction = (grid_v[I] - normal_v).normalized()
+                friction_force = friction_k * delta_v
+                grid_v[I] += delta_v-friction_force*tangent_direction
+                #grid_v[I] = obstacle_normals[I] * min((-sdf[I]) / dt * k,5)
+                #grid_v[I] = obstacle_normals[I] *(-sdf[I]) / dt * k
+                #friction
+                # normal_v = grid_v[I].dot(obstacle_normals[I]) * obstacle_normals[I]
+                # tangent_direction = (grid_v[I] - normal_v).normalized()
+                # grid
+
             cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
             grid_v[I] = ti.select(cond, 0, grid_v[I])
             grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
@@ -318,7 +334,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
         substep_calculate_signed_distance_field(obstacle_pos,sdf,grid_obstacle_vel,obstacle_radius,dx,dt)
         substep_calculate_hand_sdf(skeleton_segments, hand_sdf,obstacle_normals, skeleton_capsule_radius, dx)
-        substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals,gx,gy,gz,k,v_allowed,dt,n_grid)
+        substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid)
         substep_g2p(x, v, C,  grid_v, dx, dt)
         substep_apply_Von_Mises_plasticity(dg, mu_0, SigY)
         substep_apply_clamp_plasticity(dg, 0.1,0.1)

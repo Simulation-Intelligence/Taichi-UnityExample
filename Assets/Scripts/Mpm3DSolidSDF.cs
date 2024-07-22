@@ -63,7 +63,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
     [SerializeField]
     private int n_grid = 32;
     [SerializeField]
-    private float max_dt = 1e-4f, frame_time = 0.005f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f;
+    private float max_dt = 1e-4f, frame_time = 0.005f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
     [SerializeField]
     bool use_correct_cfl = false;
 
@@ -90,7 +90,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
     [SerializeField]
     private float E = 1e4f;
     [SerializeField]
-    private float SigY = 1000, nu = 0.3f, colide_factor = 0.5f, p_rho = 1000, min_clamp = 0.1f, max_clamp = 0.1f, friction_angle = 30;
+    private float SigY = 1000, nu = 0.3f, colide_factor = 0.5f, friction_k = 0.4f, p_rho = 1000, min_clamp = 0.1f, max_clamp = 0.1f, friction_angle = 30;
 
     private float mu, lambda, sin_phi, alpha;
 
@@ -127,8 +127,8 @@ public class Mpm3DSolidSDF : MonoBehaviour
         NParticles = (int)(n_grid * n_grid * n_grid * cube_size * cube_size * cube_size * particle_per_grid);
         dx = 1.0f / n_grid;
         scale = transform.localScale;
-        p_vol = dx * dx * dx;
-        p_mass = p_vol * p_rho / particle_per_grid * scale.x * scale.y * scale.z;
+        p_vol = dx * dx * dx / particle_per_grid;
+        p_mass = p_vol * p_rho * scale.x * scale.y * scale.z;
         mu = E / (2 * (1 + nu));
         lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
         v_allowed = allowed_cfl * dx / max_dt;
@@ -252,7 +252,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
                         }
                         break;
                 }
-                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, obstacle_norms, g.x / scale.x, g.y / scale.y, g.z / scale.z, colide_factor, v_allowed, dt, n_grid);
+                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, obstacle_norms, g.x / scale.x, g.y / scale.y, g.z / scale.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid);
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt);
                 switch (plasticityType)
                 {
