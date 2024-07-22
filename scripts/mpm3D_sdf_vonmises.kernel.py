@@ -4,6 +4,8 @@ import numpy as np
 import taichi as ti
 import json
 
+import timeit
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--arch", type=str, default='vulkan')
 parser.add_argument("--cgraph", action='store_true', default=False)
@@ -32,9 +34,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
     dim, n_grid, steps, dt,cube_size ,particle_per_grid= 3, 64, 25, 1e-4,0.2,16
     n_particles  = int((((n_grid*cube_size)**dim) *particle_per_grid))
-    print(n_particles)
+    print("Number of particles: ", n_particles)
     dx = 1/n_grid
-
+    
     p_rho = 1000
     p_vol = dx** 3  
     p_mass = p_vol * p_rho/ particle_per_grid
@@ -225,7 +227,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 Z = ti.Matrix([[E[0], 0, 0], [0, E[1], 0], [0, 0, E[2]]])
                 
             dg[p] = U @ Z @ V.transpose()
-
+    
     @ti.kernel
     def substep_apply_clamp_plasticity(dg: ti.types.ndarray(ndim=1),min_clamp:ti.f32,max_clamp:ti.f32):
         for p in dg:
@@ -247,8 +249,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     @ti.func
     def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
-                              sx: ti.f32, sy: ti.f32, sz: ti.f32,
-                              ex: ti.f32, ey: ti.f32, ez: ti.f32) -> ti.f32:
+                                         sx: ti.f32, sy: ti.f32, sz: ti.f32,
+                                         ex: ti.f32, ey: ti.f32, ez: ti.f32) -> ti.f32:
         point = ti.Vector([px, py, pz])
         start = ti.Vector([sx, sy, sz])
         end = ti.Vector([ex, ey, ez])
@@ -290,11 +292,92 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             hand_sdf[I] = min_dist
             obstacle_normals[I] = norm
     
-    # store distance for all nodes
+    @ti.kernel
+    def substep_calculate_hand_sdf_hash(skeleton_segments: ti.types.ndarray(ndim=2), 
+                                        hand_sdf: ti.types.ndarray(ndim=3),
+                                        skeleton_capsule_radius: ti.types.ndarray(ndim=1),
+                                        dx: ti.f32, 
+                                        n_grid: ti.i32,
+                                        hash_table: ti.types.ndarray(ndim=4),
+                                        segments_count_per_cell: ti.types.ndarray(ndim=3)):
+        # clear and build hash
+        clear_hash_table(hash_table, segments_count_per_cell)
+        insert_segments(skeleton_segments, n_grid, hash_table, segments_count_per_cell)
+        for I in ti.grouped(hand_sdf):
+            pos = I * dx + dx * 0.5
+            min_dist = float('inf')
+            cell = get_hash(pos, n_grid)
+            for offset_x, offset_y, offset_z in ti.ndrange((-2, 3), (-2, 3), (-2, 3)):
+                neighbor_cell = cell + ti.Vector([offset_x, offset_y, offset_z])
+                if (0 <= neighbor_cell[0] < n_grid) and (0 <= neighbor_cell[1] < n_grid) and (0 <= neighbor_cell[2] < n_grid):
+                    for i in range(segments_count_per_cell[neighbor_cell[0], neighbor_cell[1], neighbor_cell[2]]):
+                        segment_idx = hash_table[neighbor_cell[0], neighbor_cell[1], neighbor_cell[2], i]
+                        if segment_idx != -1:
+                            seg_start = skeleton_segments[segment_idx, 0]
+                            seg_end = skeleton_segments[segment_idx, 1]
+                            dist = calculate_point_segment_distance(pos[0], pos[1], pos[2], seg_start[0], seg_start[1], seg_start[2], seg_end[0], seg_end[1], seg_end[2])
+                            min_dist = min(min_dist, dist)
+            hand_sdf[I] = min_dist
+
+    # region - Hash Grid Functions
+    @ti.func
+    def get_hash(pos, n_grid):
+        # use position to determine the hash key
+        x_index = int(ti.floor(pos[0] * n_grid))
+        y_index = int(ti.floor(pos[1] * n_grid))
+        z_index = int(ti.floor(pos[2] * n_grid))
+        return ti.Vector([x_index, y_index, z_index])
+    
+    @ti.func
+    def min_bounding_box(seg_start, seg_end):
+        return ti.Vector([min(seg_start[0], seg_end[0]),
+                          min(seg_start[1], seg_end[1]),
+                          min(seg_start[2], seg_end[2])])
+    
+    @ti.func
+    def max_bounding_box(seg_start, seg_end):
+        return ti.Vector([max(seg_start[0], seg_end[0]),
+                          max(seg_start[1], seg_end[1]),
+                          max(seg_start[2], seg_end[2])])
+    
+    @ti.func
+    def insert_segments(skeleton_segments: ti.types.ndarray(ndim=2),
+                        n_grid: ti.i32,
+                        hash_table: ti.types.ndarray(ndim=4),
+                        segments_count_per_cell: ti.types.ndarray(ndim=3)):
+        for i in range(skeleton_segments.shape[0]):
+            seg_start = skeleton_segments[i, 0]
+            seg_end = skeleton_segments[i, 1]
+            min_bb = min_bounding_box(seg_start, seg_end)
+            max_bb = max_bounding_box(seg_start, seg_end)
+            min_cell = get_hash(min_bb, n_grid)
+            max_cell = get_hash(max_bb, n_grid)
+            
+            for x in range(min_cell[0], max_cell[0] + 1):
+                if 0 <= x < n_grid:
+                    for y in range(min_cell[1], max_cell[1] + 1):
+                        if 0 <= y < n_grid:
+                            for z in range(min_cell[2], max_cell[2] + 1):
+                                if 0 <= z < n_grid:
+                                    idx = ti.atomic_add(segments_count_per_cell[x, y, z], 1)
+                                    hash_table[x, y, z, idx] = i
+    
+    @ti.func
+    def clear_hash_table(hash_table: ti.types.ndarray(ndim=4),
+                         segments_count_per_cell: ti.types.ndarray(ndim=3)):
+        for i, j, k in ti.ndrange(n_grid, n_grid, n_grid):
+            segments_count_per_cell[i, j, k] = 0
+            for l in range(skeleton_segments.shape[0]):
+                hash_table[i, j, k, l] = -1
+    # endregion
+    
+    # hand sdf for mpm grid
     hand_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
     obstacle_normals = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     skeleton_segments = ti.Vector.ndarray(3, ti.f32, shape=(24, 2))
     skeleton_capsule_radius = ti.ndarray(ti.f32, shape=(24))
+    hash_table = ti.ndarray(ti.i32, shape=(n_grid, n_grid, n_grid, skeleton_segments.shape[0]))
+    segments_count_per_cell = ti.ndarray(ti.i32, shape=(n_grid, n_grid, n_grid))
     
     x = ti.Vector.ndarray(3, ti.f32, shape=(n_particles))
     v = ti.Vector.ndarray(3, ti.f32, shape=(n_particles))
@@ -340,6 +423,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'max_speed': max_speed})
         
         mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'skeleton_capsule_radius': skeleton_capsule_radius})
+        mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'hand_sdf': hand_sdf, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DVonmisesSDF.kernel.tcm")
         print("AOT done")
@@ -355,17 +439,31 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             ])
         segments_np = np.array(segments_list, dtype=np.float32)
         skeleton_segments.from_numpy(segments_np)
-        substep_calculate_hand_sdf(skeleton_segments, hand_sdf, obstacle_normals,skeleton_capsule_radius, dx)
-        print(hand_sdf.to_numpy())
+        # substep_calculate_hand_sdf(skeleton_segments, hand_sdf, obstacle_normals, skeleton_capsule_radius, dx)
+        # substep_calculate_hand_sdf_hash(skeleton_segments, hand_sdf, skeleton_capsule_radius, dx, n_grid, hash_table, segments_count_per_cell)
+
+        # print(hand_sdf.to_numpy())
+        # print hash table
+        np_segments_count_per_cell = segments_count_per_cell.to_numpy()
+        total_cells = 0
+        for x in range(n_grid):
+            for y in range(n_grid):
+                for z in range(n_grid):
+                    count = np_segments_count_per_cell[x, y, z]
+                    # print(count)
+                    if count > 0:
+                        total_cells += 1
+                        print(f"Cell ({x}, {y}, {z}) contains {count} line segments.")
+        print(f"Number of non-empty cells: {total_cells}")
         
-        gui = ti.GUI('MPM3D', res=(800, 800))
-        init_particles(x, v, dg,cube_size)
-        while gui.running and not gui.get_event(gui.ESCAPE):
-            for i in range(50):
-                substep()
-            gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
-            gui.show()
-    run_aot()
+        # gui = ti.GUI('MPM3D', res=(800, 800))
+        # init_particles(x, v, dg,cube_size)
+        # while gui.running and not gui.get_event(gui.ESCAPE):
+        #     for i in range(50):
+        #         substep()
+        #     gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
+        #     gui.show()
+    # run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph
