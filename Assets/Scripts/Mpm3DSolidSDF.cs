@@ -7,6 +7,10 @@ using System.Text.RegularExpressions;
 using System.Diagnostics;
 using Meta.WitAi.CallbackHandlers;
 using UnityEngine.UIElements;
+using System.IO;
+using System;
+using UnityEngine.InputSystem;
+
 
 public class Mpm3DSolidSDF : MonoBehaviour
 {
@@ -93,6 +97,20 @@ public class Mpm3DSolidSDF : MonoBehaviour
     private float SigY = 1000, nu = 0.3f, colide_factor = 0.5f, friction_k = 0.4f, p_rho = 1000, min_clamp = 0.1f, max_clamp = 0.1f, friction_angle = 30;
 
     private float mu, lambda, sin_phi, alpha;
+
+    private bool isRecording = false;
+    private List<float[]> handPositions = new List<float[]>();
+
+    private int handMotionIndex = 0;
+    private InputAction spaceAction;
+
+
+
+    [Header("Hand Recording")]
+    [SerializeField]
+    private bool UseRecordDate = false;
+    [SerializeField]
+    private string filePath = "HandMotionData.txt";
 
     // Start is called before the first frame update
     void Start()
@@ -202,11 +220,20 @@ public class Mpm3DSolidSDF : MonoBehaviour
         _MeshFilter.mesh = _Mesh;
 
         bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
+
+        if (UseRecordDate)
+        {
+            LoadHandMotionData();
+        }
+        spaceAction = new InputAction(binding: "<Keyboard>/space");
+        spaceAction.performed += ctx => OnSpacePressed();
+        spaceAction.Enable();
     }
 
     // Update is called once per frame
     void Update()
     {
+
         if (_Compute_Graph_g_update != null)
         {
             _Compute_Graph_g_update.LaunchAsync(new Dictionary<string, object>
@@ -236,7 +263,10 @@ public class Mpm3DSolidSDF : MonoBehaviour
                     }
                     break;
                 case ObstacleType.Hand:
-                    UpdateHandSDF();
+                    if (UseRecordDate)
+                        UpdateHandSDFFromRecordedData(handMotionIndex++);
+                    else
+                        UpdateHandSDF();
                     if (IntersectwithHand(oculus_hands))
                     {
                         _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, sdf, obstacle_norms, obstacle_velocity, skeleton_capsule_radius, dx);
@@ -341,35 +371,95 @@ public class Mpm3DSolidSDF : MonoBehaviour
                     int init = i * skeleton_num_capsules * 6;
                     for (int j = 0; j < numBones; j++)
                     {
+
                         var bone = oculus_skeletons[i].Bones[j];
                         Vector3 start = bone.Transform.position;
                         Vector3 end = bone.Transform.parent.position;
-                        hand_skeleton_segments[init + j * 6] = (start.x - _MeshFilter.transform.position.x) / scale.x;
-                        hand_skeleton_segments[init + j * 6 + 1] = (start.y - _MeshFilter.transform.position.y) / scale.y;
-                        hand_skeleton_segments[init + j * 6 + 2] = (start.z - _MeshFilter.transform.position.z) / scale.z;
-                        hand_skeleton_segments[init + j * 6 + 3] = (end.x - _MeshFilter.transform.position.x) / scale.x;
-                        hand_skeleton_segments[init + j * 6 + 4] = (end.y - _MeshFilter.transform.position.y) / scale.y;
-                        hand_skeleton_segments[init + j * 6 + 5] = (end.z - _MeshFilter.transform.position.z) / scale.z;
-
-                        hand_skeleton_velocities[init + j * 6] = (start.x - hand_skeleton_segments_prev[init + j * 6]) / frame_time;
-                        hand_skeleton_velocities[init + j * 6 + 1] = (start.y - hand_skeleton_segments_prev[init + j * 6 + 1]) / frame_time;
-                        hand_skeleton_velocities[init + j * 6 + 2] = (start.z - hand_skeleton_segments_prev[init + j * 6 + 2]) / frame_time;
-                        hand_skeleton_velocities[init + j * 6 + 3] = (end.x - hand_skeleton_segments_prev[init + j * 6 + 3]) / frame_time;
-                        hand_skeleton_velocities[init + j * 6 + 4] = (end.y - hand_skeleton_segments_prev[init + j * 6 + 4]) / frame_time;
-                        hand_skeleton_velocities[init + j * 6 + 5] = (end.z - hand_skeleton_segments_prev[init + j * 6 + 5]) / frame_time;
-
-                        hand_skeleton_segments_prev[init + j * 6] = start.x;
-                        hand_skeleton_segments_prev[init + j * 6 + 1] = start.y;
-                        hand_skeleton_segments_prev[init + j * 6 + 2] = start.z;
-                        hand_skeleton_segments_prev[init + j * 6 + 3] = end.x;
-                        hand_skeleton_segments_prev[init + j * 6 + 4] = end.y;
-                        hand_skeleton_segments_prev[init + j * 6 + 5] = end.z;
+                        if (isRecording)
+                        {
+                            handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
+                        }
+                        UpdateHandSkeletonSegment(init + j * 6, start, end, frame_time, _MeshFilter.transform.position, scale);
                     }
                     skeleton_segments.CopyFromArray(hand_skeleton_segments);
                     skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
                 }
             }
         }
+    }
+    void SaveHandMotionData()
+    {
+        using StreamWriter writer = new(filePath);
+        foreach (var position in handPositions)
+        {
+            writer.WriteLine(string.Join(",", position));
+        }
+    }
+    void LoadHandMotionData()
+    {
+        handPositions.Clear();
+        using StreamReader reader = new(filePath);
+
+        string line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            float[] position = Array.ConvertAll(line.Split(','), float.Parse);
+            handPositions.Add(position);
+        }
+
+    }
+    void UpdateHandSDFFromRecordedData(int index)
+    {
+        index %= handPositions.Count / (skeleton_num_capsules * oculus_skeletons.Length);
+        if (handPositions.Count == 0)
+        {
+            UnityEngine.Debug.LogWarning("No recorded hand positions available.");
+            return;
+        }
+
+        // Iterate through the recorded hand positions and apply them to the hand skeleton segments
+        for (int i = 0; i < oculus_skeletons.Length; i++)
+        {
+            int init = i * skeleton_num_capsules * 6;
+
+            for (int j = 0; j < skeleton_num_capsules; j++)
+            {
+                int idx = index * skeleton_num_capsules * oculus_skeletons.Length + i * skeleton_num_capsules + j;
+                if (idx >= handPositions.Count)
+                {
+                    return;
+                }
+                float[] position = handPositions[idx];
+                UpdateHandSkeletonSegment(init + j * 6, new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]), frame_time, _MeshFilter.transform.position, scale);
+
+            }
+        }
+
+        skeleton_segments.CopyFromArray(hand_skeleton_segments);
+        skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
+    }
+    private void UpdateHandSkeletonSegment(int init, Vector3 start, Vector3 end, float frameTime, Vector3 meshPosition, Vector3 scale)
+    {
+        hand_skeleton_segments[init] = (start.x - meshPosition.x) / scale.x;
+        hand_skeleton_segments[init + 1] = (start.y - meshPosition.y) / scale.y;
+        hand_skeleton_segments[init + 2] = (start.z - meshPosition.z) / scale.z;
+        hand_skeleton_segments[init + 3] = (end.x - meshPosition.x) / scale.x;
+        hand_skeleton_segments[init + 4] = (end.y - meshPosition.y) / scale.y;
+        hand_skeleton_segments[init + 5] = (end.z - meshPosition.z) / scale.z;
+
+        hand_skeleton_velocities[init] = (start.x - hand_skeleton_segments_prev[init]) / frameTime;
+        hand_skeleton_velocities[init + 1] = (start.y - hand_skeleton_segments_prev[init + 1]) / frameTime;
+        hand_skeleton_velocities[init + 2] = (start.z - hand_skeleton_segments_prev[init + 2]) / frameTime;
+        hand_skeleton_velocities[init + 3] = (end.x - hand_skeleton_segments_prev[init + 3]) / frameTime;
+        hand_skeleton_velocities[init + 4] = (end.y - hand_skeleton_segments_prev[init + 4]) / frameTime;
+        hand_skeleton_velocities[init + 5] = (end.z - hand_skeleton_segments_prev[init + 5]) / frameTime;
+
+        hand_skeleton_segments_prev[init] = start.x;
+        hand_skeleton_segments_prev[init + 1] = start.y;
+        hand_skeleton_segments_prev[init + 2] = start.z;
+        hand_skeleton_segments_prev[init + 3] = end.x;
+        hand_skeleton_segments_prev[init + 4] = end.y;
+        hand_skeleton_segments_prev[init + 5] = end.z;
     }
 
     bool Intersectwith(Sphere[] o)
@@ -393,4 +483,18 @@ public class Mpm3DSolidSDF : MonoBehaviour
     {
         return true;
     }
+    void OnSpacePressed()
+    {
+        isRecording = !isRecording;
+        //print("Recording: " + isRecording);
+        if (!isRecording)
+        {
+            SaveHandMotionData();
+        }
+        else
+        {
+            handPositions.Clear();
+        }
+    }
+
 }
