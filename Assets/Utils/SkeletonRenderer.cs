@@ -1,39 +1,59 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
-public class SkeletonRenderer : MonoBehaviour
+public class SkeletonRenderer
 {
-    // visualize capsules
+    private List<SegmentVisualization> _segmentVisualizations;
+    private List<CapsuleVisualization> _capsuleVisualizations;
+
+    public float Skeleton_capsule_radius = 0.01f;
+
+    private void Start()
+    {
+        _segmentVisualizations = new List<SegmentVisualization>();
+        _capsuleVisualizations = new List<CapsuleVisualization>();
+    }
+
+    public void Update()
+    {
+        for (int i = 0; i < _capsuleVisualizations.Count; i++)
+        {
+            //_capsuleVisualizations[i].Update(begin, end);
+        }
+    }
+
+    // Visualize hand skeleton by capsules
     public class CapsuleVisualization
     {
         private GameObject CapsuleGO;
-        private OVRBoneCapsule BoneCapsule;
+        private Vector3 BoneBegin;
+        private Vector3 BoneEnd;
+        
         private Vector3 capsuleScale;
         private MeshRenderer Renderer;
         private Material RenderMaterial;
 
-        private float capsult_radius = 0.007f;
+        private float capsult_radius;
         
-        public CapsuleVisualization(Transform begin, Transform end)
+        public CapsuleVisualization(float radius)
         {
-            Vector3 BoneBegin = begin.position;
-            Vector3 BoneEnd = end.parent.position;
-
-            GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            capsule.transform.localScale = new Vector3(capsult_radius * 2, Vector3.Distance(BoneBegin, BoneEnd) / 2, capsult_radius * 2);
-            capsule.transform.position = (BoneBegin + BoneEnd) / 2;
-            Vector3 direction = (BoneEnd - BoneBegin).normalized;
-            capsule.transform.rotation = Quaternion.LookRotation(direction) * Quaternion.Euler(90, 0, 0);
+            capsult_radius = radius;
+            CapsuleGO = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         }
         
-        public void Update()
+        public void Update(Vector3 BoneBegin, Vector3 BoneEnd)
         {
+            CapsuleGO.transform.localScale = new Vector3(capsult_radius * 2, Vector3.Distance(BoneBegin, BoneEnd) / 2, capsult_radius * 2);
+            CapsuleGO.transform.position = (BoneBegin + BoneEnd) / 2;
+            Vector3 direction = (BoneEnd - BoneBegin).normalized;
+            CapsuleGO.transform.rotation = Quaternion.LookRotation(direction) * Quaternion.Euler(90, 0, 0);
         }
     }
 
-    // visualize skeletion line segments
-    public class BoneVisualization
+    // Visualize hand skeletion by line segments
+    public class SegmentVisualization
     {
         private GameObject BoneGO;
         private Transform BoneBegin;
@@ -42,7 +62,7 @@ public class SkeletonRenderer : MonoBehaviour
         private Material RenderMaterial;
         private const float LINE_RENDERER_WIDTH = 0.002f;
         
-        public BoneVisualization(GameObject rootGO, Material renderMat, Transform begin, Transform end)
+        public SegmentVisualization(GameObject rootGO, Material renderMat, Transform begin, Transform end)
         {
             RenderMaterial = renderMat;
 
@@ -72,8 +92,8 @@ public class SkeletonRenderer : MonoBehaviour
             Line.startWidth = LINE_RENDERER_WIDTH;
             Line.endWidth = LINE_RENDERER_WIDTH;
 
-            Line.enabled = shouldRender;
             Line.sharedMaterial = RenderMaterial;
         }
     }
 }
+
