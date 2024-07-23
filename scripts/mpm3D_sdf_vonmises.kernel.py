@@ -467,22 +467,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'max_speed': max_speed})
         
         # hand sdf functions
-        mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 
-                                                                  'skeleton_velocities': skeleton_velocities, 
-                                                                  'hand_sdf': hand_sdf, 
-                                                                  'obstacle_normals': obstacle_normals, 
-                                                                  'obstacle_velocities': obstacle_velocities, 
-                                                                  'skeleton_capsule_radius': skeleton_capsule_radius})
-        mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 
-                                                                       'skeleton_velocities': skeleton_velocities, 
-                                                                       'hand_sdf': hand_sdf, 
-                                                                       'obstacle_normals': obstacle_normals, 
-                                                                       'obstacle_velocities': obstacle_velocities, 
-                                                                       'skeleton_capsule_radius': skeleton_capsule_radius, 
-                                                                       'hash_table': hash_table, 
-                                                                       'segments_count_per_cell': segments_count_per_cell,
-                                                                       'hash_table': hash_table,
-                                                                       'segments_count_per_cell': segments_count_per_cell})
+        mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius})
+        mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DVonmisesSDF(Hash).kernel.tcm")
         print("AOT done")
