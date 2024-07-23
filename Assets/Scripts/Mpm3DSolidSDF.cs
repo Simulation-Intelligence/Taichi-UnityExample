@@ -387,6 +387,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
             }
         }
     }
+    
     void SaveHandMotionData()
     {
         using StreamWriter writer = new(filePath);
@@ -395,6 +396,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
             writer.WriteLine(string.Join(",", position));
         }
     }
+    
     void LoadHandMotionData()
     {
         handPositions.Clear();
@@ -408,6 +410,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
         }
 
     }
+    
     void UpdateHandSDFFromRecordedData(int index)
     {
         index %= handPositions.Count / (skeleton_num_capsules * oculus_skeletons.Length);
@@ -438,6 +441,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
         skeleton_segments.CopyFromArray(hand_skeleton_segments);
         skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
     }
+    
     private void UpdateHandSkeletonSegment(int init, Vector3 start, Vector3 end, float frameTime, Vector3 meshPosition, Vector3 scale)
     {
         hand_skeleton_segments[init] = (start.x - meshPosition.x) / scale.x;
@@ -479,10 +483,12 @@ public class Mpm3DSolidSDF : MonoBehaviour
         }
         return false;
     }
+    
     bool IntersectwithHand(OVRHand[] hands)
     {
         return true;
     }
+    
     void OnSpacePressed()
     {
         isRecording = !isRecording;
