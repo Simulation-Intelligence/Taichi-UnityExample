@@ -156,7 +156,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
         sin_phi = Mathf.Sin(friction_angle * Mathf.Deg2Rad);
         alpha = Mathf.Sqrt(2.0f / 3.0f) * 2 * sin_phi / (3 - sin_phi);
 
-        //Taichi Allocate memory,hostwrite are not considered
+        // Taichi Allocate memory, hostwrite are not considered
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
@@ -168,6 +168,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
         obstacle_velocity = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
         obstacle_radius = new NdArrayBuilder<float>().Shape(sphere.Length).HostWrite(true).Build();
         max_v = new NdArrayBuilder<float>().Shape(1).HostRead(true).Build();
+
         sphere_positions = new float[3 * sphere.Length];
         sphere_velocities = new float[3 * sphere.Length];
         sphere_radii = new float[sphere.Length];
@@ -314,6 +315,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
                 if (use_correct_cfl)
                 {
                     v_allowed = float.MaxValue;
+                    //Taichi Allocate memory,hostwrite are not considered
                     _Kernel_substep_get_max_speed.LaunchAsync(v, max_v);
                     float[] max_speed = new float[1];
                     max_v.CopyToArray(max_speed);
