@@ -76,3 +76,8 @@ crashlytics-build.properties
 .vscode
 .vsconfig
 .DS_Store
+
+#gaussian
+images/
+model/
+sparse/
