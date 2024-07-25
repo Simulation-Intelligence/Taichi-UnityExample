@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Meta.WitAi.CallbackHandlers;
 using UnityEngine.UIElements;
 using System.IO;
+using System.Text;
 using System;
 using UnityEngine.InputSystem;
 using static SkeletonRenderer;
@@ -162,6 +163,15 @@ public class Mpm3DSolidSDF : MonoBehaviour
         volumeTextureUpdater.height = n_grid;
         volumeTextureUpdater.depth = n_grid;
         volumeTextureUpdater.densityData = new float[n_grid * n_grid * n_grid];
+        volumeTextureUpdater.volumeTex = new RenderTexture(n_grid, n_grid, 0, RenderTextureFormat.RFloat)
+        {
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = n_grid,
+            enableRandomWrite = true,
+            wrapMode = TextureWrapMode.Clamp
+        };
+        volumeTextureUpdater.computeBuffer = new ComputeBuffer(n_grid * n_grid * n_grid, sizeof(float));
+
         volumeTextureUpdater.max_density = particle_per_grid * p_mass;
 
         // Taichi Allocate memory, hostwrite are not considered
@@ -170,7 +180,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
-        grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).HostRead(true).Build();
+        grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         obstacle_pos = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
         obstacle_velocity = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
@@ -333,7 +343,8 @@ public class Mpm3DSolidSDF : MonoBehaviour
             }
         }
         x.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
-        grid_m.CopyToArray(volumeTextureUpdater.densityData);
+        //grid_m.CopyToNativeBufferAsync(volumeTextureUpdater.volumeTex.GetNativeTexturePtr());
+        grid_m.CopyToNativeBufferAsync(volumeTextureUpdater.computeBuffer.GetNativeBufferPtr());
         Runtime.Submit();
     }
 
@@ -560,5 +571,15 @@ public class Mpm3DSolidSDF : MonoBehaviour
             handPositions.Clear();
         }
     }
+    unsafe void PrintNativeTextureData(IntPtr ptr, int size)
+    {
 
+        byte* data = (byte*)ptr.ToPointer();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < size; i++)
+        {
+            sb.AppendFormat("Byte {0}: {1:X2} ", i, data[i]);
+        }
+        UnityEngine.Debug.Log(sb.ToString());
+    }
 }
