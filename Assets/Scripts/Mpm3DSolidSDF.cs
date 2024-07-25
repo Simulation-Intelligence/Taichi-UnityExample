@@ -18,6 +18,8 @@ public class Mpm3DSolidSDF : MonoBehaviour
     private Mesh _Mesh;
     private MeshFilter _MeshFilter;
 
+    public VolumeTextureUpdater volumeTextureUpdater;
+
     [Header("MpM Engine")]
     [SerializeField]
     private AotModuleAsset Mpm3DModule;
@@ -156,13 +158,19 @@ public class Mpm3DSolidSDF : MonoBehaviour
         sin_phi = Mathf.Sin(friction_angle * Mathf.Deg2Rad);
         alpha = Mathf.Sqrt(2.0f / 3.0f) * 2 * sin_phi / (3 - sin_phi);
 
+        volumeTextureUpdater.width = n_grid;
+        volumeTextureUpdater.height = n_grid;
+        volumeTextureUpdater.depth = n_grid;
+        volumeTextureUpdater.densityData = new float[n_grid * n_grid * n_grid];
+        volumeTextureUpdater.max_density = particle_per_grid * p_mass;
+
         // Taichi Allocate memory, hostwrite are not considered
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
-        grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
+        grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).HostRead(true).Build();
         sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         obstacle_pos = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
         obstacle_velocity = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
@@ -270,7 +278,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
                     if (UseRecordDate)
                     {
                         UpdateHandSDFFromRecordedData(handMotionIndex++);
-                        RenderRecordedHandSkeletonCapsule(handMotionIndex-1);
+                        RenderRecordedHandSkeletonCapsule(handMotionIndex - 1);
                     }
                     else
                     {
@@ -325,6 +333,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
             }
         }
         x.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
+        grid_m.CopyToArray(volumeTextureUpdater.densityData);
         Runtime.Submit();
     }
 
@@ -396,7 +405,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
             }
         }
     }
-    
+
     void SaveHandMotionData()
     {
         using StreamWriter writer = new(filePath);
@@ -405,7 +414,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
             writer.WriteLine(string.Join(",", position));
         }
     }
-    
+
     void LoadHandMotionData()
     {
         handPositions.Clear();
@@ -418,7 +427,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
             handPositions.Add(position);
         }
     }
-    
+
     void UpdateHandSDFFromRecordedData(int index)
     {
         index %= handPositions.Count / (skeleton_num_capsules * oculus_skeletons.Length);
@@ -448,7 +457,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
         skeleton_segments.CopyFromArray(hand_skeleton_segments);
         skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
     }
-    
+
     private void RenderRecordedHandSkeletonCapsule(int index)
     {
         // initialization
@@ -464,7 +473,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
             }
             RendererInitialized = true;
         }
-        
+
         if (RendererInitialized)
         {
             index %= handPositions.Count / (skeleton_num_capsules * oculus_skeletons.Length);
@@ -480,17 +489,17 @@ public class Mpm3DSolidSDF : MonoBehaviour
                         return;
                     }
                     float[] position = handPositions[idx];
-                    UnityEngine.Debug.Log(position);
-                    for (int k = 0; k < position.Length; k++)
-                    {
-                        UnityEngine.Debug.Log($"position[{k}] = {position[k]}");
-                    }
+                    //UnityEngine.Debug.Log(position);
+                    // for (int k = 0; k < position.Length; k++)
+                    // {
+                    //     UnityEngine.Debug.Log($"position[{k}] = {position[k]}");
+                    // }
                     _capsuleVisualizations[i * skeleton_num_capsules + j].Update(new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]));
                 }
             }
         }
     }
-    
+
     private void UpdateHandSkeletonSegment(int init, Vector3 start, Vector3 end, float frameTime, Vector3 meshPosition, Vector3 scale)
     {
         hand_skeleton_segments[init] = (start.x - meshPosition.x) / scale.x;
@@ -499,7 +508,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
         hand_skeleton_segments[init + 3] = (end.x - meshPosition.x) / scale.x;
         hand_skeleton_segments[init + 4] = (end.y - meshPosition.y) / scale.y;
         hand_skeleton_segments[init + 5] = (end.z - meshPosition.z) / scale.z;
-        
+
         hand_skeleton_velocities[init] = (start.x - hand_skeleton_segments_prev[init]) / scale.x / frameTime;
         hand_skeleton_velocities[init + 1] = (start.y - hand_skeleton_segments_prev[init + 1]) / scale.y / frameTime;
         hand_skeleton_velocities[init + 2] = (start.z - hand_skeleton_segments_prev[init + 2]) / scale.z / frameTime;
@@ -532,12 +541,12 @@ public class Mpm3DSolidSDF : MonoBehaviour
         }
         return false;
     }
-    
+
     bool IntersectwithHand(OVRHand[] hands)
     {
         return true;
     }
-    
+
     void OnSpacePressed()
     {
         isRecording = !isRecording;

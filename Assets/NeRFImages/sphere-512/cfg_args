@@ -1,0 +1,1 @@
+Namespace(sh_degree=3, source_path='D:\\work\\Graphics\\VRhand\\Taichi-UnityExample\\Assets\\NeRFImages', model_path='D:\\work\\Graphics\\VRhand\\Taichi-UnityExample\\Assets\\NeRFImages\\model-512\\', images='images', resolution=-1, white_background=False, data_device='cuda', eval=False)
