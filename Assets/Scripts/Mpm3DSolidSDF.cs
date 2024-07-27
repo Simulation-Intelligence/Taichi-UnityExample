@@ -18,6 +18,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
 {
     private Mesh _Mesh;
     private MeshFilter _MeshFilter;
+    private MeshRenderer _MeshRenderer;
 
     public VolumeTextureUpdater volumeTextureUpdater;
 
@@ -29,7 +30,11 @@ public class Mpm3DSolidSDF : MonoBehaviour
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed;
 
-
+    public enum RenderType
+    {
+        PointMesh,
+        Raymarching
+    }
     public enum PlasticityType
     {
         Von_Mises,
@@ -49,6 +54,12 @@ public class Mpm3DSolidSDF : MonoBehaviour
         Hand
     }
     [Header("Material")]
+    [SerializeField]
+    private RenderType renderType = RenderType.PointMesh;
+    [SerializeField]
+    private Material pointMaterial;
+    [SerializeField]
+    private Material raymarchingMaterial;
     [SerializeField]
     private PlasticityType plasticityType = PlasticityType.Von_Mises;
     [SerializeField]
@@ -159,20 +170,30 @@ public class Mpm3DSolidSDF : MonoBehaviour
         sin_phi = Mathf.Sin(friction_angle * Mathf.Deg2Rad);
         alpha = Mathf.Sqrt(2.0f / 3.0f) * 2 * sin_phi / (3 - sin_phi);
 
-        volumeTextureUpdater.width = n_grid;
-        volumeTextureUpdater.height = n_grid;
-        volumeTextureUpdater.depth = n_grid;
-        volumeTextureUpdater.densityData = new float[n_grid * n_grid * n_grid];
-        volumeTextureUpdater.volumeTex = new RenderTexture(n_grid, n_grid, 0, RenderTextureFormat.RFloat)
-        {
-            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
-            volumeDepth = n_grid,
-            enableRandomWrite = true,
-            wrapMode = TextureWrapMode.Clamp
-        };
-        volumeTextureUpdater.computeBuffer = new ComputeBuffer(n_grid * n_grid * n_grid, sizeof(float));
 
-        volumeTextureUpdater.max_density = particle_per_grid * p_mass;
+        _MeshRenderer = GetComponent<MeshRenderer>();
+        _MeshFilter = GetComponent<MeshFilter>();
+        if (renderType == RenderType.Raymarching)
+        {
+            _MeshRenderer.material = raymarchingMaterial;
+            volumeTextureUpdater.width = n_grid;
+            volumeTextureUpdater.height = n_grid;
+            volumeTextureUpdater.depth = n_grid;
+            volumeTextureUpdater.densityData = new float[n_grid * n_grid * n_grid];
+            volumeTextureUpdater.volumeTex = new RenderTexture(n_grid, n_grid, 0, RenderTextureFormat.RFloat)
+            {
+                dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+                volumeDepth = n_grid,
+                enableRandomWrite = true,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            volumeTextureUpdater.volumeTex.Create();
+            volumeTextureUpdater.computeBuffer = new ComputeBuffer(n_grid * n_grid * n_grid, sizeof(float));
+
+            volumeTextureUpdater.max_density = particle_per_grid * p_mass;
+            volumeTextureUpdater.targetMaterial = GetComponent<Renderer>().material;
+        }
+
 
         // Taichi Allocate memory, hostwrite are not considered
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
@@ -222,26 +243,28 @@ public class Mpm3DSolidSDF : MonoBehaviour
             //kernel initialize
             _Kernel_init_particles.LaunchAsync(x, v, dg, cube_size);
         }
-
-        _MeshFilter = GetComponent<MeshFilter>();
-        _Mesh = new Mesh();
-        int[] indices = new int[NParticles];
-        for (int i = 0; i < NParticles; ++i)
+        if (renderType == RenderType.PointMesh)
         {
-            indices[i] = i;
+            _Mesh = new Mesh();
+            int[] indices = new int[NParticles];
+            for (int i = 0; i < NParticles; ++i)
+            {
+                indices[i] = i;
+            }
+            Vector3[] vertices = new Vector3[NParticles];
+
+            var index = indices.ToArray();
+            _Mesh.vertices = vertices;
+            _Mesh.SetIndices(indices, MeshTopology.Points, 0);
+            _Mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 114514f);
+            _Mesh.name = "Mpm3D";
+            _Mesh.MarkModified();
+            _Mesh.UploadMeshData(false);
+            _MeshFilter.mesh = _Mesh;
+            _MeshRenderer.material = pointMaterial;
+            bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
         }
-        Vector3[] vertices = new Vector3[NParticles];
 
-        var index = indices.ToArray();
-        _Mesh.vertices = vertices;
-        _Mesh.SetIndices(indices, MeshTopology.Points, 0);
-        _Mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 114514f);
-        _Mesh.name = "Mpm3D";
-        _Mesh.MarkModified();
-        _Mesh.UploadMeshData(false);
-        _MeshFilter.mesh = _Mesh;
-
-        bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
 
         if (UseRecordDate)
         {
@@ -342,9 +365,14 @@ public class Mpm3DSolidSDF : MonoBehaviour
                 }
             }
         }
-        x.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
-        //grid_m.CopyToNativeBufferAsync(volumeTextureUpdater.volumeTex.GetNativeTexturePtr());
-        grid_m.CopyToNativeBufferAsync(volumeTextureUpdater.computeBuffer.GetNativeBufferPtr());
+        if (renderType == RenderType.PointMesh)
+        {
+            x.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
+        }
+        else if (renderType == RenderType.Raymarching)
+        {
+            grid_m.CopyToNativeBufferAsync(volumeTextureUpdater.computeBuffer.GetNativeBufferPtr());
+        }
         Runtime.Submit();
     }
 
@@ -461,7 +489,8 @@ public class Mpm3DSolidSDF : MonoBehaviour
                     return;
                 }
                 float[] position = handPositions[idx];
-                UpdateHandSkeletonSegment(init + j * 6, new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]), frame_time, _MeshFilter.transform.position, scale);
+                Vector3 MeshPosition = _MeshFilter.transform.position;
+                UpdateHandSkeletonSegment(init + j * 6, new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]), frame_time, MeshPosition, scale);
             }
         }
 

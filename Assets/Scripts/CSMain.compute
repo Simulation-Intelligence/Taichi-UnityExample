@@ -18,7 +18,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         return;
 
     // 计算在 1D 数据中的索引
-    int index = id.x + id.y * textureSize + id.z * textureSize * textureSize;
+    int index = id.x* textureSize * textureSize + id.y * textureSize + id.z ;
 
     // 从 ComputeBuffer 获取数据
     float value = dataBuffer[index];

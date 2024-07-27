@@ -14,7 +14,7 @@ public class VolumeTextureUpdater : MonoBehaviour
     public ComputeShader computeShader;
     public float max_density = 100;
     public RenderTexture volumeTex;   // RenderTexture 对象
-    private Material targetMaterial; // 目标材质
+    public Material targetMaterial; // 目标材质
 
     void Start()
     {
@@ -39,12 +39,6 @@ public class VolumeTextureUpdater : MonoBehaviour
             Debug.LogError("Target object does not have a material.");
             return;
         }
-
-        // // 初始化或更新密度数据，这里只是一个示例，可以根据实际需求更新
-        // UpdateDensityData();
-
-        // // 设置初始 RenderTexture
-        // UpdateVolumeTexture();
     }
 
     void Update()
