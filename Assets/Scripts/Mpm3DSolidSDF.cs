@@ -197,6 +197,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
 
         // Taichi Allocate memory, hostwrite are not considered
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
+        //x = NdArray<float>.FromArray(xList.ToArray(), new int[] { NParticles, 3 });
         v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();

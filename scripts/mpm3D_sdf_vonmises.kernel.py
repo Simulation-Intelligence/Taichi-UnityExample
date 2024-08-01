@@ -261,6 +261,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         for i in range(x.shape[0]):
             x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size+ (0.5-cube_size/2), ti.random() * cube_size+(0.5-cube_size/2)]
             dg[i] = ti.Matrix.identity(float, dim)
+
+    @ti.kernel
+    def init_dg(dg: ti.types.ndarray(ndim=1)):
+        for i in range(dg.shape[0]):
+            dg[i] = ti.Matrix.identity(float, dim)
     
     @ti.kernel
     def substep_get_max_speed(v: ti.types.ndarray(ndim=1),max_speed: ti.types.ndarray(ndim=1)):
@@ -465,6 +470,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'max_speed': max_speed})
+        mod.add_kernel(init_dg, template_args={'dg': dg})
         
         # hand sdf functions
         mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius})
@@ -474,16 +480,16 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         print("AOT done")
     
     if run:
-        with open('./scripts/HandSkeletonSegments.json', 'r') as file:
-            data = json.load(file)
-        segments_list = []
-        for segment in data['skeleton_segments']:
-            segments_list.append([
-                [segment['start']['x'], segment['start']['y'], segment['start']['z']],
-                [segment['end']['x'], segment['end']['y'], segment['end']['z']]
-            ])
-        segments_np = np.array(segments_list, dtype=np.float32)
-        skeleton_segments.from_numpy(segments_np)
+        # with open('./scripts/HandSkeletonSegments.json', 'r') as file:
+        #     data = json.load(file)
+        # segments_list = []
+        # for segment in data['skeleton_segments']:
+        #     segments_list.append([
+        #         [segment['start']['x'], segment['start']['y'], segment['start']['z']],
+        #         [segment['end']['x'], segment['end']['y'], segment['end']['z']]
+        #     ])
+        # segments_np = np.array(segments_list, dtype=np.float32)
+        # skeleton_segments.from_numpy(segments_np)
         # substep_calculate_hand_sdf(skeleton_segments, hand_sdf, obstacle_normals, skeleton_capsule_radius, dx)
         # substep_calculate_hand_sdf_hash(skeleton_segments, hand_sdf, skeleton_capsule_radius, dx, n_grid, hash_table, segments_count_per_cell)
 
@@ -501,13 +507,13 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         #                 print(f"Cell ({x}, {y}, {z}) contains {count} line segments.")
         # print(f"Number of non-empty cells: {total_cells}")
         
-        # gui = ti.GUI('MPM3D', res=(800, 800))
-        # init_particles(x, v, dg,cube_size)
-        # while gui.running and not gui.get_event(gui.ESCAPE):
-        #     for i in range(50):
-        #         substep()
-        #     gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
-        #     gui.show()
+        gui = ti.GUI('MPM3D', res=(800, 800))
+        init_particles(x, v, dg,cube_size)
+        while gui.running and not gui.get_event(gui.ESCAPE):
+            for i in range(50):
+                substep()
+            gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
+            gui.show()
     run_aot()
     
 if __name__ == "__main__":
