@@ -421,7 +421,7 @@ MonoBehaviour:
   plasticityType: 0
   stressType: 0
   splatManager: {fileID: 249369758}
-  g: {x: 0, y: 0, z: 0}
+  g: {x: 0, y: -9.8, z: 0}
   n_grid: 32
   max_dt: 0.0001
   frame_time: 0.001
