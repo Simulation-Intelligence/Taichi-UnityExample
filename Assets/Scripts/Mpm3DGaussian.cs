@@ -29,7 +29,7 @@ public class Mpm3DGaussian : MonoBehaviour
     _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_update_grid_v, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed,
-     _Kernel_init_dg, _kernel_init_gaussian_data, _kernel_substep_update_gaussian_data;
+     _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube;
 
     public enum RenderType
     {
@@ -82,6 +82,9 @@ public class Mpm3DGaussian : MonoBehaviour
 
     [Header("Scene Settings")]
     [SerializeField]
+    bool RunSimulation = true;
+    private bool updated = false;
+    [SerializeField]
     GaussianSplatRenderManager splatManager;
 
     [SerializeField]
@@ -89,12 +92,13 @@ public class Mpm3DGaussian : MonoBehaviour
     [SerializeField]
     private int n_grid = 32;
     [SerializeField]
+    private float bounding_eps = 0.1f;
+    [SerializeField]
     private float max_dt = 1e-4f, frame_time = 0.005f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
     [SerializeField]
     bool use_correct_cfl = false;
 
 
-    private Vector3 scale;
     [Header("Obstacle")]
     [SerializeField]
     private ObstacleType obstacleType = ObstacleType.Sphere;
@@ -159,8 +163,9 @@ public class Mpm3DGaussian : MonoBehaviour
             _Kernel_substep_get_max_speed = kernels["substep_get_max_speed"];
 
             //gaussian
-            _kernel_init_gaussian_data = kernels["init_gaussian_data"];
-            _kernel_substep_update_gaussian_data = kernels["substep_update_gaussian_data"];
+            _Kernel_init_gaussian_data = kernels["init_gaussian_data"];
+            _Kernel_substep_update_gaussian_data = kernels["substep_update_gaussian_data"];
+            _Kernel_scale_to_unit_cube = kernels["scale_to_unit_cube"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -180,9 +185,8 @@ public class Mpm3DGaussian : MonoBehaviour
             NParticles = (int)(n_grid * n_grid * n_grid * cube_size * cube_size * cube_size * particle_per_grid);
         }
         dx = 1.0f / n_grid;
-        scale = transform.localScale;
         p_vol = dx * dx * dx / particle_per_grid;
-        p_mass = p_vol * p_rho * scale.x * scale.y * scale.z;
+        p_mass = p_vol * p_rho;
         mu = E / (2 * (1 + nu));
         lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
         v_allowed = allowed_cfl * dx / max_dt;
@@ -254,7 +258,7 @@ public class Mpm3DGaussian : MonoBehaviour
         _skeleton_capsule_radius = new float[skeleton_num_capsules * oculus_skeletons.Length];
         for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
         {
-            _skeleton_capsule_radius[i] = Skeleton_capsule_radius / scale.x;
+            _skeleton_capsule_radius[i] = Skeleton_capsule_radius / transform.localScale.x;
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
         if (_Compute_Graph_g_init != null)
@@ -271,7 +275,9 @@ public class Mpm3DGaussian : MonoBehaviour
             other_data.CopyFromArray(splatManager.m_other);
             init_sh.CopyFromArray(splatManager.m_SH);
             _Kernel_init_dg.LaunchAsync(dg);
-            _kernel_init_gaussian_data.LaunchAsync(init_rotation, init_scale, other_data);
+            _Kernel_scale_to_unit_cube.LaunchAsync(x, other_data, bounding_eps);
+            _Kernel_init_gaussian_data.LaunchAsync(init_rotation, init_scale, other_data);
+
         }
 
         _Mesh = new Mesh();
@@ -308,19 +314,30 @@ public class Mpm3DGaussian : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        if (!RunSimulation)
+        {
+            if (!updated)
+            {
+                other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
+                x.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
+                updated = true;
+                Runtime.Submit();
+            }
+            return;
+        }
         if (_Compute_Graph_g_update != null)
         {
             _Compute_Graph_g_update.LaunchAsync(new Dictionary<string, object>
             {
-                {"v", v},
-                {"grid_m",grid_m},
-                {"x",x},
-                {"C",C},
-                {"grid_v",grid_v},
-                {"g_x",g.x},
-                {"g_y",g.y},
-                {"g_z",g.z},
+                {"v", v
+},
+                { "grid_m",grid_m},
+                { "x",x},
+                { "C",C},
+                { "grid_v",grid_v},
+                { "g_x",g.x},
+                { "g_y",g.y},
+                { "g_z",g.z},
             });
         }
         else
@@ -366,7 +383,7 @@ public class Mpm3DGaussian : MonoBehaviour
                         break;
                 }
 
-                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, obstacle_norms, obstacle_velocity, g.x / scale.x, g.y / scale.y, g.z / scale.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid);
+                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, obstacle_norms, obstacle_velocity, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid);
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt);
                 switch (plasticityType)
                 {
@@ -404,7 +421,7 @@ public class Mpm3DGaussian : MonoBehaviour
         }
         else if (renderType == RenderType.GaussianSplat)
         {
-            _kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh);
+            _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh);
             other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
             sh.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuSHData.GetNativeBufferPtr());
             x.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
@@ -439,13 +456,12 @@ public class Mpm3DGaussian : MonoBehaviour
         {
             Vector3 curpos = sphere[i].Position;
             Vector3 velocity = sphere[i].Velocity;
-            sphere_positions[i * 3] = (curpos.x - _MeshFilter.transform.position.x) / scale.x;
-            sphere_positions[i * 3 + 1] = (curpos.y - _MeshFilter.transform.position.y) / scale.y;
-            sphere_positions[i * 3 + 2] = (curpos.z - _MeshFilter.transform.position.z) / scale.z;
-            sphere_velocities[i * 3] = velocity.x;
+            sphere_positions[i * 3] = (curpos.x - _MeshFilter.transform.position.x);
+            sphere_positions[i * 3 + 1] = (curpos.y - _MeshFilter.transform.position.y);
+            sphere_positions[i * 3 + 2] = (curpos.z - _MeshFilter.transform.position.z);
             sphere_velocities[i * 3 + 1] = velocity.y;
             sphere_velocities[i * 3 + 2] = velocity.z;
-            sphere_radii[i] = sphere[i].Radius / scale.x;
+            sphere_radii[i] = sphere[i].Radius;
         }
         obstacle_pos.CopyFromArray(sphere_positions);
         obstacle_velocity.CopyFromArray(sphere_velocities);
@@ -472,10 +488,12 @@ public class Mpm3DGaussian : MonoBehaviour
                         {
                             handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
                         }
-                        UpdateHandSkeletonSegment(init + j * 6, start, end, frame_time, _MeshFilter.transform.position, scale);
+                        UpdateHandSkeletonSegment(init + j * 6, start, end, frame_time);
+                        _skeleton_capsule_radius[i * skeleton_num_capsules + j] = Skeleton_capsule_radius / transform.localScale.x;
                     }
                     skeleton_segments.CopyFromArray(hand_skeleton_segments);
                     skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
+                    skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
                 }
             }
         }
@@ -525,8 +543,7 @@ public class Mpm3DGaussian : MonoBehaviour
                     return;
                 }
                 float[] position = handPositions[idx];
-                Vector3 MeshPosition = _MeshFilter.transform.position;
-                UpdateHandSkeletonSegment(init + j * 6, new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]), frame_time, MeshPosition, scale);
+                UpdateHandSkeletonSegment(init + j * 6, new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]), frame_time);
             }
         }
 
@@ -565,39 +582,36 @@ public class Mpm3DGaussian : MonoBehaviour
                         return;
                     }
                     float[] position = handPositions[idx];
-                    //UnityEngine.Debug.Log(position);
-                    // for (int k = 0; k < position.Length; k++)
-                    // {
-                    //     UnityEngine.Debug.Log($"position[{k}] = {position[k]}");
-                    // }
                     _capsuleVisualizations[i * skeleton_num_capsules + j].Update(new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]));
                 }
             }
         }
     }
 
-    private void UpdateHandSkeletonSegment(int init, Vector3 start, Vector3 end, float frameTime, Vector3 meshPosition, Vector3 scale)
+    private void UpdateHandSkeletonSegment(int init, Vector3 start, Vector3 end, float frameTime)
     {
-        hand_skeleton_segments[init] = (start.x - meshPosition.x) / scale.x;
-        hand_skeleton_segments[init + 1] = (start.y - meshPosition.y) / scale.y;
-        hand_skeleton_segments[init + 2] = (start.z - meshPosition.z) / scale.z;
-        hand_skeleton_segments[init + 3] = (end.x - meshPosition.x) / scale.x;
-        hand_skeleton_segments[init + 4] = (end.y - meshPosition.y) / scale.y;
-        hand_skeleton_segments[init + 5] = (end.z - meshPosition.z) / scale.z;
+        Vector3 TransformedStart = transform.InverseTransformPoint(start);
+        Vector3 TransformedEnd = transform.InverseTransformPoint(end);
+        hand_skeleton_segments[init] = TransformedStart.x;
+        hand_skeleton_segments[init + 1] = TransformedStart.y;
+        hand_skeleton_segments[init + 2] = TransformedStart.z;
+        hand_skeleton_segments[init + 3] = TransformedEnd.x;
+        hand_skeleton_segments[init + 4] = TransformedEnd.y;
+        hand_skeleton_segments[init + 5] = TransformedEnd.z;
 
-        hand_skeleton_velocities[init] = (start.x - hand_skeleton_segments_prev[init]) / scale.x / frameTime;
-        hand_skeleton_velocities[init + 1] = (start.y - hand_skeleton_segments_prev[init + 1]) / scale.y / frameTime;
-        hand_skeleton_velocities[init + 2] = (start.z - hand_skeleton_segments_prev[init + 2]) / scale.z / frameTime;
-        hand_skeleton_velocities[init + 3] = (end.x - hand_skeleton_segments_prev[init + 3]) / scale.x / frameTime;
-        hand_skeleton_velocities[init + 4] = (end.y - hand_skeleton_segments_prev[init + 4]) / scale.y / frameTime;
-        hand_skeleton_velocities[init + 5] = (end.z - hand_skeleton_segments_prev[init + 5]) / scale.z / frameTime;
+        hand_skeleton_velocities[init] = (TransformedStart.x - hand_skeleton_segments_prev[init]) / frameTime;
+        hand_skeleton_velocities[init + 1] = (TransformedStart.y - hand_skeleton_segments_prev[init + 1]) / frameTime;
+        hand_skeleton_velocities[init + 2] = (TransformedStart.z - hand_skeleton_segments_prev[init + 2]) / frameTime;
+        hand_skeleton_velocities[init + 3] = (TransformedEnd.x - hand_skeleton_segments_prev[init + 3]) / frameTime;
+        hand_skeleton_velocities[init + 4] = (TransformedEnd.y - hand_skeleton_segments_prev[init + 4]) / frameTime;
+        hand_skeleton_velocities[init + 5] = (TransformedEnd.z - hand_skeleton_segments_prev[init + 5]) / frameTime;
 
-        hand_skeleton_segments_prev[init] = start.x;
-        hand_skeleton_segments_prev[init + 1] = start.y;
-        hand_skeleton_segments_prev[init + 2] = start.z;
-        hand_skeleton_segments_prev[init + 3] = end.x;
-        hand_skeleton_segments_prev[init + 4] = end.y;
-        hand_skeleton_segments_prev[init + 5] = end.z;
+        hand_skeleton_segments_prev[init] = TransformedStart.x;
+        hand_skeleton_segments_prev[init + 1] = TransformedStart.y;
+        hand_skeleton_segments_prev[init + 2] = TransformedStart.z;
+        hand_skeleton_segments_prev[init + 3] = TransformedEnd.x;
+        hand_skeleton_segments_prev[init + 4] = TransformedEnd.y;
+        hand_skeleton_segments_prev[init + 5] = TransformedEnd.z;
     }
 
     bool Intersectwith(Sphere[] o)

@@ -514,7 +514,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_update_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'dg': dg, 'other_data': other_data, 'init_sh': init_sh, 'sh': sh})
         mod.add_kernel(scale_to_unit_cube, template_args={'x': x, 'other_data': other_data})
 
-        mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian.kernel.tcm")
+        mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part.kernel.tcm")
         print("AOT done")
     
     if run:

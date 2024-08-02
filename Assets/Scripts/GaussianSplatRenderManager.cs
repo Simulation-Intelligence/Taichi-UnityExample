@@ -1,18 +1,19 @@
 using UnityEngine;
-using UnityEngine.Rendering;
 using GaussianSplatting.Runtime;
-public class GaussianSplatRenderManager : MonoBehaviour
+using System;
+public class GaussianSplatRenderManager : MonoBehaviour, IDisposable
 {
     // Member variable of GaussianSplatRender
     public GaussianSplatRenderer m_Render;
 
     // Array to store position data
+    [NonSerialized]
     public float[] m_pos;
-
+    [NonSerialized]
     public float[] m_other;
-
+    [NonSerialized]
     public float[] m_color;
-
+    [NonSerialized]
     public float[] m_SH;
 
     public float eps = 0.1f;
@@ -35,8 +36,7 @@ public class GaussianSplatRenderManager : MonoBehaviour
         GetPos();
         GetOther();
         GetShs();
-        ScaleToUnitCube();
-
+        //ScaleToUnitCube();
     }
     void Update()
     {
@@ -79,22 +79,6 @@ public class GaussianSplatRenderManager : MonoBehaviour
         }
         gpuOtherData.GetData(m_other);
     }
-    // public void GetColor()
-    // {
-    //     if (m_Render == null)
-    //     {
-    //         Debug.LogError("GaussianSplatRenderSystem instance is not initialized.");
-    //         return;
-    //     }
-
-    //     var gpuColorData = m_Render.m_GpuColorData;
-    //     if (gpuColorData == null || gpuColorData.count == 0)
-    //     {
-    //         Debug.LogWarning("No color data available.");
-    //         return;
-    //     }
-    //     gpuColorData.GetData(m_color);
-    // }
 
     public void GetShs()
     {
