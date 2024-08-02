@@ -29,7 +29,7 @@ public class Mpm3DGaussian : MonoBehaviour
     _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_update_grid_v, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed,
-     _Kernel_init_dg;
+     _Kernel_init_dg, _kernel_init_gaussian_data, _kernel_substep_update_gaussian_data;
 
     public enum RenderType
     {
@@ -70,6 +70,8 @@ public class Mpm3DGaussian : MonoBehaviour
     private NdArray<float> x, v, C, dg, grid_v, grid_m, obstacle_pos, obstacle_velocity, obstacle_radius, sdf;
 
     public NdArray<float> skeleton_segments, skeleton_velocities, hand_sdf, obstacle_norms, skeleton_capsule_radius, max_v;
+
+    public NdArray<float> init_rotation, init_scale, init_sh, other_data, sh;
 
     private float[] hand_skeleton_segments, hand_skeleton_segments_prev, hand_skeleton_velocities, _skeleton_capsule_radius, sphere_positions, sphere_velocities, sphere_radii;
 
@@ -118,7 +120,7 @@ public class Mpm3DGaussian : MonoBehaviour
     private float mu, lambda, sin_phi, alpha;
 
     private bool isRecording = false;
-    private List<float[]> handPositions = new List<float[]>();
+    private List<float[]> handPositions = new();
 
     private int handMotionIndex = 0;
     private InputAction spaceAction;
@@ -132,7 +134,7 @@ public class Mpm3DGaussian : MonoBehaviour
     private string filePath = "HandMotionData.txt";
 
     private bool RendererInitialized = false;
-    private List<CapsuleVisualization> _capsuleVisualizations = new List<CapsuleVisualization>();
+    private List<CapsuleVisualization> _capsuleVisualizations = new();
 
     // Start is called before the first frame update
     void Start()
@@ -155,6 +157,10 @@ public class Mpm3DGaussian : MonoBehaviour
             // new added
             _Kernel_substep_calculate_hand_sdf = kernels["substep_calculate_hand_sdf"];
             _Kernel_substep_get_max_speed = kernels["substep_get_max_speed"];
+
+            //gaussian
+            _kernel_init_gaussian_data = kernels["init_gaussian_data"];
+            _kernel_substep_update_gaussian_data = kernels["substep_update_gaussian_data"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -234,6 +240,13 @@ public class Mpm3DGaussian : MonoBehaviour
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build(); // use a consistent radius for all capsules (at now)
         obstacle_norms = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
 
+        //gaussian
+        init_rotation = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).Build();
+        init_scale = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
+        other_data = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).HostWrite(true).Build();
+        init_sh = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(16, 3).HostWrite(true).Build();
+        sh = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(16, 3).Build();
+
         //skeleton_num_capsules = oculus_skeletons[0].Bones.Count();
         hand_skeleton_segments = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         hand_skeleton_segments_prev = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
@@ -255,7 +268,10 @@ public class Mpm3DGaussian : MonoBehaviour
         else
         {
             x.CopyFromArray(splatManager.m_pos);
+            other_data.CopyFromArray(splatManager.m_other);
+            init_sh.CopyFromArray(splatManager.m_SH);
             _Kernel_init_dg.LaunchAsync(dg);
+            _kernel_init_gaussian_data.LaunchAsync(init_rotation, init_scale, other_data);
         }
 
         _Mesh = new Mesh();
@@ -310,7 +326,6 @@ public class Mpm3DGaussian : MonoBehaviour
         else
         {
             //kernel update
-
             float dt = max_dt, time_left = frame_time;
             switch (obstacleType)
             {
@@ -389,6 +404,9 @@ public class Mpm3DGaussian : MonoBehaviour
         }
         else if (renderType == RenderType.GaussianSplat)
         {
+            _kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh);
+            other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
+            sh.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuSHData.GetNativeBufferPtr());
             x.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
         }
         Runtime.Submit();

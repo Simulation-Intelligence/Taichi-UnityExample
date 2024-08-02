@@ -9,9 +9,16 @@ public class GaussianSplatRenderManager : MonoBehaviour
     // Array to store position data
     public float[] m_pos;
 
+    public float[] m_other;
+
+    public float[] m_color;
+
+    public float[] m_SH;
+
     public float eps = 0.1f;
 
     public Vector3 min, max;
+    bool setted = false;
 
 
 
@@ -19,14 +26,26 @@ public class GaussianSplatRenderManager : MonoBehaviour
     public int splatsNum { get; private set; }
 
     // Awake is called when the script instance is being loaded
-    private void Start()
+    void Start()
     {
         splatsNum = m_Render.splatCount;
         m_pos = new float[splatsNum * 3];
+        m_other = new float[splatsNum * 4];
+        m_SH = new float[splatsNum * 16 * 3];
         GetPos();
+        GetOther();
+        GetShs();
         ScaleToUnitCube();
-    }
 
+    }
+    void Update()
+    {
+        // if (!setted)
+        // {
+        //     m_Render.m_GpuOtherData.SetData(m_other);
+        //     setted = true;
+        // }
+    }
     // Function to copy data from m_GpuPosData to m_pos and update splatsNum
     public void GetPos()
     {
@@ -44,6 +63,56 @@ public class GaussianSplatRenderManager : MonoBehaviour
         }
         gpuPosData.GetData(m_pos);
     }
+    public void GetOther()
+    {
+        if (m_Render == null)
+        {
+            Debug.LogError("GaussianSplatRenderSystem instance is not initialized.");
+            return;
+        }
+
+        var gpuOtherData = m_Render.m_GpuOtherData;
+        if (gpuOtherData == null || gpuOtherData.count == 0)
+        {
+            Debug.LogWarning("No scale data available.");
+            return;
+        }
+        gpuOtherData.GetData(m_other);
+    }
+    // public void GetColor()
+    // {
+    //     if (m_Render == null)
+    //     {
+    //         Debug.LogError("GaussianSplatRenderSystem instance is not initialized.");
+    //         return;
+    //     }
+
+    //     var gpuColorData = m_Render.m_GpuColorData;
+    //     if (gpuColorData == null || gpuColorData.count == 0)
+    //     {
+    //         Debug.LogWarning("No color data available.");
+    //         return;
+    //     }
+    //     gpuColorData.GetData(m_color);
+    // }
+
+    public void GetShs()
+    {
+        if (m_Render == null)
+        {
+            Debug.LogError("GaussianSplatRenderSystem instance is not initialized.");
+            return;
+        }
+
+        var gpuShsData = m_Render.m_GpuSHData;
+        if (gpuShsData == null || gpuShsData.count == 0)
+        {
+            Debug.LogWarning("No shs data available.");
+            return;
+        }
+        gpuShsData.GetData(m_SH);
+    }
+
     public void ScaleToUnitCube()
     {
         // Find the bounding box of the splats
@@ -74,15 +143,26 @@ public class GaussianSplatRenderManager : MonoBehaviour
             m_pos[i * 3 + 2] = (m_pos[i * 3 + 2] - center.z) * scaleFactor + newCenter.z;
 
             // Scale scales (already exponentiated)
-            // scales[i * 3] *= scaleFactor;
-            // scales[i * 3 + 1] *= scaleFactor;
-            // scales[i * 3 + 2] *= scaleFactor;
+            m_other[i * 4 + 1] *= scaleFactor;
+            m_other[i * 4 + 2] *= scaleFactor;
+            m_other[i * 4 + 3] *= scaleFactor;
         }
 
         // Update min and max after scaling
         min = (min - center) * scaleFactor + newCenter;
         max = (max - center) * scaleFactor + newCenter;
     }
-
+    public void Dispose()
+    {
+        // Manually release resources here
+        m_pos = null;
+        m_other = null;
+        m_color = null;
+        m_SH = null;
+    }
+    void OnDestroy()
+    {
+        Dispose();
+    }
     // Additional methods for managing GaussianSplatRenderSystem can be added here
 }
