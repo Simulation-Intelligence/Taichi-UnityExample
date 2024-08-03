@@ -372,3 +372,32 @@ def clear_hash_table(hash_table: ti.types.ndarray(ndim=4),
         for l in range(hash_table.shape[3]):
             hash_table[I[0], I[1], I[2], l] = -1
 # endregion
+
+@ti.dataclass
+class DistanceResult:
+    distance: ti.types.vector(3, ti.f32)
+    b: ti.f32
+    
+@ti.func
+def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
+                                     sx: ti.f32, sy: ti.f32, sz: ti.f32,
+                                     ex: ti.f32, ey: ti.f32, ez: ti.f32) -> DistanceResult:
+    point = ti.Vector([px, py, pz])
+    start = ti.Vector([sx, sy, sz])
+    end = ti.Vector([ex, ey, ez])
+    v = end - start
+    w = point - start
+    c1 = w.dot(v)
+    c2 = v.dot(v)
+    b=0.0
+    distance = ti.Vector([0.0, 0.0, 0.0])
+    if c1 <= 0:
+        distance = (point - start)
+    elif c1 >= c2:
+        distance = (point - end)
+        b=1
+    else:
+        b = c1 / c2
+        Pb = start + b * v
+        distance = (point - Pb)
+    return DistanceResult(distance=distance, b=b)

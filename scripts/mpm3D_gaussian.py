@@ -273,10 +273,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def substep_get_max_speed(v: ti.types.ndarray(ndim=1),max_speed: ti.types.ndarray(ndim=1)):
         for I in ti.grouped(v):
             max_speed[0] = ti.atomic_max(max_speed[0], v[I].norm())
-    @ti.dataclass
-    class DistanceResult:
-        distance: ti.types.vector(3, ti.f32)
-        b: ti.f32
+
     
     @ti.func
     def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,

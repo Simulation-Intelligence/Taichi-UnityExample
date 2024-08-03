@@ -66,73 +66,76 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         for I in ti.grouped(grid_m):
             grid_v[I] = [0, 0, 0]
             grid_m[I] = 0
-
+            
     @ti.kernel
     def substep_neohookean_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
                                dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
-                               mu:ti.f32,la:ti.f32,p_vol:ti.f32,p_mass:ti.f32,dx:ti.f32,dt:ti.f32):
+                               mu:ti.f32,la:ti.f32,p_vol:ti.f32,p_mass:ti.f32,dx:ti.f32,dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for p in x:
-            Xp = x[p] / dx
-            base = int(Xp - 0.5)
-            fx = Xp - base
-            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
+            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
+                Xp = x[p] / dx
+                base = int(Xp - 0.5)
+                fx = Xp - base
+                w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
 
-            dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
-            J=dg[p].determinant()
-            cauchy=mu*(dg[p]@dg[p].transpose())+ti.Matrix.identity(float, dim)*(la*ti.log(J)-mu)
-            stress=-(dt * p_vol * 4 /dx**2) * cauchy
-            affine = stress + p_mass * C[p]
+                dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
+                J=dg[p].determinant()
+                cauchy=mu*(dg[p]@dg[p].transpose())+ti.Matrix.identity(float, dim)*(la*ti.log(J)-mu)
+                stress=-(dt * p_vol * 4 /dx**2) * cauchy
+                affine = stress + p_mass * C[p]
 
-            for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
-                dpos = (offset - fx) * dx
-                weight = 1.0
-                for i in ti.static(range(dim)):
-                    weight *= w[offset[i]][i]
-                grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
-                grid_m[base + offset] += weight * p_mass
+                for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
+                    dpos = (offset - fx) * dx
+                    weight = 1.0
+                    for i in ti.static(range(dim)):
+                        weight *= w[offset[i]][i]
+                    grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
+                    grid_m[base + offset] += weight * p_mass
         
     @ti.kernel
     def substep_kirchhoff_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),
                                dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
-                               mu:ti.f32,la:ti.f32,p_vol:ti.f32,p_mass:ti.f32,dx:ti.f32,dt:ti.f32):
+                               mu:ti.f32,la:ti.f32,p_vol:ti.f32,p_mass:ti.f32,dx:ti.f32,dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for p in x:
-            Xp = x[p] / dx
-            base = int(Xp - 0.5)
-            fx = Xp - base
-            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
+            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
+                Xp = x[p] / dx
+                base = int(Xp - 0.5)
+                fx = Xp - base
+                w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
 
-            dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
-            U, sig, V = ti.svd(dg[p])
-            J_new = sig[0, 0] * sig[1, 1] * sig[2, 2]
-            stress = 2 * mu * (dg[p] - U @ V.transpose()) @ dg[p].transpose() + ti.Matrix.identity(
-                float, dim) * la * J_new * (J_new - 1)
-            stress = (-dt * p_vol * 4) * stress / dx**2
-            affine = stress + p_mass * C[p]
+                dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
+                U, sig, V = ti.svd(dg[p])
+                J_new = sig[0, 0] * sig[1, 1] * sig[2, 2]
+                stress = 2 * mu * (dg[p] - U @ V.transpose()) @ dg[p].transpose() + ti.Matrix.identity(
+                    float, dim) * la * J_new * (J_new - 1)
+                stress = (-dt * p_vol * 4) * stress / dx**2
+                affine = stress + p_mass * C[p]
 
-            for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
-                dpos = (offset - fx) * dx
-                weight = 1.0
-                for i in ti.static(range(dim)):
-                    weight *= w[offset[i]][i]
-                grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
-                grid_m[base + offset] += weight * p_mass
+                for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
+                    dpos = (offset - fx) * dx
+                    weight = 1.0
+                    for i in ti.static(range(dim)):
+                        weight *= w[offset[i]][i]
+                    grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
+                    grid_m[base + offset] += weight * p_mass
     
     @ti.kernel
     def substep_calculate_signed_distance_field(obstacle_pos: ti.types.ndarray(ndim=1),
                                                 sdf: ti.types.ndarray(ndim=3), obstacle_normals: ti.types.ndarray(ndim=3),
-                                                obstacle_radius:ti.types.ndarray(ndim=1),dx:ti.f32,dt:ti.f32):
+                                                obstacle_radius:ti.types.ndarray(ndim=1),dx:ti.f32,dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for I in ti.grouped(sdf):
             pos = I * dx + dx * 0.5
-            min_dist = float('inf')
-            norm= ti.Vector([0.0, 0.0, 0.0])
-            for j in obstacle_pos:
-                dist = (pos - obstacle_pos[j]).norm() - obstacle_radius[j]
-                if dist < min_dist:
-                    min_dist = dist
-                    norm= (pos-obstacle_pos[j]).normalized()
+            if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
+                min_dist = float('inf')
+                norm= ti.Vector([0.0, 0.0, 0.0])
+                for j in obstacle_pos:
+                    dist = (pos - obstacle_pos[j]).norm() - obstacle_radius[j]
+                    if dist < min_dist:
+                        min_dist = dist
+                        norm= (pos-obstacle_pos[j]).normalized()
 
-            sdf[I] = min_dist
-            obstacle_normals[I] = norm
+                sdf[I] = min_dist
+                obstacle_normals[I] = norm
 
     @ti.kernel
     def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
@@ -140,123 +143,123 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                               obstacle_normals:ti.types.ndarray(ndim=3),
                               obstacle_velocities:ti.types.ndarray(ndim=3),
                               gx:float,gy:float,gz:float,k:float,damping:float,friction_k:float,
-                              v_allowed:ti.f32,dt:ti.f32,n_grid:ti.i32):
+                              v_allowed:ti.f32,dt:ti.f32,n_grid:ti.i32,dx:ti.f32,bound:ti.i32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for I in ti.grouped(grid_m):
-            if grid_m[I] > 0:
-                grid_v[I] /= grid_m[I]
-            gravity = ti.Vector([gx,gy,gz])
-            grid_v[I] += dt * gravity
-            #damping
-            grid_v[I] *= ti.exp(-damping * dt)
-            if sdf[I] <= 0:
-                d=-sdf[I]
-                rel_v=grid_v[I]-obstacle_velocities[I]
-                normal_v = rel_v.dot(obstacle_normals[I]) * obstacle_normals[I]
-                delta_v =obstacle_normals[I] *d / dt * k-normal_v
-                tangent_direction = (rel_v - normal_v).normalized()
-                friction_force = friction_k * delta_v
-                grid_v[I] += delta_v-friction_force*tangent_direction
-                #grid_v[I] = obstacle_normals[I] * min((-sdf[I]) / dt * k,5)
-                #grid_v[I] = obstacle_normals[I] *(-sdf[I]) / dt * k
-                #friction
-                # normal_v = grid_v[I].dot(obstacle_normals[I]) * obstacle_normals[I]
-                # tangent_direction = (grid_v[I] - normal_v).normalized()
-                # grid
+            pos=I*dx+dx*0.5
+            if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
+                if grid_m[I] > 0:
+                    grid_v[I] /= grid_m[I]
+                gravity = ti.Vector([gx,gy,gz])
+                grid_v[I] += dt * gravity
+                #damping
+                grid_v[I] *= ti.exp(-damping * dt)
+                if sdf[I] <= 0:
+                    d=-sdf[I]
+                    rel_v=grid_v[I]-obstacle_velocities[I]
+                    normal_v = rel_v.dot(obstacle_normals[I]) * obstacle_normals[I]
+                    delta_v =obstacle_normals[I] *d / dt * k-normal_v
+                    tangent_direction = (rel_v - normal_v).normalized()
+                    friction_force = friction_k * delta_v
+                    grid_v[I] += delta_v-friction_force*tangent_direction
 
-            cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
-            grid_v[I] = ti.select(cond, 0, grid_v[I])
-            grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
-            sdf[I] = 1
-            obstacle_normals[I] = [0,0,0]
+                cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
+                grid_v[I] = ti.select(cond, 0, grid_v[I])
+                grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
+                sdf[I] = 1
+                obstacle_normals[I] = [0,0,0]
 
     @ti.kernel
     def substep_g2p(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),grid_v: ti.types.ndarray(ndim=3),
-                    dx:ti.f32,dt:ti.f32):
+                    dx:ti.f32,dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for p in x:
-            Xp = x[p] / dx
-            base = int(Xp - 0.5)
-            fx = Xp - base
-            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
-            new_v = ti.zero(v[p])
-            new_C = ti.zero(C[p])
-            for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
-                dpos = (offset - fx) * dx
-                weight = 1.0
+            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
+                Xp = x[p] / dx
+                base = int(Xp - 0.5)
+                fx = Xp - base
+                w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
+                new_v = ti.zero(v[p])
+                new_C = ti.zero(C[p])
+                for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
+                    dpos = (offset - fx) * dx
+                    weight = 1.0
+                    for i in ti.static(range(dim)):
+                        weight *= w[offset[i]][i]
+                    g_v = grid_v[base + offset]
+                    new_v += weight * g_v
+                    new_C += 4 * weight * g_v.outer_product(dpos) / dx**2
+                v[p] = new_v
+                x[p] += dt * v[p]
+                C[p] = new_C
+
+    @ti.kernel
+    def substep_apply_Drucker_Prager_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),slambda_0:ti.f32,mu_0:ti.f32,alpha:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+        for p in dg:
+            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
+                U, sig, V = ti.svd(dg[p])
+
+                # 将 sig 转换为向量
+                sig_vec = ti.Vector([sig[i, i] for i in range(dim)])
+
+                epsilon = ti.log(ti.abs(sig_vec))
+                trace_epsilon = epsilon.sum()
+
+                epsilon_hat = epsilon - trace_epsilon / 3 * ti.Vector([1.0, 1.0, 1.0])
+                epsilon_hat_squared_norm = epsilon_hat.norm_sqr()
+                epsilon_hat_norm = ti.sqrt(epsilon_hat_squared_norm)
+                delta_gamma = 0.0
+
+                if trace_epsilon <= 0:
+                    delta_gamma = epsilon_hat_norm + (3 * lambda_0 + 2 * mu_0) / (2 * mu_0) * trace_epsilon * alpha
+                else:
+                    delta_gamma = epsilon_hat_norm
+
+                Z = ti.Matrix.identity(float, 3)
+                if delta_gamma <= 0:
+                    for i in range(dim):
+                        Z[i, i] = sig_vec[i]
+                else:
+                    H = epsilon - (delta_gamma / epsilon_hat_norm) * epsilon_hat
+                    E = ti.exp(H)
+                    Z = ti.Matrix([[E[0], 0, 0], [0, E[1], 0], [0, 0, E[2]]])
+
+                dg[p] = U @ Z @ V.transpose()
+    
+    @ti.kernel
+    def substep_apply_Von_Mises_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),mu_0:ti.f32,SigY:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+        for p in dg:
+            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
+                U, sig, V = ti.svd(dg[p])
+
+                # 将 sig 转换为向量
+                sig_vec = ti.Vector([sig[i, i] for i in range(dim)])
+
+                epsilon = ti.log(ti.abs(sig_vec))
+                trace_epsilon = epsilon.sum()
+
+                epsilon_hat = epsilon - trace_epsilon / 3 * ti.Vector([1.0, 1.0, 1.0])
+                epsilon_hat_squared_norm = epsilon_hat.norm_sqr()
+                epsilon_hat_norm = ti.sqrt(epsilon_hat_squared_norm)
+                delta_gamma = epsilon_hat_norm - SigY / (2 * mu_0)
+
+                Z = ti.Matrix.identity(float, 3)
+                if delta_gamma <= 0:
+                    for i in range(dim):
+                        Z[i, i] = sig_vec[i]
+                else:
+                    H = epsilon - (delta_gamma / epsilon_hat_norm) * epsilon_hat
+                    E = ti.exp(H)
+                    Z = ti.Matrix([[E[0], 0, 0], [0, E[1], 0], [0, 0, E[2]]])
+
+                dg[p] = U @ Z @ V.transpose()
+    
+    @ti.kernel
+    def substep_apply_clamp_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),min_clamp:ti.f32,max_clamp:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+        for p in dg:
+            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
+                U, sig, V = ti.svd(dg[p]) 
                 for i in ti.static(range(dim)):
-                    weight *= w[offset[i]][i]
-                g_v = grid_v[base + offset]
-                new_v += weight * g_v
-                new_C += 4 * weight * g_v.outer_product(dpos) / dx**2
-            v[p] = new_v
-            x[p] += dt * v[p]
-            C[p] = new_C
-
-    @ti.kernel
-    def substep_apply_Drucker_Prager_plasticity(dg: ti.types.ndarray(ndim=1),lambda_0:ti.f32,mu_0:ti.f32,alpha:ti.f32):
-        for p in dg:
-            U, sig, V = ti.svd(dg[p])
-
-            # 将 sig 转换为向量
-            sig_vec = ti.Vector([sig[i, i] for i in range(dim)])
-
-            epsilon = ti.log(ti.abs(sig_vec))
-            trace_epsilon = epsilon.sum()
-
-            epsilon_hat = epsilon - trace_epsilon / 3 * ti.Vector([1.0, 1.0, 1.0])
-            epsilon_hat_squared_norm = epsilon_hat.norm_sqr()
-            epsilon_hat_norm = ti.sqrt(epsilon_hat_squared_norm)
-            delta_gamma = 0.0
-
-            if trace_epsilon <= 0:
-                delta_gamma = epsilon_hat_norm + (3 * lambda_0 + 2 * mu_0) / (2 * mu_0) * trace_epsilon * alpha
-            else:
-                delta_gamma = epsilon_hat_norm
-
-            Z = ti.Matrix.identity(float, 3)
-            if delta_gamma <= 0:
-                for i in range(dim):
-                    Z[i, i] = sig_vec[i]
-            else:
-                H = epsilon - (delta_gamma / epsilon_hat_norm) * epsilon_hat
-                E = ti.exp(H)
-                Z = ti.Matrix([[E[0], 0, 0], [0, E[1], 0], [0, 0, E[2]]])
-                
-            dg[p] = U @ Z @ V.transpose()
-    
-    @ti.kernel
-    def substep_apply_Von_Mises_plasticity(dg: ti.types.ndarray(ndim=1),mu_0:ti.f32,SigY:ti.f32):
-        for p in dg:
-            U, sig, V = ti.svd(dg[p])
-
-            # 将 sig 转换为向量
-            sig_vec = ti.Vector([sig[i, i] for i in range(dim)])
-
-            epsilon = ti.log(ti.abs(sig_vec))
-            trace_epsilon = epsilon.sum()
-
-            epsilon_hat = epsilon - trace_epsilon / 3 * ti.Vector([1.0, 1.0, 1.0])
-            epsilon_hat_squared_norm = epsilon_hat.norm_sqr()
-            epsilon_hat_norm = ti.sqrt(epsilon_hat_squared_norm)
-            delta_gamma = epsilon_hat_norm - SigY / (2 * mu_0)
-
-            Z = ti.Matrix.identity(float, 3)
-            if delta_gamma <= 0:
-                for i in range(dim):
-                    Z[i, i] = sig_vec[i]
-            else:
-                H = epsilon - (delta_gamma / epsilon_hat_norm) * epsilon_hat
-                E = ti.exp(H)
-                Z = ti.Matrix([[E[0], 0, 0], [0, E[1], 0], [0, 0, E[2]]])
-                
-            dg[p] = U @ Z @ V.transpose()
-    
-    @ti.kernel
-    def substep_apply_clamp_plasticity(dg: ti.types.ndarray(ndim=1),min_clamp:ti.f32,max_clamp:ti.f32):
-        for p in dg:
-            U, sig, V = ti.svd(dg[p]) 
-            for i in ti.static(range(dim)):
-                sig[i, i] = min(max(sig[i, i], 1-min_clamp), 1+max_clamp)
-            dg[p] = U @ sig @ V.transpose()
+                    sig[i, i] = min(max(sig[i, i], 1-min_clamp), 1+max_clamp)
+                dg[p] = U @ sig @ V.transpose()
 
     @ti.kernel
     def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1),cube_size:ti.f32):
@@ -270,37 +273,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             dg[i] = ti.Matrix.identity(float, dim)
     
     @ti.kernel
-    def substep_get_max_speed(v: ti.types.ndarray(ndim=1),max_speed: ti.types.ndarray(ndim=1)):
+    def substep_get_max_speed(v: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),max_speed: ti.types.ndarray(ndim=1),min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for I in ti.grouped(v):
-            max_speed[0] = ti.atomic_max(max_speed[0], v[I].norm())
-    @ti.dataclass
-    class DistanceResult:
-        distance: ti.types.vector(3, ti.f32)
-        b: ti.f32
+            if(x[I][0]>min_x and x[I][0]<max_x and x[I][1]>min_y and x[I][1]<max_y and x[I][2]>min_z and x[I][2]<max_z):
+                max_speed[0] = ti.atomic_max(max_speed[0], v[I].norm())
     
-    @ti.func
-    def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
-                                         sx: ti.f32, sy: ti.f32, sz: ti.f32,
-                                         ex: ti.f32, ey: ti.f32, ez: ti.f32) -> DistanceResult:
-        point = ti.Vector([px, py, pz])
-        start = ti.Vector([sx, sy, sz])
-        end = ti.Vector([ex, ey, ez])
-        v = end - start
-        w = point - start
-        c1 = w.dot(v)
-        c2 = v.dot(v)
-        b=0.0
-        distance = ti.Vector([0.0, 0.0, 0.0])
-        if c1 <= 0:
-            distance = (point - start)
-        elif c1 >= c2:
-            distance = (point - end)
-            b=1
-        else:
-            b = c1 / c2
-            Pb = start + b * v
-            distance = (point - Pb)
-        return DistanceResult(distance=distance, b=b)
     
     @ti.kernel
     def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2), 
@@ -309,26 +286,27 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                                    obstacle_normals: ti.types.ndarray(ndim=3),
                                    obstacle_velocities: ti.types.ndarray(ndim=3),
                                    skeleton_capsule_radius: ti.types.ndarray(ndim=1),
-                                   dx:ti.f32):
+                                   dx:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         #if (skeleton_segments.shape[0] != 0):
         for I in ti.grouped(hand_sdf):
             pos = I * dx + dx * 0.5
-            min_dist = float('inf')
-            norm= ti.Vector([0.0, 0.0, 0.0])
-            
-            for i in range(skeleton_segments.shape[0]):
-                sx, sy, sz = skeleton_segments[i, 0][0], skeleton_segments[i, 0][1], skeleton_segments[i, 0][2]
-                ex, ey, ez = skeleton_segments[i, 1][0], skeleton_segments[i, 1][1], skeleton_segments[i, 1][2]
-                result = calculate_point_segment_distance(pos[0], pos[1], pos[2], sx, sy, sz, ex, ey, ez)
-                dist = result.distance
-                r = result.b
-                distance = dist.norm() - skeleton_capsule_radius[i]
-                if distance < min_dist:
-                    min_dist = distance
-                    norm = dist.normalized()
-                    obstacle_velocities[I] = skeleton_velocities[i,0] * (1-r) + skeleton_velocities[i,1] * r
-            hand_sdf[I] = min_dist
-            obstacle_normals[I] = norm
+            if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
+                min_dist = float('inf')
+                norm= ti.Vector([0.0, 0.0, 0.0])
+
+                for i in range(skeleton_segments.shape[0]):
+                    sx, sy, sz = skeleton_segments[i, 0][0], skeleton_segments[i, 0][1], skeleton_segments[i, 0][2]
+                    ex, ey, ez = skeleton_segments[i, 1][0], skeleton_segments[i, 1][1], skeleton_segments[i, 1][2]
+                    result = calculate_point_segment_distance(pos[0], pos[1], pos[2], sx, sy, sz, ex, ey, ez)
+                    dist = result.distance
+                    r = result.b
+                    distance = dist.norm() - skeleton_capsule_radius[i]
+                    if distance < min_dist:
+                        min_dist = distance
+                        norm = dist.normalized()
+                        obstacle_velocities[I] = skeleton_velocities[i,0] * (1-r) + skeleton_velocities[i,1] * r
+                hand_sdf[I] = min_dist
+                obstacle_normals[I] = norm
     
     @ti.kernel
     def substep_calculate_hand_sdf_hash(skeleton_segments: ti.types.ndarray(ndim=2),
@@ -379,34 +357,36 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
 
     @ti.kernel
-    def substep_update_gaussian_data(init_rotation:ti.types.ndarray(ndim=1),init_scale:ti.types.ndarray(ndim=1),dg:ti.types.ndarray(ndim=1),other_data:ti.types.ndarray(ndim=1),init_sh:ti.types.ndarray(ndim=1),sh:ti.types.ndarray(ndim=1)):
+    def substep_update_gaussian_data(init_rotation:ti.types.ndarray(ndim=1),init_scale:ti.types.ndarray(ndim=1),dg:ti.types.ndarray(ndim=1),
+                                     other_data:ti.types.ndarray(ndim=1),init_sh:ti.types.ndarray(ndim=1),sh:ti.types.ndarray(ndim=1),x:ti.types.ndarray(ndim=1),
+                                        min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for i in dg:
-           # 假设 dg 是一个 3x3 的矩阵
-            dg_matrix = dg[i]
-            # SVD 分解 dg_matrix = U * Sigma * V^T
-            U, sig, V = ti.svd(dg_matrix)
-            R = U @ V.transpose()  # 旋转矩阵
-            S = V @ sig @ V.transpose()  # 尺度矩阵
- 
-            # 将旋转矩阵 R 转换为四元数 rot
-            rot = rotation_matrix_to_quaternion(R)
- 
-            # 用 R 作用在 init_rotation 上
-            q_init = init_rotation[i]
-            rot = quaternion_multiply(rot, q_init)
- 
-            # 用 S 作用在 init_scale 上
-            scale =S @ init_scale[i]
- 
-            # 编码 rot 并填入 other_data
-            packed_rot = PackSmallest3Rotation(rot)
-            encoded_rot = EncodeQuatToNorm10(packed_rot)
-            other_data[i][0] = ti.bit_cast(encoded_rot, ti.f32)
-            other_data[i][1]  = scale[0]
-            other_data[i][2]  = scale[1]
-            other_data[i][3]  = scale[2]
+            if(x[i][0]>min_x and x[i][0]<max_x and x[i][1]>min_y and x[i][1]<max_y and x[i][2]>min_z and x[i][2]<max_z):
+                dg_matrix = dg[i]
+                # SVD 分解 dg_matrix = U * Sigma * V^T
+                U, sig, V = ti.svd(dg_matrix)
+                R = U @ V.transpose()  # 旋转矩阵
+                S = V @ sig @ V.transpose()  # 尺度矩阵
+    
+                # 将旋转矩阵 R 转换为四元数 rot
+                rot = rotation_matrix_to_quaternion(R)
+    
+                # 用 R 作用在 init_rotation 上
+                q_init = init_rotation[i]
+                rot = quaternion_multiply(rot, q_init)
+    
+                # 用 S 作用在 init_scale 上
+                scale =S @ init_scale[i]
+    
+                # 编码 rot 并填入 other_data
+                packed_rot = PackSmallest3Rotation(rot)
+                encoded_rot = EncodeQuatToNorm10(packed_rot)
+                other_data[i][0] = ti.bit_cast(encoded_rot, ti.f32)
+                other_data[i][1]  = scale[0]
+                other_data[i][2]  = scale[1]
+                other_data[i][3]  = scale[2]
 
-            sh[i]=RotateSH(R,init_sh[i])
+                sh[i]=RotateSH(R,init_sh[i])
 
     @ti.kernel
     def scale_to_unit_cube(x: ti.types.ndarray(ndim=1),other_data: ti.types.ndarray(ndim=1),eps:ti.f32):
@@ -476,19 +456,27 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     other_data = ti.Vector.ndarray(4,ti.f32, shape=(n_particles))
     init_sh = ti.Matrix.ndarray(16,3,ti.f32, shape=(n_particles))
     sh = ti.Matrix.ndarray(16,3,ti.f32, shape=(n_particles))
+
+    #boundary
+    min_x = 0.1
+    max_x = 0.9
+    min_y = 0.1
+    max_y = 0.9
+    min_z = 0.1
+    max_z = 0.9
     
     def substep():
         substep_reset_grid(grid_v, grid_m)
-        substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
-        substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
-        substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt)
-        substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx)
-        substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals ,obstacle_velocities,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid)
-        substep_g2p(x, v, C,  grid_v, dx, dt)
-        substep_apply_Von_Mises_plasticity(dg, mu_0, SigY)
-        substep_apply_clamp_plasticity(dg, 0.1,0.1)
-        substep_apply_Drucker_Prager_plasticity(dg, lambda_0, mu_0, alpha)
-        substep_get_max_speed(v, max_speed)
+        substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt,min_x,max_x,min_y,max_y,min_z,max_z)
+        substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals ,obstacle_velocities,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid,dx,bound,min_x,max_x,min_y,max_y,min_z,max_z)
+        substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_apply_Von_Mises_plasticity(dg,x, mu_0, SigY, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_apply_clamp_plasticity(dg, x,0.1,0.1, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_apply_Drucker_Prager_plasticity(dg, x,lambda_0, mu_0, alpha, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_get_max_speed(v,x, max_speed, min_x, max_x, min_y, max_y, min_z, max_z)
     
     def run_aot():
         mod = ti.aot.Module(arch)
@@ -496,13 +484,13 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_kirchhoff_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})  
         mod.add_kernel(substep_neohookean_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})
         mod.add_kernel(substep_g2p, template_args={'x': x, 'v': v, 'C': C, 'grid_v': grid_v})
-        mod.add_kernel(substep_apply_Drucker_Prager_plasticity, template_args={'dg': dg})
-        mod.add_kernel(substep_apply_Von_Mises_plasticity, template_args={'dg': dg})
-        mod.add_kernel(substep_apply_clamp_plasticity, template_args={'dg': dg,})
+        mod.add_kernel(substep_apply_Drucker_Prager_plasticity, template_args={'dg': dg,'x': x})
+        mod.add_kernel(substep_apply_Von_Mises_plasticity, template_args={'dg': dg,'x': x})
+        mod.add_kernel(substep_apply_clamp_plasticity, template_args={'dg': dg,'x': x})
         mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'dg': dg})
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
-        mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'max_speed': max_speed})
+        mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'x': x,'max_speed': max_speed})
         mod.add_kernel(init_dg, template_args={'dg': dg})
         
         # hand sdf functions
@@ -511,7 +499,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         
         # Gaussian kernel functions
         mod.add_kernel(init_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'other_data': other_data})
-        mod.add_kernel(substep_update_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'dg': dg, 'other_data': other_data, 'init_sh': init_sh, 'sh': sh})
+        mod.add_kernel(substep_update_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'dg': dg, 'other_data': other_data, 'init_sh': init_sh, 'sh': sh, 'x': x})
         mod.add_kernel(scale_to_unit_cube, template_args={'x': x, 'other_data': other_data})
 
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part.kernel.tcm")
@@ -526,7 +514,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         while gui.running and not gui.get_event(gui.ESCAPE):
             for i in range(50):
                 substep()
-            substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh)
+            substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
     run_aot()
