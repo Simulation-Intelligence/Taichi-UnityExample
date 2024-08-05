@@ -3,7 +3,8 @@ using System.Linq;
 using Taichi;
 using UnityEngine;
 
-public partial class Fractal : MonoBehaviour {
+public partial class Fractal : MonoBehaviour
+{
     const int WIDTH = 640;
     const int HEIGHT = 320;
 
@@ -17,13 +18,16 @@ public partial class Fractal : MonoBehaviour {
     private Color[] _FractalDataColor;
 
     // Start is called before the first frame update
-    void Start() {
+    void Start()
+    {
         var kernels = Module.GetAllKernels().ToDictionary(x => x.Name);
         var cgraphs = Module.GetAllComputeGrpahs().ToDictionary(x => x.Name);
-        if (kernels.ContainsKey("fractal")) {
+        if (kernels.ContainsKey("fractal"))
+        {
             _Kernel_fractal = kernels["fractal"];
         }
-        if (cgraphs.ContainsKey("fractal")) {
+        if (cgraphs.ContainsKey("fractal"))
+        {
             _ComputeGraph_fractal = cgraphs["fractal"];
         }
 
@@ -36,7 +40,8 @@ public partial class Fractal : MonoBehaviour {
         _MeshRenderer.material.mainTexture = _Texture;
     }
 
-    Color GetColor() {
+    Color GetColor()
+    {
         var iframe = Time.frameCount;
 
         float pos = iframe % 100;
@@ -51,11 +56,13 @@ public partial class Fractal : MonoBehaviour {
     }
 
     // Update is called once per frame
-    void Update() {
+    void Update()
+    {
         // Note that we are reading data from last frame here.
         var fractal = new float[WIDTH * HEIGHT];
         _Canvas.CopyToArray(fractal);
-        for (int i = 0; i < _FractalDataColor.Length; ++i) {
+        for (int i = 0; i < _FractalDataColor.Length; ++i)
+        {
             var v = fractal[i];
             _FractalDataColor[i] = new Color(v, v, v);
         }
@@ -67,13 +74,15 @@ public partial class Fractal : MonoBehaviour {
         // immediately executed on graphics device.
         float t = Time.frameCount * 0.03f;
 
-        if (_ComputeGraph_fractal != null) {
+        if (_ComputeGraph_fractal != null)
+        {
             _ComputeGraph_fractal.LaunchAsync(new Dictionary<string, object> {
                 { "t", t },
                 { "canvas", _Canvas },
             });
         }
-        if (_Kernel_fractal != null) {
+        if (_Kernel_fractal != null)
+        {
             _Kernel_fractal.LaunchAsync(t, _Canvas);
         }
         // Everything settled. Submit launched kernels and compute graphs to

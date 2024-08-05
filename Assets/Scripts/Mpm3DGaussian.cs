@@ -10,6 +10,7 @@ using UnityEngine.UIElements;
 using System.IO;
 using System.Text;
 using System;
+using Oculus.Interaction;
 using UnityEngine.InputSystem;
 using static SkeletonRenderer;
 
@@ -67,23 +68,24 @@ public class Mpm3DGaussian : MonoBehaviour
     [SerializeField]
     private StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
-    private NdArray<float> x, v, C, dg, grid_v, grid_m, obstacle_pos, obstacle_velocity, obstacle_radius, sdf;
+    private NdArray<float> x, v, C, dg, grid_v, grid_m, sphere_pos, obstacle_velocities, sphere_velocities, sphere_radius, hand_sdf;
 
-    public NdArray<float> skeleton_segments, skeleton_velocities, hand_sdf, obstacle_norms, skeleton_capsule_radius, max_v;
+    public NdArray<float> skeleton_segments, skeleton_velocities, obstacle_normals, skeleton_capsule_radius, max_v;
 
     public NdArray<float> init_rotation, init_scale, init_sh, other_data, sh;
 
-    private float[] hand_skeleton_segments, hand_skeleton_segments_prev, hand_skeleton_velocities, _skeleton_capsule_radius, sphere_positions, sphere_velocities, sphere_radii;
+    private float[] hand_skeleton_segments, hand_skeleton_segments_prev, hand_skeleton_velocities, _skeleton_capsule_radius, sphere_positions, _sphere_velocities, sphere_radii;
 
     private Bounds bounds;
 
     private ComputeGraph _Compute_Graph_g_init;
-    private ComputeGraph _Compute_Graph_g_update;
+    private ComputeGraph _Compute_Graph_g_substep;
 
     [Header("Scene Settings")]
     [SerializeField]
     bool RunSimulation = true;
     private bool updated = false;
+    private Grabbable _grabbable;
     [SerializeField]
     GaussianSplatRenderManager splatManager;
 
@@ -172,7 +174,7 @@ public class Mpm3DGaussian : MonoBehaviour
         if (cgraphs.Count > 0)
         {
             _Compute_Graph_g_init = cgraphs["init"];
-            _Compute_Graph_g_update = cgraphs["update"];
+            _Compute_Graph_g_substep = cgraphs["substep"];
         }
 
         //initialize
@@ -196,6 +198,7 @@ public class Mpm3DGaussian : MonoBehaviour
 
         _MeshRenderer = GetComponent<MeshRenderer>();
         _MeshFilter = GetComponent<MeshFilter>();
+        _grabbable = GetComponent<Grabbable>();
 
         if (renderType == RenderType.Raymarching)
         {
@@ -226,14 +229,14 @@ public class Mpm3DGaussian : MonoBehaviour
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
-        sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
-        obstacle_pos = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
-        obstacle_velocity = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
-        obstacle_radius = new NdArrayBuilder<float>().Shape(sphere.Length).HostWrite(true).Build();
+        sphere_pos = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
+        sphere_velocities = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
+        obstacle_velocities = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
+        sphere_radius = new NdArrayBuilder<float>().Shape(sphere.Length).HostWrite(true).Build();
         max_v = new NdArrayBuilder<float>().Shape(1).HostRead(true).Build();
 
         sphere_positions = new float[3 * sphere.Length];
-        sphere_velocities = new float[3 * sphere.Length];
+        _sphere_velocities = new float[3 * sphere.Length];
         sphere_radii = new float[sphere.Length];
 
         // new added
@@ -242,7 +245,7 @@ public class Mpm3DGaussian : MonoBehaviour
         skeleton_velocities = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats
         hand_sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build(); // use a consistent radius for all capsules (at now)
-        obstacle_norms = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
+        obstacle_normals = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
 
         //gaussian
         init_rotation = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).Build();
@@ -261,19 +264,26 @@ public class Mpm3DGaussian : MonoBehaviour
             _skeleton_capsule_radius[i] = Skeleton_capsule_radius / transform.localScale.x;
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
+
+        x.CopyFromArray(splatManager.m_pos);
+        other_data.CopyFromArray(splatManager.m_other);
+        init_sh.CopyFromArray(splatManager.m_SH);
         if (_Compute_Graph_g_init != null)
         {
             _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
             {
                 { "x", x },
-                { "v", v }
+                {"dg", dg},
+                {"other_data", other_data},
+                {"init_sh", init_sh},
+                {"init_rotation", init_rotation},
+                {"init_scale", init_scale},
+                {"eps", bounding_eps},
+
             });
         }
         else
         {
-            x.CopyFromArray(splatManager.m_pos);
-            other_data.CopyFromArray(splatManager.m_other);
-            init_sh.CopyFromArray(splatManager.m_SH);
             _Kernel_init_dg.LaunchAsync(dg);
             _Kernel_scale_to_unit_cube.LaunchAsync(x, other_data, bounding_eps);
             _Kernel_init_gaussian_data.LaunchAsync(init_rotation, init_scale, other_data);
@@ -316,7 +326,7 @@ public class Mpm3DGaussian : MonoBehaviour
     {
         if (!RunSimulation)
         {
-            if (!updated)
+            if (!updated || _grabbable.SelectingPointsCount > 0)
             {
                 other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
                 x.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
@@ -325,19 +335,44 @@ public class Mpm3DGaussian : MonoBehaviour
             }
             return;
         }
-        if (_Compute_Graph_g_update != null)
+        if (_Compute_Graph_g_substep != null)
         {
-            _Compute_Graph_g_update.LaunchAsync(new Dictionary<string, object>
+            UpdateHandSDF();
+            _Compute_Graph_g_substep.LaunchAsync(new Dictionary<string, object>
             {
-                {"v", v
-},
+                {"v", v},
                 { "grid_m",grid_m},
                 { "x",x},
                 { "C",C},
                 { "grid_v",grid_v},
-                { "g_x",g.x},
-                { "g_y",g.y},
-                { "g_z",g.z},
+                {"init_sh",init_sh},
+                {"sh",sh},
+                {"other_data",other_data},
+                { "dg",dg},
+                {"init_scale",init_scale},
+                {"init_rotation",init_rotation},
+                { "mu_0",mu},
+                { "lambda_0",lambda},
+                { "p_vol",p_vol},
+                { "p_mass",p_mass},
+                { "dx",dx},
+                { "dt",max_dt},
+                { "n_grid",n_grid},
+                {"gx",g.x},
+                {"gy",g.y},
+                {"gz",g.z},
+                { "k",colide_factor},
+                { "damping",damping},
+                { "friction_k",friction_k},
+                { "v_allowed",v_allowed},
+                { "min_clamp",min_clamp},
+                { "max_clamp",max_clamp},
+                {"hand_sdf",hand_sdf},
+                {"skeleton_segments",skeleton_segments},
+                {"skeleton_velocities",skeleton_velocities},
+                {"skeleton_capsule_radius",skeleton_capsule_radius},
+                {"obstacle_normals",obstacle_normals},
+                {"obstacle_velocities",obstacle_velocities},
             });
         }
         else
@@ -350,7 +385,7 @@ public class Mpm3DGaussian : MonoBehaviour
                     UpdateSphereSDF();
                     if (Intersectwith(sphere))
                     {
-                        _Kernel_substep_calculate_signed_distance_field.LaunchAsync(obstacle_pos, sdf, obstacle_norms, obstacle_radius, dx, dt);
+                        _Kernel_substep_calculate_signed_distance_field.LaunchAsync(sphere_pos, hand_sdf, obstacle_normals, sphere_radius, dx, dt);
                     }
                     break;
                 case ObstacleType.Hand:
@@ -365,7 +400,7 @@ public class Mpm3DGaussian : MonoBehaviour
                     }
                     if (IntersectwithHand(oculus_hands))
                     {
-                        _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, sdf, obstacle_norms, obstacle_velocity, skeleton_capsule_radius, dx);
+                        _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx);
                     }
                     break;
             }
@@ -383,7 +418,7 @@ public class Mpm3DGaussian : MonoBehaviour
                         break;
                 }
 
-                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, sdf, obstacle_norms, obstacle_velocity, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid);
+                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid);
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt);
                 switch (plasticityType)
                 {
@@ -410,6 +445,7 @@ public class Mpm3DGaussian : MonoBehaviour
                     dt = Mathf.Min(dt, time_left);
                 }
             }
+            _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh);
         }
         if (renderType == RenderType.PointMesh)
         {
@@ -421,7 +457,6 @@ public class Mpm3DGaussian : MonoBehaviour
         }
         else if (renderType == RenderType.GaussianSplat)
         {
-            _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh);
             other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
             sh.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuSHData.GetNativeBufferPtr());
             x.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
@@ -459,13 +494,13 @@ public class Mpm3DGaussian : MonoBehaviour
             sphere_positions[i * 3] = (curpos.x - _MeshFilter.transform.position.x);
             sphere_positions[i * 3 + 1] = (curpos.y - _MeshFilter.transform.position.y);
             sphere_positions[i * 3 + 2] = (curpos.z - _MeshFilter.transform.position.z);
-            sphere_velocities[i * 3 + 1] = velocity.y;
-            sphere_velocities[i * 3 + 2] = velocity.z;
+            _sphere_velocities[i * 3 + 1] = velocity.y;
+            _sphere_velocities[i * 3 + 2] = velocity.z;
             sphere_radii[i] = sphere[i].Radius;
         }
-        obstacle_pos.CopyFromArray(sphere_positions);
-        obstacle_velocity.CopyFromArray(sphere_velocities);
-        obstacle_radius.CopyFromArray(sphere_radii);
+        sphere_pos.CopyFromArray(sphere_positions);
+        sphere_velocities.CopyFromArray(_sphere_velocities);
+        sphere_radius.CopyFromArray(sphere_radii);
     }
 
     void UpdateHandSDF()

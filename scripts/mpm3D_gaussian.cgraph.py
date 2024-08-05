@@ -156,12 +156,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 tangent_direction = (rel_v - normal_v).normalized()
                 friction_force = friction_k * delta_v
                 grid_v[I] += delta_v-friction_force*tangent_direction
-                #grid_v[I] = obstacle_normals[I] * min((-sdf[I]) / dt * k,5)
-                #grid_v[I] = obstacle_normals[I] *(-sdf[I]) / dt * k
-                #friction
-                # normal_v = grid_v[I].dot(obstacle_normals[I]) * obstacle_normals[I]
-                # tangent_direction = (grid_v[I] - normal_v).normalized()
-                # grid
 
             cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
             grid_v[I] = ti.select(cond, 0, grid_v[I])
@@ -473,6 +467,80 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     other_data = ti.Vector.ndarray(4,ti.f32, shape=(n_particles))
     init_sh = ti.Matrix.ndarray(16,3,ti.f32, shape=(n_particles))
     sh = ti.Matrix.ndarray(16,3,ti.f32, shape=(n_particles))
+    sym_x=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'x', ndim=1, dtype=ti.types.vector(3, ti.f32))
+    sym_v=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'v', ndim=1, dtype=ti.types.vector(3, ti.f32))
+    sym_C=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'C', ndim=1, dtype=ti.types.matrix(3, 3, ti.f32))
+    sym_dg=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'dg', ndim=1, dtype=ti.types.matrix(3, 3, ti.f32))
+    sym_grid_v=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'grid_v', ndim=3, dtype=ti.types.vector(3, ti.f32))
+    sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'grid_m', ti.f32, ndim=3)
+    sym_sdf=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'sdf', ndim=3, dtype=ti.f32)
+    sym_obstacle_pos=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'obstacle_pos', ndim=1, dtype=ti.types.vector(3, ti.f32))
+    sym_obstacle_radius=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'obstacle_radius',ti.f32, ndim=1)
+    sym_obstacle_velocities=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'obstacle_velocities', ndim=3, dtype=ti.types.vector(3, ti.f32))
+    sym_max_speed=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'max_speed',ti.f32, ndim=1)
+    sym_init_scale=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'init_scale', ndim=1, dtype=ti.types.vector(3, ti.f32))
+    sym_init_rotation=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'init_rotation', ndim=1, dtype=ti.types.vector(4, ti.f32))
+    sym_other_data=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'other_data', ndim=1, dtype=ti.types.vector(4, ti.f32))
+    sym_init_sh=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'init_sh', ndim=1, dtype=ti.types.matrix(16, 3, ti.f32))
+    sym_sh=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'sh', ndim=1, dtype=ti.types.matrix(16, 3, ti.f32))
+
+    sym_hand_sdf=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'hand_sdf', ti.f32, ndim=3)
+    sym_obstacle_normals=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'obstacle_normals', ndim=3, dtype=ti.types.vector(3, ti.f32))
+    sym_skeleton_segments=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'skeleton_segments', ndim=2, dtype=ti.types.vector(3, ti.f32))
+    sym_skeleton_velocities=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'skeleton_velocities', ndim=2, dtype=ti.types.vector(3, ti.f32))
+    sym_skeleton_capsule_radius=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'skeleton_capsule_radius',ti.f32, ndim=1)
+    sym_hash_table=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'hash_table', ndim=4, dtype=ti.i32)
+    sym_segments_count_per_cell=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'segments_count_per_cell', ndim=3, dtype=ti.i32)
+
+    sym_n_grid=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'n_grid', ti.i32)
+    sym_n_particles=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'n_particles', ti.i32)
+    sym_dt=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'dt', ti.f32)
+    sym_dx=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'dx', ti.f32)
+    sym_mu_0=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'mu_0', ti.f32)
+    sym_lambda_0=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'lambda_0', ti.f32)
+    sym_cube_size=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'cube_size', ti.f32)
+    sym_eps=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'eps', ti.f32)
+    sym_gx=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'gx', ti.f32)
+    sym_gy=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'gy', ti.f32)
+    sym_gz=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'gz', ti.f32)
+    sym_k=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'k', ti.f32)
+    sym_damping=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'damping', ti.f32)
+    sym_friction_k=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'friction_k', ti.f32)
+    sym_v_allowed=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'v_allowed', ti.f32)
+    sym_bound=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'bound', ti.i32)
+    sym_mu=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'mu', ti.f32)
+    sym_la=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'la', ti.f32)
+    sym_SigY=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'SigY', ti.f32)
+    sym_alpha=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'alpha', ti.f32)
+    sym_p_rho=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'p_rho', ti.f32)
+    sym_p_vol=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'p_vol', ti.f32)
+    sym_p_mass=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'p_mass', ti.f32)
+    sym_E = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'E', ti.f32)
+    sym_nu = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'nu', ti.f32)
+    sym_min_clamp=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'min_clamp', ti.f32)
+    sym_max_clamp=ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'max_clamp', ti.f32)
+
+    g_init_builder=ti.graph.GraphBuilder()
+    g_init_builder.dispatch(init_dg,sym_dg)
+    g_init_builder.dispatch(scale_to_unit_cube,sym_x,sym_other_data,sym_eps)
+    g_init_builder.dispatch(init_gaussian_data,sym_init_rotation,sym_init_scale,sym_other_data)
+    g_init=g_init_builder.compile()
+
+    g_substep_builder=ti.graph.GraphBuilder()
+
+    iters=10
+
+    g_substep_builder.dispatch(substep_calculate_hand_sdf,sym_skeleton_segments,sym_skeleton_velocities,sym_hand_sdf,sym_obstacle_normals,sym_obstacle_velocities,sym_skeleton_capsule_radius,sym_dx)
+    
+    for i in range(iters):
+        g_substep_builder.dispatch(substep_reset_grid,sym_grid_v,sym_grid_m)
+        g_substep_builder.dispatch(substep_neohookean_p2g,sym_x,sym_v,sym_C,sym_dg,sym_grid_v,sym_grid_m,sym_mu_0,sym_lambda_0,sym_p_vol,sym_p_mass,sym_dx,sym_dt)
+        g_substep_builder.dispatch(substep_update_grid_v,sym_grid_v,sym_grid_m,sym_hand_sdf,sym_obstacle_normals,sym_obstacle_velocities,sym_gx,sym_gy,sym_gz,sym_k,sym_damping,sym_friction_k,sym_v_allowed,sym_dt,sym_n_grid)
+        g_substep_builder.dispatch(substep_g2p,sym_x,sym_v,sym_C,sym_grid_v,sym_dx,sym_dt)
+        g_substep_builder.dispatch(substep_apply_clamp_plasticity,sym_dg,sym_min_clamp,sym_max_clamp)
+
+    g_substep_builder.dispatch(substep_update_gaussian_data,sym_init_rotation,sym_init_scale,sym_dg,sym_other_data,sym_init_sh,sym_sh)
+    g_substep=g_substep_builder.compile()
     
     def substep():
         substep_reset_grid(grid_v, grid_m)
@@ -489,31 +557,45 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     def run_aot():
         mod = ti.aot.Module(arch)
-        mod.add_kernel(substep_reset_grid, template_args={'grid_v': grid_v, 'grid_m': grid_m})
-        mod.add_kernel(substep_kirchhoff_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})  
-        mod.add_kernel(substep_neohookean_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})
-        mod.add_kernel(substep_g2p, template_args={'x': x, 'v': v, 'C': C, 'grid_v': grid_v})
-        mod.add_kernel(substep_apply_Drucker_Prager_plasticity, template_args={'dg': dg})
-        mod.add_kernel(substep_apply_Von_Mises_plasticity, template_args={'dg': dg})
-        mod.add_kernel(substep_apply_clamp_plasticity, template_args={'dg': dg,})
-        mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'dg': dg})
-        mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
-        mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
-        mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'max_speed': max_speed})
-        mod.add_kernel(init_dg, template_args={'dg': dg})
-        
-        # hand sdf functions
-        mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius})
-        mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
-        
-        # Gaussian kernel functions
-        mod.add_kernel(init_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'other_data': other_data})
-        mod.add_kernel(substep_update_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'dg': dg, 'other_data': other_data, 'init_sh': init_sh, 'sh': sh})
-        mod.add_kernel(scale_to_unit_cube, template_args={'x': x, 'other_data': other_data})
-
-        mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian.kernel.tcm")
+        mod.add_graph('init',g_init)
+        mod.add_graph('substep',g_substep)
+        mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian.cgraph.tcm")
         print("AOT done")
-    
+    params = {
+    'v': v,
+    'grid_m': grid_m,
+    'x': x,
+    'C': C,
+    'grid_v': grid_v,
+    'init_sh': init_sh,
+    'sh': sh,
+    'other_data': other_data,
+    'dg': dg,
+    'init_scale': init_scale,
+    'init_rotation': init_rotation,
+    'mu_0': mu_0,
+    'lambda_0': lambda_0,
+    'p_vol': p_vol,
+    'p_mass': p_mass,
+    'dx': dx,
+    'dt': dt,
+    'n_grid': n_grid,
+    'gx': gx,
+    'gy': gy,
+    'gz': gz,
+    'k': k,
+    'damping': damping,
+    'friction_k': friction_k,
+    'v_allowed': v_allowed,
+    'min_clamp': 0.1,
+    'max_clamp': 0.1,
+    'hand_sdf': hand_sdf,
+    'skeleton_segments': skeleton_segments,
+    'skeleton_velocities': skeleton_velocities,
+    'skeleton_capsule_radius': skeleton_capsule_radius,
+    'obstacle_normals': obstacle_normals,
+    'obstacle_velocities': obstacle_velocities,
+    }
     if run:
         gui = ti.GUI('MPM3D', res=(800, 800))
         init_particles(x, v, dg,cube_size)
@@ -524,8 +606,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             for i in range(50):
                 substep()
             substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh)
+            g_substep.run(params)
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
+        
     run_aot()
     
 if __name__ == "__main__":

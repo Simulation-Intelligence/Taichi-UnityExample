@@ -475,16 +475,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   volumeTextureUpdater: {fileID: 249369752}
-  Mpm3DModule: {fileID: -8196383504532815311, guid: 352baa52efaaf644d864bd8c35a6c688, type: 3}
+  Mpm3DModule: {fileID: -8196383504532815311, guid: 34ce006920cf99f42b14beb006787e9a, type: 3}
   renderType: 2
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
-  plasticityType: 0
+  plasticityType: 3
   stressType: 0
   RunSimulation: 1
   splatManager: {fileID: 249369758}
-  g: {x: 0, y: 0, z: 0}
-  n_grid: 64
+  g: {x: 0, y: -9.8, z: 0}
+  n_grid: 32
   bounding_eps: 0.1
   max_dt: 0.0001
   frame_time: 0.001
@@ -543,7 +543,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 67ae52db277bce54aaf6860330f6d663, type: 2}
+  m_Asset: {fileID: 11400000, guid: 443472c1f12fe8243971a358d6368ba6, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -832,7 +832,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 67ae52db277bce54aaf6860330f6d663, type: 2}
+  m_Asset: {fileID: 11400000, guid: 6954beb4d3527f5459c7e2d1f43e2a23, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -953,22 +953,22 @@ MonoBehaviour:
   renderType: 2
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
-  plasticityType: 0
+  plasticityType: 3
   stressType: 0
   RunSimulation: 1
   splatManager: {fileID: 331304792}
   g: {x: 0, y: 0, z: 0}
-  n_grid: 64
+  n_grid: 400
   bound: 3
   bounding_eps: 0.1
   max_dt: 0.0001
-  frame_time: 0.005
+  frame_time: 0.001
   cube_size: 0.2
   particle_per_grid: 8
   allowed_cfl: 0.5
   damping: 1
   use_correct_cfl: 0
-  hand_simulation_radius: 0.5
+  hand_simulation_radius: 0.3
   obstacleType: 1
   sphere:
   - {fileID: 1300250346}
@@ -4607,7 +4607,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1839962845}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3266c3d920715b84089935c4ab019210, type: 3}
   m_Name: 
@@ -4616,7 +4616,7 @@ MonoBehaviour:
   _editor: {fileID: 1839962849}
   _colorShaderPropertyName: _Color
   _normalColorState:
-    Color: {r: 0.83137256, g: 0.83137256, b: 0.83137256, a: 0.07058824}
+    Color: {r: 0.83137256, g: 0.83137256, b: 0.83137256, a: 0}
     ColorCurve:
       serializedVersion: 2
       m_Curve:
@@ -4643,7 +4643,7 @@ MonoBehaviour:
       m_RotationOrder: 4
     ColorTime: 0.1
   _hoverColorState:
-    Color: {r: 1, g: 1, b: 1, a: 1}
+    Color: {r: 1, g: 1, b: 1, a: 0.11372549}
     ColorCurve:
       serializedVersion: 2
       m_Curve:
@@ -4670,7 +4670,7 @@ MonoBehaviour:
       m_RotationOrder: 4
     ColorTime: 0.1
   _selectColorState:
-    Color: {r: 0.83137256, g: 0.83137256, b: 0.83137256, a: 1}
+    Color: {r: 0.83137256, g: 0.83137256, b: 0.83137256, a: 0.11372549}
     ColorCurve:
       serializedVersion: 2
       m_Curve:

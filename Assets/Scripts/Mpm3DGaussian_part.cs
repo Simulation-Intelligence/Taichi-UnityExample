@@ -11,6 +11,7 @@ using System.IO;
 using System.Text;
 using System;
 using UnityEngine.InputSystem;
+using Oculus.Interaction;
 using static SkeletonRenderer;
 
 
@@ -84,6 +85,7 @@ public class Mpm3DGaussian_part : MonoBehaviour
     [SerializeField]
     bool RunSimulation = true;
     private bool updated = false;
+    private Grabbable _grabbable;
     [SerializeField]
     GaussianSplatRenderManager splatManager;
 
@@ -201,6 +203,7 @@ public class Mpm3DGaussian_part : MonoBehaviour
 
         _MeshRenderer = GetComponent<MeshRenderer>();
         _MeshFilter = GetComponent<MeshFilter>();
+        _grabbable = GetComponent<Grabbable>();
 
         if (renderType == RenderType.Raymarching)
         {
@@ -319,7 +322,7 @@ public class Mpm3DGaussian_part : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!RunSimulation)
+        if (!RunSimulation || _grabbable.SelectingPointsCount > 0)
         {
             if (!updated)
             {
@@ -429,7 +432,8 @@ public class Mpm3DGaussian_part : MonoBehaviour
         }
         else if (renderType == RenderType.GaussianSplat)
         {
-            _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh);
+            _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh, x,
+             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
             sh.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuSHData.GetNativeBufferPtr());
             x.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
@@ -508,10 +512,8 @@ public class Mpm3DGaussian_part : MonoBehaviour
             }
         }
         Center /= oculus_skeletons.Length;
-        boundary_min = Center - Vector3.one * hand_simulation_radius;
-        boundary_max = Center + Vector3.one * hand_simulation_radius;
-        boundary_min = transform.InverseTransformPoint(boundary_min);
-        boundary_max = transform.InverseTransformPoint(boundary_max);
+        boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.localScale.x;
+        boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.localScale.x;
     }
 
     void SaveHandMotionData()
