@@ -192,7 +192,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 C[p] = new_C
 
     @ti.kernel
-    def substep_apply_Drucker_Prager_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),slambda_0:ti.f32,mu_0:ti.f32,alpha:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+    def substep_apply_Drucker_Prager_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),lambda_0:ti.f32,mu_0:ti.f32,alpha:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for p in dg:
             if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
                 U, sig, V = ti.svd(dg[p])

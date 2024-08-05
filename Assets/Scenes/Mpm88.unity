@@ -475,15 +475,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   volumeTextureUpdater: {fileID: 249369752}
-  Mpm3DModule: {fileID: -8196383504532815311, guid: d06a8e8a80cbe8b4ebd0a68097b8c370, type: 3}
-  renderType: 0
+  Mpm3DModule: {fileID: -8196383504532815311, guid: 352baa52efaaf644d864bd8c35a6c688, type: 3}
+  renderType: 2
   handMaterial: {fileID: 0}
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
   plasticityType: 3
   stressType: 0
   RunSimulation: 1
-  splatManager: {fileID: 0}
+  splatManager: {fileID: 249369758}
   g: {x: 0, y: -9.8, z: 0}
   n_grid: 32
   bounding_eps: 0.1
@@ -528,7 +528,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: e8c24a0912df21f44975bb9d3a38ca50, type: 2}
+  m_Asset: {fileID: 11400000, guid: 443472c1f12fe8243971a358d6368ba6, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -829,7 +829,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 67ae52db277bce54aaf6860330f6d663, type: 2}
+  m_Asset: {fileID: 11400000, guid: 6954beb4d3527f5459c7e2d1f43e2a23, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -945,6 +945,49 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 392216f01fd3c434fb42c13980a74102, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  volumeTextureUpdater: {fileID: 331304794}
+  Mpm3DModule: {fileID: -8196383504532815311, guid: 49d9fe7f16ccc4848a0a43e84fcedf3b, type: 3}
+  renderType: 2
+  pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
+  raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
+  plasticityType: 3
+  stressType: 0
+  RunSimulation: 1
+  splatManager: {fileID: 331304792}
+  g: {x: 0, y: 0, z: 0}
+  n_grid: 400
+  bound: 3
+  bounding_eps: 0.1
+  max_dt: 0.0001
+  frame_time: 0.001
+  cube_size: 0.2
+  particle_per_grid: 8
+  allowed_cfl: 0.5
+  damping: 1
+  use_correct_cfl: 0
+  hand_simulation_radius: 0.3
+  obstacleType: 1
+  sphere:
+  - {fileID: 1300250346}
+  - {fileID: 1736624407}
+  oculus_hands:
+  - {fileID: 588067680}
+  - {fileID: 588067679}
+  oculus_skeletons:
+  - {fileID: 588067678}
+  - {fileID: 588067682}
+  Skeleton_capsule_radius: 0.01
+  E: 100000
+  SigY: 10000
+  nu: 0.1
+  colide_factor: 1
+  friction_k: 0.4
+  p_rho: 1000
+  min_clamp: 0.1
+  max_clamp: 0.1
+  friction_angle: 30
+  UseRecordDate: 0
+  filePath: HandMotionData.txt
 --- !u!1 &420085018 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2483171112401766336, guid: f54012181eacade4ea242c65f804720f, type: 3}
@@ -4562,7 +4605,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1839962845}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3266c3d920715b84089935c4ab019210, type: 3}
   m_Name: 
@@ -4571,7 +4614,7 @@ MonoBehaviour:
   _editor: {fileID: 1839962849}
   _colorShaderPropertyName: _Color
   _normalColorState:
-    Color: {r: 0.83137256, g: 0.83137256, b: 0.83137256, a: 0.07058824}
+    Color: {r: 0.83137256, g: 0.83137256, b: 0.83137256, a: 0}
     ColorCurve:
       serializedVersion: 2
       m_Curve:
@@ -4598,7 +4641,7 @@ MonoBehaviour:
       m_RotationOrder: 4
     ColorTime: 0.1
   _hoverColorState:
-    Color: {r: 1, g: 1, b: 1, a: 1}
+    Color: {r: 1, g: 1, b: 1, a: 0.11372549}
     ColorCurve:
       serializedVersion: 2
       m_Curve:
@@ -4625,7 +4668,7 @@ MonoBehaviour:
       m_RotationOrder: 4
     ColorTime: 0.1
   _selectColorState:
-    Color: {r: 0.83137256, g: 0.83137256, b: 0.83137256, a: 1}
+    Color: {r: 0.83137256, g: 0.83137256, b: 0.83137256, a: 0.11372549}
     ColorCurve:
       serializedVersion: 2
       m_Curve:
