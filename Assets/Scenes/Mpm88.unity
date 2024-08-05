@@ -484,7 +484,7 @@ MonoBehaviour:
   RunSimulation: 1
   splatManager: {fileID: 249369758}
   g: {x: 0, y: -9.8, z: 0}
-  n_grid: 32
+  n_grid: 128
   bounding_eps: 0.1
   max_dt: 0.0001
   frame_time: 0.001
@@ -543,7 +543,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 443472c1f12fe8243971a358d6368ba6, type: 2}
+  m_Asset: {fileID: 11400000, guid: d07f8cb5d7db7ce4bb36c02bf7b8b9ac, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -832,7 +832,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 6954beb4d3527f5459c7e2d1f43e2a23, type: 2}
+  m_Asset: {fileID: 11400000, guid: 2c5ae6ac515a384419d4a7c02d1d061f, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -953,7 +953,7 @@ MonoBehaviour:
   renderType: 2
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
-  plasticityType: 3
+  plasticityType: 2
   stressType: 0
   RunSimulation: 1
   splatManager: {fileID: 331304792}
@@ -2127,7 +2127,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &793716089
 MeshCollider:
   m_ObjectHideFlags: 0
