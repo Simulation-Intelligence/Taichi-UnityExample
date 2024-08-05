@@ -4,8 +4,6 @@ import numpy as np
 import taichi as ti
 import json
 
-import timeit
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--arch", type=str, default='vulkan')
 parser.add_argument("--cgraph", action='store_true', default=False)
@@ -27,13 +25,13 @@ def get_save_dir(name, arch):
     return os.path.join(curr_dir, f"{name}_{arch}")
 
 def compile_mpm3D(arch, save_compute_graph, run=False):
-    ti.init(arch, vk_api_version="1.0",debug=False)  
-
+    ti.init(arch, vk_api_version="1.0", debug=False)  
+    
     if ti.lang.impl.current_cfg().arch != arch:
         return
-
-    dim, n_grid, steps, dt,cube_size ,particle_per_grid= 3, 64, 25, 1e-4,0.2,16
-    n_particles  = int((((n_grid*cube_size)**dim) *particle_per_grid))
+    
+    dim, n_grid, steps, dt, cube_size, particle_per_grid = 3, 64, 25, 1e-4, 0.2, 16
+    n_particles  = int((((n_grid*cube_size)**dim) * particle_per_grid))
     print("Number of particles: ", n_particles)
     dx = 1/n_grid
     
@@ -46,17 +44,17 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     gy=-9.8
     gz=0
     k=0.5
-    friction_k=0.4
-    damping=1
+    friction_k = 0.4
+    damping = 1
     bound = 3
-    E = 10000  # Young's modulus for snow
-    SigY=1000
+    E = 50000  # Young's modulus for snow
+    SigY = 10000
     nu = 0.45  # Poisson's ratio
     mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # Lame parameters
     friction_angle = 30.0
     sin_phi = ti.sin(friction_angle / 180 * 3.141592653)
     alpha = ti.sqrt(2 / 3) * 2 * sin_phi / (3 - sin_phi)
-
+    
     neighbour = (3,) * dim
 
     @ti.kernel 
@@ -257,20 +255,33 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             dg[p] = U @ sig @ V.transpose()
 
     @ti.kernel
-    def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1),cube_size:ti.f32):
+    def init_particles(x: ti.types.ndarray(ndim=1), 
+                       initial_x: ti.types.ndarray(ndim=1),
+                       v: ti.types.ndarray(ndim=1), 
+                       dg: ti.types.ndarray(ndim=1), 
+                       cube_size:ti.f32):
         for i in range(x.shape[0]):
             x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size+ (0.5-cube_size/2), ti.random() * cube_size+(0.5-cube_size/2)]
             dg[i] = ti.Matrix.identity(float, dim)
-
-    @ti.kernel
-    def init_dg(dg: ti.types.ndarray(ndim=1)):
-        for i in range(dg.shape[0]):
-            dg[i] = ti.Matrix.identity(float, dim)
+            initial_x[i] = x[i]
     
     @ti.kernel
-    def substep_get_max_speed(v: ti.types.ndarray(ndim=1),max_speed: ti.types.ndarray(ndim=1)):
+    def substep_get_max_speed(v: ti.types.ndarray(ndim=1), max_speed: ti.types.ndarray(ndim=1)):
         for I in ti.grouped(v):
             max_speed[0] = ti.atomic_max(max_speed[0], v[I].norm())
+    
+    @ti.kernel
+    def substep_fix_object(grid_v: ti.types.ndarray(ndim=3), 
+                           n_grid: ti.i32,
+                           fix_center_x: ti.f32, fix_center_y: ti.f32, fix_center_z: ti.f32, 
+                           fix_range: ti.f32):
+        for I in ti.grouped(grid_v):
+            dist_to_center = ti.sqrt((I[0] - fix_center_x * n_grid) ** 2 +
+                                     (I[1] - fix_center_y * n_grid) ** 2 +
+                                     (I[2] - fix_center_z * n_grid) ** 2)
+            if dist_to_center < fix_range * n_grid:
+                grid_v[I] = ti.Vector([0.0, 0.0, 0.0])
+    
     @ti.dataclass
     class DistanceResult:
         distance: ti.types.vector(3, ti.f32)
@@ -444,6 +455,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     max_speed = ti.ndarray(ti.f32, shape=(1))
     obstacle_radius[0] = 0
     
+
     def substep():
         substep_reset_grid(grid_v, grid_m)
         substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
@@ -451,12 +463,16 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt)
         substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx)
         substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals ,obstacle_velocities,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid)
+        
+        # fix in place
+        # substep_fix_object(grid_v, n_grid, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=0.1)
+        
         substep_g2p(x, v, C,  grid_v, dx, dt)
         substep_apply_Von_Mises_plasticity(dg, mu_0, SigY)
         substep_apply_clamp_plasticity(dg, 0.1,0.1)
         substep_apply_Drucker_Prager_plasticity(dg, lambda_0, mu_0, alpha)
         substep_get_max_speed(v, max_speed)
-    
+        
     def run_aot():
         mod = ti.aot.Module(arch)
         mod.add_kernel(substep_reset_grid, template_args={'grid_v': grid_v, 'grid_m': grid_m})
@@ -470,7 +486,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'max_speed': max_speed})
-        mod.add_kernel(init_dg, template_args={'dg': dg})
         
         # hand sdf functions
         mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius})
@@ -478,18 +493,18 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DVonmisesSDF(Hash).kernel.tcm")
         print("AOT done")
-    
+        
     if run:
-        # with open('./scripts/HandSkeletonSegments.json', 'r') as file:
-        #     data = json.load(file)
-        # segments_list = []
-        # for segment in data['skeleton_segments']:
-        #     segments_list.append([
-        #         [segment['start']['x'], segment['start']['y'], segment['start']['z']],
-        #         [segment['end']['x'], segment['end']['y'], segment['end']['z']]
-        #     ])
-        # segments_np = np.array(segments_list, dtype=np.float32)
-        # skeleton_segments.from_numpy(segments_np)
+        with open('./scripts/HandSkeletonSegments.json', 'r') as file:
+            data = json.load(file)
+        segments_list = []
+        for segment in data['skeleton_segments']:
+            segments_list.append([
+                [segment['start']['x'], segment['start']['y'], segment['start']['z']],
+                [segment['end']['x'], segment['end']['y'], segment['end']['z']]
+            ])
+        segments_np = np.array(segments_list, dtype=np.float32)
+        skeleton_segments.from_numpy(segments_np)
         # substep_calculate_hand_sdf(skeleton_segments, hand_sdf, obstacle_normals, skeleton_capsule_radius, dx)
         # substep_calculate_hand_sdf_hash(skeleton_segments, hand_sdf, skeleton_capsule_radius, dx, n_grid, hash_table, segments_count_per_cell)
 
@@ -508,13 +523,13 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         # print(f"Number of non-empty cells: {total_cells}")
         
         gui = ti.GUI('MPM3D', res=(800, 800))
-        init_particles(x, v, dg,cube_size)
+        init_particles(x, initial_x, v, dg, cube_size)
         while gui.running and not gui.get_event(gui.ESCAPE):
             for i in range(50):
                 substep()
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    run_aot()
+        # run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph
