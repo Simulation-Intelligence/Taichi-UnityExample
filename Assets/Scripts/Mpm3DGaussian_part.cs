@@ -59,6 +59,8 @@ public class Mpm3DGaussian_part : MonoBehaviour
     [SerializeField]
     private RenderType renderType = RenderType.PointMesh;
     [SerializeField]
+    private Material handMaterial;
+    [SerializeField]
     private Material pointMaterial;
     [SerializeField]
     private Material raymarchingMaterial;
@@ -116,6 +118,7 @@ public class Mpm3DGaussian_part : MonoBehaviour
     private OVRSkeleton[] oculus_skeletons;
     [SerializeField]
     private float Skeleton_capsule_radius = 0.01f;
+    private float[] preset_capsule_radius;
     private int skeleton_num_capsules = 24; // use default 24
     private int NParticles;
     private float dx, p_vol, p_mass, v_allowed;
@@ -261,11 +264,45 @@ public class Mpm3DGaussian_part : MonoBehaviour
         hand_skeleton_segments_prev = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         hand_skeleton_velocities = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         _skeleton_capsule_radius = new float[skeleton_num_capsules * oculus_skeletons.Length];
+        
+        // for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
+        // {
+        //     _skeleton_capsule_radius[i] = Skeleton_capsule_radius / scale.x;
+        // }
+        // skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
+
+        // 24 line segments with 24 capsules in total
+        preset_capsule_radius = new float[] { 0,
+                                              0,
+                                              0,
+                                              0.015382f,
+                                              0.013382f,
+                                              0.01028295f,
+                                              0.01822828f,
+                                              0.01029526f,
+                                              0.008038102f,
+                                              0.02323196f,
+                                              0.01117394f,
+                                              0.008030958f,
+                                              0.01608828f,
+                                              0.009922137f,
+                                              0.007611672f,
+                                              0.01823196f,
+                                              0.015f,
+                                              0.008483353f,
+                                              0.006764194f,
+                                              0.009768805f,
+                                              0.007636196f,
+                                              0.007629411f,
+                                              0.007231089f,
+                                              0.006425985f };
         for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
         {
-            _skeleton_capsule_radius[i] = Skeleton_capsule_radius / transform.localScale.x;
+            _skeleton_capsule_radius[i] = preset_capsule_radius[i % 24] / transform.localScale.x;
+            //_skeleton_capsule_radius[i] = preset_capsule_radius / transform.localScale.x;
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
+        
         if (_Compute_Graph_g_init != null)
         {
             _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
@@ -575,7 +612,7 @@ public class Mpm3DGaussian_part : MonoBehaviour
             {
                 for (int j = 0; j < skeleton_num_capsules; j++)
                 {
-                    var capsuleVis = new CapsuleVisualization(Skeleton_capsule_radius);
+                    var capsuleVis = new CapsuleVisualization(preset_capsule_radius[j], handMaterial);
                     _capsuleVisualizations.Add(capsuleVis);
                 }
             }
