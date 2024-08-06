@@ -18,7 +18,7 @@
     "com.unity.xr.interaction.toolkit": "2.5.4",
     "com.unity.xr.management": "4.4.1",
     "com.unity.xr.openxr": "1.11.0",
-    "org.nesnausk.gaussian-splatting": "file:D:/work/Graphics/VRhand/UnityGaussianSplatting-0.9.0/UnityGaussianSplatting-0.9.0/package",
+    "org.nesnausk.gaussian-splatting": "file:UnityGaussianSplatting-0.9.0/package",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.animation": "1.0.0",

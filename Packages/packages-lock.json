@@ -376,7 +376,7 @@
       "url": "https://packages.unity.com"
     },
     "org.nesnausk.gaussian-splatting": {
-      "version": "file:D:/work/Graphics/VRhand/UnityGaussianSplatting-0.9.0/UnityGaussianSplatting-0.9.0/package",
+      "version": "file:UnityGaussianSplatting-0.9.0/package",
       "depth": 0,
       "source": "local",
       "dependencies": {
