@@ -3,4 +3,4 @@ colmap automatic_reconstructor `
     --image_path .\images `
     --camera_model SIMPLE_PINHOLE `
     --dense 0 `
-    --single_camera 1
+    --single_camera 0
