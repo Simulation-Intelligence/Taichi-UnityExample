@@ -361,7 +361,7 @@ GameObject:
   - component: {fileID: 249369757}
   - component: {fileID: 249369752}
   - component: {fileID: 249369759}
-  - component: {fileID: 249369763}
+  - component: {fileID: 249369758}
   - component: {fileID: 249369761}
   - component: {fileID: 249369760}
   - component: {fileID: 249369762}
@@ -371,7 +371,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &249369752
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -390,7 +390,7 @@ MonoBehaviour:
   targetObject: {fileID: 249369751}
   texturePropertyName: _volumeTex
   densityData: []
-  computeShader: {fileID: 7200000, guid: 6cd8c4cc370d56a4895a0d14a444d2ec, type: 3}
+  computeShader: {fileID: 7200000, guid: 3580a4237d2c5cd478d0fe62daeecd72, type: 3}
   max_density: 0
   volumeTex: {fileID: 0}
   targetMaterial: {fileID: 0}
@@ -471,11 +471,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 249369751}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0becec5dca65b194b835fe18e91db896, type: 3}
+  m_Script: {fileID: 11500000, guid: ddee4b39ca6ba7247a143356d2f8b573, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   volumeTextureUpdater: {fileID: 249369752}
-  Mpm3DModule: {fileID: -8196383504532815311, guid: 352baa52efaaf644d864bd8c35a6c688, type: 3}
+  Mpm3DModule: {fileID: -8196383504532815311, guid: 34ce006920cf99f42b14beb006787e9a, type: 3}
   renderType: 2
   handMaterial: {fileID: 0}
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
@@ -484,17 +484,17 @@ MonoBehaviour:
   stressType: 0
   RunSimulation: 1
   splatManager: {fileID: 249369758}
-  g: {x: 0, y: -9.8, z: 0}
+  g: {x: 0, y: 0, z: 0}
   n_grid: 128
   bounding_eps: 0.1
   max_dt: 0.0001
-  frame_time: 0.005
-  cube_size: 0.2
+  frame_time: 0.001
+  cube_size: 0.8
   particle_per_grid: 8
   allowed_cfl: 0.5
   damping: 1
   use_correct_cfl: 0
-  obstacleType: 0
+  obstacleType: 1
   sphere:
   - {fileID: 1300250346}
   - {fileID: 1736624407}
@@ -505,10 +505,10 @@ MonoBehaviour:
   - {fileID: 588067678}
   - {fileID: 588067682}
   Skeleton_capsule_radius: 0.01
-  E: 10000
-  SigY: 1000
-  nu: 0.3
-  colide_factor: 0.5
+  E: 1000000
+  SigY: 100000
+  nu: 0.1
+  colide_factor: 1
   friction_k: 0.4
   p_rho: 1000
   min_clamp: 0.1
@@ -516,6 +516,22 @@ MonoBehaviour:
   friction_angle: 30
   UseRecordDate: 0
   filePath: HandMotionData.txt
+--- !u!114 &249369758
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 249369751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34cb1c7628863cb43886e53880f2147a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Render: {fileID: 249369759}
+  eps: 0.1
+  min: {x: 0, y: 0, z: 0}
+  max: {x: 0, y: 0, z: 0}
 --- !u!114 &249369759
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -528,7 +544,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: d07f8cb5d7db7ce4bb36c02bf7b8b9ac, type: 2}
+  m_Asset: {fileID: 11400000, guid: 6954beb4d3527f5459c7e2d1f43e2a23, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -653,22 +669,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
---- !u!114 &249369763
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 249369751}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6746f20e50a932144a09a08911f944a7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Render: {fileID: 249369759}
-  eps: 0.1
-  min: {x: 0, y: 0, z: 0}
-  max: {x: 0, y: 0, z: 0}
 --- !u!1 &331304788
 GameObject:
   m_ObjectHideFlags: 0
@@ -693,7 +693,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!54 &331304789
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -817,6 +817,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34cb1c7628863cb43886e53880f2147a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_Render: {fileID: 331304793}
+  eps: 0.1
+  min: {x: 0, y: 0, z: 0}
+  max: {x: 0, y: 0, z: 0}
 --- !u!114 &331304793
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -829,7 +833,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 2c5ae6ac515a384419d4a7c02d1d061f, type: 2}
+  m_Asset: {fileID: 11400000, guid: 6954beb4d3527f5459c7e2d1f43e2a23, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -946,8 +950,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   volumeTextureUpdater: {fileID: 331304794}
-  Mpm3DModule: {fileID: -8196383504532815311, guid: 49d9fe7f16ccc4848a0a43e84fcedf3b, type: 3}
+  Mpm3DModule: {fileID: -8196383504532815311, guid: 2efcc6f0c9e52984aaff72a2cafccc2d, type: 3}
   renderType: 2
+  handMaterial: {fileID: 0}
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
   plasticityType: 2
@@ -3863,9 +3868,9 @@ MonoBehaviour:
   _pinchGrabRules:
     _thumbRequirement: 0
     _indexRequirement: 1
-    _middleRequirement: 1
-    _ringRequirement: 1
-    _pinkyRequirement: 1
+    _middleRequirement: 0
+    _ringRequirement: 0
+    _pinkyRequirement: 0
     _unselectMode: 0
   _palmGrabRules:
     _thumbRequirement: 2
@@ -4194,9 +4199,9 @@ MonoBehaviour:
   _pinchGrabRules:
     _thumbRequirement: 0
     _indexRequirement: 1
-    _middleRequirement: 1
-    _ringRequirement: 1
-    _pinkyRequirement: 1
+    _middleRequirement: 0
+    _ringRequirement: 0
+    _pinkyRequirement: 0
     _unselectMode: 0
   _palmGrabRules:
     _thumbRequirement: 2

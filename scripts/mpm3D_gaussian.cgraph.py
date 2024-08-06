@@ -467,6 +467,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     other_data = ti.Vector.ndarray(4,ti.f32, shape=(n_particles))
     init_sh = ti.Matrix.ndarray(16,3,ti.f32, shape=(n_particles))
     sh = ti.Matrix.ndarray(16,3,ti.f32, shape=(n_particles))
+
+    
     sym_x=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'x', ndim=1, dtype=ti.types.vector(3, ti.f32))
     sym_v=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'v', ndim=1, dtype=ti.types.vector(3, ti.f32))
     sym_C=ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'C', ndim=1, dtype=ti.types.matrix(3, 3, ti.f32))
