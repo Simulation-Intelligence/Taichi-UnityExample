@@ -13,6 +13,7 @@ using System;
 using UnityEngine.InputSystem;
 using Oculus.Interaction;
 using static SkeletonRenderer;
+using GaussianSplatting.Runtime;
 
 
 public class Mpm3DGaussian_part : MonoBehaviour
@@ -184,16 +185,7 @@ public class Mpm3DGaussian_part : MonoBehaviour
             _Compute_Graph_g_init = cgraphs["init"];
             _Compute_Graph_g_substep = cgraphs["substep"];
         }
-
-        //initialize
-        if (renderType == RenderType.GaussianSplat)
-        {
-            NParticles = splatManager.splatsNum;
-        }
-        else
-        {
-            NParticles = (int)(n_grid * n_grid * n_grid * cube_size * cube_size * cube_size * particle_per_grid);
-        }
+        Init_gaussian();
         dx = 1.0f / n_grid;
         p_vol = dx * dx * dx / particle_per_grid;
         p_mass = p_vol * p_rho;
@@ -231,10 +223,6 @@ public class Mpm3DGaussian_part : MonoBehaviour
 
 
         // Taichi Allocate memory, hostwrite are not considered
-        x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
-        v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
-        C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-        dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         sphere_pos = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
@@ -255,24 +243,12 @@ public class Mpm3DGaussian_part : MonoBehaviour
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build(); // use a consistent radius for all capsules (at now)
         obstacle_normals = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
 
-        //gaussian
-        init_rotation = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).Build();
-        init_scale = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
-        other_data = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).HostWrite(true).Build();
-        init_sh = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(16, 3).HostWrite(true).Build();
-        sh = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(16, 3).Build();
 
         //skeleton_num_capsules = oculus_skeletons[0].Bones.Count();
         hand_skeleton_segments = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         hand_skeleton_segments_prev = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         hand_skeleton_velocities = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         _skeleton_capsule_radius = new float[skeleton_num_capsules * oculus_skeletons.Length];
-
-        // for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
-        // {
-        //     _skeleton_capsule_radius[i] = Skeleton_capsule_radius / scale.x;
-        // }
-        // skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
 
         // 24 line segments with 24 capsules in total
         preset_capsule_radius = new float[] { 0,
@@ -302,10 +278,58 @@ public class Mpm3DGaussian_part : MonoBehaviour
         for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
         {
             _skeleton_capsule_radius[i] = preset_capsule_radius[i % 24] / transform.localScale.x;
-            //_skeleton_capsule_radius[i] = preset_capsule_radius / transform.localScale.x;
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
 
+
+        if (renderType == RenderType.PointMesh)
+        {
+            _Mesh = new Mesh();
+            int[] indices = new int[NParticles];
+            for (int i = 0; i < NParticles; ++i)
+            {
+                indices[i] = i;
+            }
+            Vector3[] vertices = new Vector3[NParticles];
+
+            var index = indices.ToArray();
+            _Mesh.vertices = vertices;
+            _Mesh.SetIndices(indices, MeshTopology.Points, 0);
+            _Mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 114514f);
+            _Mesh.name = "Mpm3D";
+            _Mesh.MarkModified();
+            _Mesh.UploadMeshData(false);
+            _MeshFilter.mesh = _Mesh;
+            _MeshRenderer.material = pointMaterial;
+            bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
+        }
+
+
+
+        if (UseRecordDate)
+        {
+            LoadHandMotionData();
+        }
+        spaceAction = new InputAction(binding: "<Keyboard>/space");
+        spaceAction.performed += ctx => OnSpacePressed();
+        spaceAction.Enable();
+    }
+
+    void Init_gaussian()
+    {
+        splatManager.init_gaussians();
+        NParticles = splatManager.splatsNum;
+        x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
+        v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
+        C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+        dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+
+        //gaussian
+        init_rotation = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).Build();
+        init_scale = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
+        other_data = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).HostWrite(true).Build();
+        init_sh = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(16, 3).HostWrite(true).Build();
+        sh = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(16, 3).Build();
         x.CopyFromArray(splatManager.m_pos);
         other_data.CopyFromArray(splatManager.m_other);
         init_sh.CopyFromArray(splatManager.m_SH);
@@ -332,36 +356,6 @@ public class Mpm3DGaussian_part : MonoBehaviour
             _Kernel_init_gaussian_data.LaunchAsync(init_rotation, init_scale, other_data);
 
         }
-
-        _Mesh = new Mesh();
-        int[] indices = new int[NParticles];
-        for (int i = 0; i < NParticles; ++i)
-        {
-            indices[i] = i;
-        }
-        Vector3[] vertices = new Vector3[NParticles];
-
-        var index = indices.ToArray();
-        _Mesh.vertices = vertices;
-        _Mesh.SetIndices(indices, MeshTopology.Points, 0);
-        _Mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 114514f);
-        _Mesh.name = "Mpm3D";
-        _Mesh.MarkModified();
-        _Mesh.UploadMeshData(false);
-        _MeshFilter.mesh = _Mesh;
-        if (renderType == RenderType.PointMesh)
-        {
-            _MeshRenderer.material = pointMaterial;
-            bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
-        }
-
-        if (UseRecordDate)
-        {
-            LoadHandMotionData();
-        }
-        spaceAction = new InputAction(binding: "<Keyboard>/space");
-        spaceAction.performed += ctx => OnSpacePressed();
-        spaceAction.Enable();
     }
 
     // Update is called once per frame
@@ -518,7 +512,31 @@ public class Mpm3DGaussian_part : MonoBehaviour
         }
         Runtime.Submit();
     }
+    public void MergeAndUpdate(GaussianSplatRenderer otherRender)
+    {
+        if (otherRender == null)
+        {
+            UnityEngine.Debug.LogError("Other render is null.");
+            return;
+        }
+        MergeRenders(otherRender);
+        Init_gaussian();
+        otherRender.gameObject.SetActive(false);
+    }
+    private void MergeRenders(GaussianSplatRenderer otherRender)
+    {
+        var render = splatManager.m_Render;
+        int totalSplats = render.splatCount + otherRender.splatCount;
+        if (totalSplats > GaussianSplatAsset.kMaxSplats)
+        {
+            UnityEngine.Debug.LogWarning("Cannot merge, too many splats.");
+            return;
+        }
 
+        int copyDstOffset = render.splatCount;
+        render.EditSetSplatCount(totalSplats);
+        otherRender.EditCopySplatsInto(render, 0, copyDstOffset, otherRender.splatCount);
+    }
     public void Reset()
     {
         if (_Compute_Graph_g_init != null)
@@ -546,9 +564,9 @@ public class Mpm3DGaussian_part : MonoBehaviour
         {
             Vector3 curpos = sphere[i].Position;
             Vector3 velocity = sphere[i].Velocity;
-            sphere_positions[i * 3] = curpos.x - _MeshFilter.transform.position.x;
-            sphere_positions[i * 3 + 1] = curpos.y - _MeshFilter.transform.position.y;
-            sphere_positions[i * 3 + 2] = curpos.z - _MeshFilter.transform.position.z;
+            sphere_positions[i * 3] = curpos.x - transform.position.x;
+            sphere_positions[i * 3 + 1] = curpos.y - transform.position.y;
+            sphere_positions[i * 3 + 2] = curpos.z - transform.position.z;
             _sphere_velocities[i * 3 + 1] = velocity.y;
             _sphere_velocities[i * 3 + 2] = velocity.z;
             sphere_radii[i] = sphere[i].Radius;
@@ -581,7 +599,7 @@ public class Mpm3DGaussian_part : MonoBehaviour
                             handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
                         }
                         UpdateHandSkeletonSegment(init + j * 6, start, end, frame_time);
-                        _skeleton_capsule_radius[i * skeleton_num_capsules + j] = Skeleton_capsule_radius / transform.localScale.x;
+                        _skeleton_capsule_radius[i * skeleton_num_capsules + j] = preset_capsule_radius[j] / transform.localScale.x;
                     }
                     skeleton_segments.CopyFromArray(hand_skeleton_segments);
                     skeleton_velocities.CopyFromArray(hand_skeleton_velocities);

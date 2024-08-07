@@ -181,6 +181,7 @@ public class Mpm3DGaussian : MonoBehaviour
         }
 
         //initialize
+        splatManager.init_gaussians();
         if (renderType == RenderType.GaussianSplat)
         {
             NParticles = splatManager.splatsNum;
@@ -262,7 +263,7 @@ public class Mpm3DGaussian : MonoBehaviour
         hand_skeleton_segments_prev = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         hand_skeleton_velocities = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         _skeleton_capsule_radius = new float[skeleton_num_capsules * oculus_skeletons.Length];
-       
+
         // for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
         // {
         //     _skeleton_capsule_radius[i] = Skeleton_capsule_radius / scale.x;
@@ -297,7 +298,6 @@ public class Mpm3DGaussian : MonoBehaviour
         for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
         {
             _skeleton_capsule_radius[i] = preset_capsule_radius[i % 24] / transform.localScale.x;
-            //_skeleton_capsule_radius[i] = preset_capsule_radius / transform.localScale.x;
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
 
@@ -560,7 +560,7 @@ public class Mpm3DGaussian : MonoBehaviour
                             handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
                         }
                         UpdateHandSkeletonSegment(init + j * 6, start, end, frame_time);
-                        _skeleton_capsule_radius[i * skeleton_num_capsules + j] = Skeleton_capsule_radius / transform.localScale.x;
+                        _skeleton_capsule_radius[i * skeleton_num_capsules + j] = preset_capsule_radius[j] / transform.localScale.x;
                     }
                     skeleton_segments.CopyFromArray(hand_skeleton_segments);
                     skeleton_velocities.CopyFromArray(hand_skeleton_velocities);

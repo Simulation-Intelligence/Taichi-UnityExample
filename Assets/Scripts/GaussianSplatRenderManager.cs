@@ -1,6 +1,7 @@
 using UnityEngine;
 using GaussianSplatting.Runtime;
 using System;
+using Oculus.Platform;
 public class GaussianSplatRenderManager : MonoBehaviour, IDisposable
 {
     // Member variable of GaussianSplatRender
@@ -29,6 +30,11 @@ public class GaussianSplatRenderManager : MonoBehaviour, IDisposable
     // Awake is called when the script instance is being loaded
     void Start()
     {
+        //init_gaussians();
+        //ScaleToUnitCube();
+    }
+    public void init_gaussians()
+    {
         splatsNum = m_Render.splatCount;
         m_pos = new float[splatsNum * 3];
         m_other = new float[splatsNum * 4];
@@ -36,15 +42,6 @@ public class GaussianSplatRenderManager : MonoBehaviour, IDisposable
         GetPos();
         GetOther();
         GetShs();
-        //ScaleToUnitCube();
-    }
-    void Update()
-    {
-        // if (!setted)
-        // {
-        //     m_Render.m_GpuOtherData.SetData(m_other);
-        //     setted = true;
-        // }
     }
     // Function to copy data from m_GpuPosData to m_pos and update splatsNum
     public void GetPos()

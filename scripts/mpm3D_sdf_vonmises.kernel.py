@@ -30,14 +30,14 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     if ti.lang.impl.current_cfg().arch != arch:
         return
     
-    dim, n_grid, steps, dt, cube_size, particle_per_grid = 3, 64, 25, 1e-4, 0.2, 16
+    dim, n_grid, steps, dt, cube_size, particle_per_grid = 3, 64, 25, 1e-4, 0.2, 8
     n_particles  = int((((n_grid*cube_size)**dim) * particle_per_grid))
     print("Number of particles: ", n_particles)
     dx = 1/n_grid
     
     p_rho = 1000
-    p_vol = dx** 3  
-    p_mass = p_vol * p_rho/ particle_per_grid
+    p_vol = dx** 3  / particle_per_grid
+    p_mass = p_vol * p_rho
     allowed_cfl = 0.5
     v_allowed = dx * allowed_cfl / dt
     gx=0
@@ -45,11 +45,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     gz=0
     k=0.5
     friction_k = 0.4
-    damping = 1
+    damping = 6000
     bound = 3
-    E = 50000  # Young's modulus for snow
+    E = 1e8  
     SigY = 10000
-    nu = 0.45  # Poisson's ratio
+    nu = 0.3  # Poisson's ratio
     mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # Lame parameters
     friction_angle = 30.0
     sin_phi = ti.sin(friction_angle / 180 * 3.141592653)
@@ -72,11 +72,18 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             base = int(Xp - 0.5)
             fx = Xp - base
             w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
+            if(p==1000):
+                print("dg1",f"{dg[p]:.20f}")
+                print("C[p]",f"{C[p]:.20f}")
 
             dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
             J=dg[p].determinant()
             cauchy=mu*(dg[p]@dg[p].transpose())+ti.Matrix.identity(float, dim)*(la*ti.log(J)-mu)
-            stress=-(dt * p_vol * 4 /dx**2) * cauchy
+            if(p==1000):
+                print("J",f"{J:.20f}")
+                print("dg2",f"{dg[p]:.20f}")
+                print("cauchy",f"{cauchy:.20f}")
+            stress=-(dt * p_vol * 4 ) * cauchy/dx**2
             affine = stress + p_mass * C[p]
 
             for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
@@ -143,7 +150,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             gravity = ti.Vector([gx,gy,gz])
             grid_v[I] += dt * gravity
             #damping
-            grid_v[I] *= ti.exp(-damping * dt)
+            grid_v[I] *=(1-damping * dt)
             if sdf[I] <= 0:
                 d=-sdf[I]
                 rel_v=grid_v[I]-obstacle_velocities[I]
@@ -214,8 +221,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     Z[i, i] = sig_vec[i]
             else:
                 H = epsilon - (delta_gamma / epsilon_hat_norm) * epsilon_hat
-                E = ti.exp(H)
-                Z = ti.Matrix([[E[0], 0, 0], [0, E[1], 0], [0, 0, E[2]]])
+                E1 = ti.exp(H)
+                Z = ti.Matrix([[E1[0], 0, 0], [0, E1[1], 0], [0, 0, E1[2]]])
                 
             dg[p] = U @ Z @ V.transpose()
     
@@ -241,8 +248,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     Z[i, i] = sig_vec[i]
             else:
                 H = epsilon - (delta_gamma / epsilon_hat_norm) * epsilon_hat
-                E = ti.exp(H)
-                Z = ti.Matrix([[E[0], 0, 0], [0, E[1], 0], [0, 0, E[2]]])
+                E1 = ti.exp(H)
+                Z = ti.Matrix([[E1[0], 0, 0], [0, E1[1], 0], [0, 0, E1[2]]])
                 
             dg[p] = U @ Z @ V.transpose()
     
@@ -256,14 +263,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
     @ti.kernel
     def init_particles(x: ti.types.ndarray(ndim=1), 
-                       initial_x: ti.types.ndarray(ndim=1),
                        v: ti.types.ndarray(ndim=1), 
                        dg: ti.types.ndarray(ndim=1), 
                        cube_size:ti.f32):
         for i in range(x.shape[0]):
             x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size+ (0.5-cube_size/2), ti.random() * cube_size+(0.5-cube_size/2)]
             dg[i] = ti.Matrix.identity(float, dim)
-            initial_x[i] = x[i]
     
     @ti.kernel
     def substep_get_max_speed(v: ti.types.ndarray(ndim=1), max_speed: ti.types.ndarray(ndim=1)):
@@ -458,7 +463,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
     def substep():
         substep_reset_grid(grid_v, grid_m)
-        substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
+        #substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
         substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt)
         substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx)
@@ -468,10 +473,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         # substep_fix_object(grid_v, n_grid, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=0.1)
         
         substep_g2p(x, v, C,  grid_v, dx, dt)
-        substep_apply_Von_Mises_plasticity(dg, mu_0, SigY)
-        substep_apply_clamp_plasticity(dg, 0.1,0.1)
-        substep_apply_Drucker_Prager_plasticity(dg, lambda_0, mu_0, alpha)
-        substep_get_max_speed(v, max_speed)
+        #substep_apply_Von_Mises_plasticity(dg, mu_0, SigY)
+        #substep_apply_clamp_plasticity(dg, 0.1,0.1)
+        #substep_apply_Drucker_Prager_plasticity(dg, lambda_0, mu_0, alpha)
+        #substep_get_max_speed(v, max_speed)
         
     def run_aot():
         mod = ti.aot.Module(arch)
@@ -523,7 +528,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         # print(f"Number of non-empty cells: {total_cells}")
         
         gui = ti.GUI('MPM3D', res=(800, 800))
-        init_particles(x, initial_x, v, dg, cube_size)
+        init_particles(x, v, dg, cube_size)
         while gui.running and not gui.get_event(gui.ESCAPE):
             for i in range(50):
                 substep()
