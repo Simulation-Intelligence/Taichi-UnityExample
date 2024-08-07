@@ -371,7 +371,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &249369752
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -484,7 +484,7 @@ MonoBehaviour:
   stressType: 0
   RunSimulation: 1
   splatManager: {fileID: 249369758}
-  g: {x: 0, y: 0, z: 0}
+  g: {x: 0, y: -9.8, z: 0}
   n_grid: 64
   bounding_eps: 0.1
   max_dt: 0.0001
@@ -544,7 +544,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 4def455151a757a4695d407fcaefd1be, type: 2}
+  m_Asset: {fileID: 11400000, guid: ee54a901024253d4ea58e16c0d2624db, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -693,7 +693,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!54 &331304789
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -833,7 +833,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 4def455151a757a4695d407fcaefd1be, type: 2}
+  m_Asset: {fileID: 11400000, guid: ee54a901024253d4ea58e16c0d2624db, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
