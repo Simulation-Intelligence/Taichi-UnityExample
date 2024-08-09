@@ -83,3 +83,5 @@ model/
 sparse/
 *.ply
 GaussianAssets/
+
+!Packages/
