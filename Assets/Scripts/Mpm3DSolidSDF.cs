@@ -13,7 +13,6 @@ using System;
 using UnityEngine.InputSystem;
 using static SkeletonRenderer;
 
-
 public class Mpm3DSolidSDF : MonoBehaviour
 {
     private Mesh _Mesh;
@@ -21,7 +20,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
     private MeshRenderer _MeshRenderer;
 
     public VolumeTextureUpdater volumeTextureUpdater;
-
+    
     [Header("MpM Engine")]
     [SerializeField]
     private AotModuleAsset Mpm3DModule;
@@ -34,6 +33,13 @@ public class Mpm3DSolidSDF : MonoBehaviour
     {
         PointMesh,
         Raymarching
+    }
+    public enum MaterialType
+    {
+        Customize,
+        Clay,
+        Dough,
+        Elastic_Material
     }
     public enum PlasticityType
     {
@@ -62,10 +68,12 @@ public class Mpm3DSolidSDF : MonoBehaviour
     private Material pointMaterial;
     [SerializeField]
     private Material raymarchingMaterial;
+     [SerializeField]
+    public MaterialType materialType = MaterialType.Customize;
     [SerializeField]
-    private PlasticityType plasticityType = PlasticityType.Von_Mises;
+    public PlasticityType plasticityType = PlasticityType.Von_Mises;
     [SerializeField]
-    private StressType stressType = StressType.NeoHookean;
+    public StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
     private NdArray<float> x, v, C, dg, grid_v, grid_m, obstacle_pos, obstacle_velocity, obstacle_radius, sdf;
 
@@ -87,7 +95,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
     private float max_dt = 1e-4f, frame_time = 0.005f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
     [SerializeField]
     bool use_correct_cfl = false;
-
+    public bool isFixed = false;
 
     private Vector3 scale;
     [Header("Obstacle")]
@@ -100,18 +108,12 @@ public class Mpm3DSolidSDF : MonoBehaviour
     private OVRHand[] oculus_hands;
     [SerializeField]
     private OVRSkeleton[] oculus_skeletons;
-    [SerializeField]
-    private float Skeleton_capsule_radius = 0.01f;
     private float[] preset_capsule_radius;
     private int skeleton_num_capsules = 24; // use default 24
     private int NParticles;
     private float dx, p_vol, p_mass, v_allowed;
 
-    [Header("Scalars")]
-    [SerializeField]
-    private float E = 1e4f;
-    [SerializeField]
-    private float SigY = 1000, nu = 0.3f, colide_factor = 0.5f, friction_k = 0.4f, p_rho = 1000, min_clamp = 0.1f, max_clamp = 0.1f, friction_angle = 30;
+    public float E = 1e4f, SigY = 1000, nu = 0.3f, colide_factor = 0.5f, friction_k = 0.4f, p_rho = 1000, min_clamp = 0.1f, max_clamp = 0.1f, friction_angle = 30;
 
     private float mu, lambda, sin_phi, alpha;
 
@@ -121,7 +123,6 @@ public class Mpm3DSolidSDF : MonoBehaviour
     private int handMotionIndex = 0;
     private InputAction spaceAction;
 
-    private OVRSkeletonRenderer ovrRend;
 
     [Header("Hand Recording")]
     [SerializeField]
@@ -172,7 +173,6 @@ public class Mpm3DSolidSDF : MonoBehaviour
         v_allowed = allowed_cfl * dx / max_dt;
         sin_phi = Mathf.Sin(friction_angle * Mathf.Deg2Rad);
         alpha = Mathf.Sqrt(2.0f / 3.0f) * 2 * sin_phi / (3 - sin_phi);
-
 
         _MeshRenderer = GetComponent<MeshRenderer>();
         _MeshFilter = GetComponent<MeshFilter>();
@@ -264,7 +264,6 @@ public class Mpm3DSolidSDF : MonoBehaviour
         for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
         {
             _skeleton_capsule_radius[i] = preset_capsule_radius[i % 24] / transform.localScale.x;
-            //_skeleton_capsule_radius[i] = preset_capsule_radius / scale.x;
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
         
@@ -316,7 +315,6 @@ public class Mpm3DSolidSDF : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
         if (_Compute_Graph_g_update != null)
         {
             _Compute_Graph_g_update.LaunchAsync(new Dictionary<string, object>
@@ -415,6 +413,8 @@ public class Mpm3DSolidSDF : MonoBehaviour
 
         // Save particles data to json
         //ExportParticleDataToJson();
+
+        // if the gameobject is being grabbed
     }
 
     public void Reset()
