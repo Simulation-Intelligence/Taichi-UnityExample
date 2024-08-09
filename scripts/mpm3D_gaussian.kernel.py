@@ -34,7 +34,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     if ti.lang.impl.current_cfg().arch != arch:
         return
 
-    dim, n_grid, steps, dt,cube_size ,particle_per_grid= 3, 64, 25, 1e-4,0.2,16
+    dim, n_grid, steps, dt,cube_size ,particle_per_grid= 3, 150, 25, 1e-4,0.2,1
     n_particles  = int((((n_grid*cube_size)**dim) *particle_per_grid))
     print("Number of particles: ", n_particles)
     dx = 1/n_grid
@@ -114,6 +114,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 weight = 1.0
                 for i in ti.static(range(dim)):
                     weight *= w[offset[i]][i]
+                
                 grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
                 grid_m[base + offset] += weight * p_mass
     
@@ -184,6 +185,26 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             v[p] = new_v
             x[p] += dt * v[p]
             C[p] = new_C
+            
+    @ti.kernel
+    def substep_adjust_particle(x: ti.types.ndarray(ndim=1),v: ti.types.ndarray(ndim=1),hash_table: ti.types.ndarray(ndim=4),segments_count_per_cell: ti.types.ndarray(ndim=3),skeleton_capsule_radius: ti.types.ndarray(ndim=1),skeleton_velocities:ti.types.ndarray(ndim=2),skeleton_segments:ti.types.ndarray(ndim=2)):
+        dx=1/segments_count_per_cell.shape[0]
+        for p in x:
+            Xp = x[p] / dx
+            base = int(Xp - 0.5)
+            min_d=float('inf')
+            for i in range(segments_count_per_cell[base]):
+                seg_idx = hash_table[base, i]
+                if seg_idx != -1:
+                    start = skeleton_segments[seg_idx, 0]
+                    end = skeleton_segments[seg_idx, 1]
+                    result = calculate_point_segment_distance(x[p], start, end)
+                    dist = result.distance
+                    r = result.b
+                    if dist.norm() < skeleton_capsule_radius[seg_idx] and dist.norm() < min_d:
+                        x[p] = x[p] + dist.normalized() * (skeleton_capsule_radius[seg_idx] - dist.norm())
+                        v[p] = skeleton_velocities[seg_idx,0] * (1-r) + skeleton_velocities[seg_idx,1] * r
+                        min_d = dist.norm()
 
     @ti.kernel
     def substep_apply_Drucker_Prager_plasticity(dg: ti.types.ndarray(ndim=1),lambda_0:ti.f32,mu_0:ti.f32,alpha:ti.f32):
@@ -269,29 +290,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             max_speed[0] = ti.atomic_max(max_speed[0], v[I].norm())
 
     
-    @ti.func
-    def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
-                                         sx: ti.f32, sy: ti.f32, sz: ti.f32,
-                                         ex: ti.f32, ey: ti.f32, ez: ti.f32) -> DistanceResult:
-        point = ti.Vector([px, py, pz])
-        start = ti.Vector([sx, sy, sz])
-        end = ti.Vector([ex, ey, ez])
-        v = end - start
-        w = point - start
-        c1 = w.dot(v)
-        c2 = v.dot(v)
-        b=0.0
-        distance = ti.Vector([0.0, 0.0, 0.0])
-        if c1 <= 0:
-            distance = (point - start)
-        elif c1 >= c2:
-            distance = (point - end)
-            b=1
-        else:
-            b = c1 / c2
-            Pb = start + b * v
-            distance = (point - Pb)
-        return DistanceResult(distance=distance, b=b)
+
     
     @ti.kernel
     def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2), 
@@ -301,16 +300,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                                    obstacle_velocities: ti.types.ndarray(ndim=3),
                                    skeleton_capsule_radius: ti.types.ndarray(ndim=1),
                                    dx:ti.f32):
-        #if (skeleton_segments.shape[0] != 0):
         for I in ti.grouped(hand_sdf):
             pos = I * dx + dx * 0.5
             min_dist = float('inf')
             norm= ti.Vector([0.0, 0.0, 0.0])
             
             for i in range(skeleton_segments.shape[0]):
-                sx, sy, sz = skeleton_segments[i, 0][0], skeleton_segments[i, 0][1], skeleton_segments[i, 0][2]
-                ex, ey, ez = skeleton_segments[i, 1][0], skeleton_segments[i, 1][1], skeleton_segments[i, 1][2]
-                result = calculate_point_segment_distance(pos[0], pos[1], pos[2], sx, sy, sz, ex, ey, ez)
+                start= skeleton_segments[i, 0]
+                end = skeleton_segments[i, 1]
+                result = calculate_point_segment_distance(pos, start, end)
                 dist = result.distance
                 r = result.b
                 distance = dist.norm() - skeleton_capsule_radius[i]
@@ -322,6 +320,29 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             obstacle_normals[I] = norm
     
     @ti.kernel
+    def substep_calculate_hand_hash(skeleton_segments: ti.types.ndarray(ndim=2),
+                                    skeleton_capsule_radius: ti.types.ndarray(ndim=1),
+                                    n_grid: ti.i32,
+                                    hash_table: ti.types.ndarray(ndim=4),
+                                    segments_count_per_cell: ti.types.ndarray(ndim=3)):
+        for I in ti.grouped(segments_count_per_cell):
+            segments_count_per_cell[I] = 0
+            for l in range(hash_table.shape[3]):
+                hash_table[I, l] = -1    
+
+        for i in range(skeleton_segments.shape[0]):
+            seg_start = skeleton_segments[i, 0]
+            seg_end = skeleton_segments[i, 1]
+            min_bb = ti.min(seg_start, seg_end)-skeleton_capsule_radius[i]
+            max_bb = ti.max(seg_start, seg_end)+skeleton_capsule_radius[i]
+            min_cell = get_hash(min_bb, n_grid)
+            max_cell = get_hash(max_bb, n_grid)
+
+            for I in ti.grouped(ti.ndrange((min_cell[0], max_cell[0] + 1), (min_cell[1], max_cell[1] + 1), (min_cell[2], max_cell[2] + 1)) ):
+                if (0 <= I < n_grid).all():
+                    idx = ti.atomic_add(segments_count_per_cell[I], 1)
+                    hash_table[I, idx] = i
+    @ti.kernel
     def substep_calculate_hand_sdf_hash(skeleton_segments: ti.types.ndarray(ndim=2),
                                         skeleton_velocities: ti.types.ndarray(ndim=2),
                                         hand_sdf: ti.types.ndarray(ndim=3),
@@ -329,35 +350,26 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                                         obstacle_velocities: ti.types.ndarray(ndim=3),
                                         skeleton_capsule_radius: ti.types.ndarray(ndim=1),
                                         dx: ti.f32,
-                                        n_grid: ti.i32,
                                         hash_table: ti.types.ndarray(ndim=4),
                                         segments_count_per_cell: ti.types.ndarray(ndim=3)):
-        # clear and build hash
-        clear_hash_table(hash_table, segments_count_per_cell)
-        insert_segments(skeleton_segments, n_grid, hash_table, segments_count_per_cell)
         # calculate hand sdf
         for I in ti.grouped(hand_sdf):
             pos = I * dx + dx * 0.5
             min_dist = float('inf')
-            cell = get_hash(pos, n_grid)
             norm= ti.Vector([0.0, 0.0, 0.0])
-
-            for offset_x, offset_y, offset_z in ti.ndrange((-2, 3), (-2, 3), (-2, 3)):
-                neighbor_cell = cell + ti.Vector([offset_x, offset_y, offset_z])
-                if (0 <= neighbor_cell[0] < n_grid) and (0 <= neighbor_cell[1] < n_grid) and (0 <= neighbor_cell[2] < n_grid):
-                    for i in range(segments_count_per_cell[neighbor_cell[0], neighbor_cell[1], neighbor_cell[2]]):
-                        segment_idx = hash_table[neighbor_cell[0], neighbor_cell[1], neighbor_cell[2], i]
-                        if segment_idx != -1:
-                            seg_start = skeleton_segments[segment_idx, 0]
-                            seg_end = skeleton_segments[segment_idx, 1]
-                            result = calculate_point_segment_distance(pos[0], pos[1], pos[2], seg_start[0], seg_start[1], seg_start[2], seg_end[0], seg_end[1], seg_end[2])
-                            dist = result.distance
-                            r = result.b
-                            distance = dist.norm() - skeleton_capsule_radius[i]
-                            if distance < min_dist:
-                                min_dist = distance
-                                norm = dist.normalized()
-                                obstacle_velocities[I] = skeleton_velocities[i,0] * (1-r) + skeleton_velocities[i,1] * r
+            for i in range(segments_count_per_cell[I]):
+                segment_idx = hash_table[I, i]
+                if segment_idx != -1:
+                    seg_start = skeleton_segments[segment_idx, 0]
+                    seg_end = skeleton_segments[segment_idx, 1]
+                    result = calculate_point_segment_distance(pos, seg_start, seg_end)
+                    dist = result.distance
+                    r = result.b
+                    distance = dist.norm() - skeleton_capsule_radius[segment_idx]
+                    if distance < min_dist:
+                        min_dist = distance
+                        norm = dist.normalized()
+                        obstacle_velocities[I] = skeleton_velocities[segment_idx,0] * (1-r) + skeleton_velocities[segment_idx,1] * r
             hand_sdf[I] = min_dist
             obstacle_normals[I] = norm
 
@@ -445,6 +457,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     skeleton_segments = ti.Vector.ndarray(3, ti.f32, shape=(24, 2))
     skeleton_velocities = ti.Vector.ndarray(3, ti.f32, shape=(24, 2))
     skeleton_capsule_radius = ti.ndarray(ti.f32, shape=(24))
+    skeleton_segments[1, 0] = [0.5, 0.5, 0.5]
+    skeleton_segments[1, 1] = [0.5, 0.5, 0.5]
+    skeleton_capsule_radius[1] = 0.5
     
     hash_table = ti.ndarray(ti.i32, shape=(n_grid, n_grid, n_grid, skeleton_segments.shape[0]))
     segments_count_per_cell = ti.ndarray(ti.i32, shape=(n_grid, n_grid, n_grid))
@@ -472,8 +487,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_reset_grid(grid_v, grid_m)
         substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, p_vol, p_mass, dx, dt)
-        substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt)
-        substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx)
+        #substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt)
+        #substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx)
+        #substep_calculate_hand_sdf_hash(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx,hash_table, segments_count_per_cell)
         substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals ,obstacle_velocities,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid)
         substep_g2p(x, v, C,  grid_v, dx, dt)
         substep_apply_Von_Mises_plasticity(dg, mu_0, SigY)
@@ -498,7 +514,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         
         # hand sdf functions
         mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius})
-        mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
+        mod.add_kernel(substep_calculate_hand_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
+        mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
+        mod.add_kernel(substep_adjust_particle, template_args={'x': x, 'v': v, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'skeleton_capsule_radius': skeleton_capsule_radius, 'skeleton_velocities': skeleton_velocities, 'skeleton_segments': skeleton_segments})
         
         # Gaussian kernel functions
         mod.add_kernel(init_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'other_data': other_data})
@@ -515,8 +533,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         init_dg(dg)
         init_gaussian_data(init_rotation, init_scale, other_data)
         while gui.running and not gui.get_event(gui.ESCAPE):
-            for i in range(50):
+            substep_calculate_hand_hash(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell)
+            for i in range(10):
                 substep()
+            substep_adjust_particle(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments)
             substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh)
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()

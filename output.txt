@@ -1,0 +1,4 @@
+[Taichi] version 1.8.0, llvm 15.0.1, commit 37a05638, win, python 3.11.7
+[Taichi] Starting on arch=vulkan
+Number of particles:  33554
+AOT done

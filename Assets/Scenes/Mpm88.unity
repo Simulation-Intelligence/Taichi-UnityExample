@@ -794,7 +794,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &249369752
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -876,7 +876,7 @@ Transform:
   m_GameObject: {fileID: 249369751}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.329, y: 1, z: 1}
+  m_LocalPosition: {x: 1, y: 1, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -898,16 +898,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   volumeTextureUpdater: {fileID: 249369752}
-  Mpm3DModule: {fileID: -8196383504532815311, guid: 34ce006920cf99f42b14beb006787e9a, type: 3}
+  Mpm3DModule: {fileID: -8196383504532815311, guid: 352baa52efaaf644d864bd8c35a6c688, type: 3}
   renderType: 2
   handMaterial: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
-  plasticityType: 3
+  plasticityType: 0
   stressType: 0
   RunSimulation: 1
   splatManager: {fileID: 249369758}
-  g: {x: 0, y: -9.8, z: 0}
+  g: {x: 0, y: 0, z: 0}
   n_grid: 64
   bounding_eps: 0.1
   max_dt: 0.0001
@@ -928,8 +928,8 @@ MonoBehaviour:
   - {fileID: 588067678}
   - {fileID: 588067682}
   Skeleton_capsule_radius: 0.01
-  E: 10000000
-  SigY: 1000000
+  E: 1000000
+  SigY: 100000
   nu: 0.3
   colide_factor: 0.5
   friction_k: 0.4
@@ -967,7 +967,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: ee54a901024253d4ea58e16c0d2624db, type: 2}
+  m_Asset: {fileID: 11400000, guid: fd53238d72c563e4ba691d8630afe9cd, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -1262,7 +1262,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!54 &331304789
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1402,7 +1402,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: ee54a901024253d4ea58e16c0d2624db, type: 2}
+  m_Asset: {fileID: 11400000, guid: fd53238d72c563e4ba691d8630afe9cd, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -1497,7 +1497,7 @@ Transform:
   m_GameObject: {fileID: 331304788}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.291, y: 1, z: 0.812}
+  m_LocalPosition: {x: 1, y: 1, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -1524,22 +1524,22 @@ MonoBehaviour:
   handMaterial: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
-  plasticityType: 3
+  plasticityType: 0
   stressType: 0
   RunSimulation: 1
   splatManager: {fileID: 331304792}
-  g: {x: 0, y: 1, z: 0}
+  g: {x: 0, y: 0, z: 0}
   n_grid: 64
   bound: 3
   bounding_eps: 0.1
   max_dt: 0.0001
-  frame_time: 0.005
+  frame_time: 0.001
   cube_size: 0.2
   particle_per_grid: 8
   allowed_cfl: 0.5
   damping: 10
   use_correct_cfl: 0
-  hand_simulation_radius: 100
+  hand_simulation_radius: 0.3
   obstacleType: 1
   sphere:
   - {fileID: 1300250346}
@@ -1552,7 +1552,7 @@ MonoBehaviour:
   - {fileID: 588067682}
   Skeleton_capsule_radius: 0.01
   E: 1000000
-  SigY: 10000
+  SigY: 100000
   nu: 0.3
   colide_factor: 0.5
   friction_k: 0.4
@@ -2501,29 +2501,17 @@ MonoBehaviour:
   _whenSelected:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 923770346}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 331304799}
+        m_TargetAssemblyTypeName: Mpm3DGaussian_part, Assembly-CSharp
+        m_MethodName: Reset
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
-          m_FloatArgument: 9.8
+          m_FloatArgument: 0
           m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 923770351}
-        m_TargetAssemblyTypeName: Mpm3DSolid, Assembly-CSharp
-        m_MethodName: SetGravity
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 9.8
-          m_StringArgument: 
-          m_BoolArgument: 1
+          m_BoolArgument: 0
         m_CallState: 2
   _whenUnselected:
     m_PersistentCalls:
@@ -2875,7 +2863,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!54 &499060533
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3015,7 +3003,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 4323d5b243abace48b5b083b48f5251f, type: 2}
+  m_Asset: {fileID: 11400000, guid: 5c45330a500f9e047a7e27dc00f74906, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -3069,16 +3057,16 @@ MonoBehaviour:
   handMaterial: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
-  plasticityType: 3
+  plasticityType: 0
   stressType: 0
   RunSimulation: 1
   splatManager: {fileID: 499060536}
   g: {x: 0, y: 1, z: 0}
-  n_grid: 64
+  n_grid: 128
   bound: 3
   bounding_eps: 0.1
-  max_dt: 0.0001
-  frame_time: 0.005
+  max_dt: 0.00005
+  frame_time: 0.001
   cube_size: 0.2
   particle_per_grid: 8
   allowed_cfl: 0.5
@@ -3096,8 +3084,8 @@ MonoBehaviour:
   - {fileID: 588067678}
   - {fileID: 588067682}
   Skeleton_capsule_radius: 0.01
-  E: 1000000
-  SigY: 10000
+  E: 5000000
+  SigY: 500000
   nu: 0.3
   colide_factor: 0.5
   friction_k: 0.4
@@ -4563,7 +4551,7 @@ Transform:
   m_GameObject: {fileID: 661096786}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.379, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -5791,31 +5779,7 @@ MonoBehaviour:
   _selector: {fileID: 880991134}
   _whenSelected:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 923770346}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 923770351}
-        m_TargetAssemblyTypeName: Mpm3DSolid, Assembly-CSharp
-        m_MethodName: SetGravity
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: -9.8
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
+      m_Calls: []
   _whenUnselected:
     m_PersistentCalls:
       m_Calls: []
@@ -8952,46 +8916,10 @@ MonoBehaviour:
   _selector: {fileID: 1538162596}
   _whenSelected:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2073833746}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 2073833751}
-        m_TargetAssemblyTypeName: Mpm3D, Assembly-CSharp
-        m_MethodName: SetGravity
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: -9.8
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
+      m_Calls: []
   _whenUnselected:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2073833746}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1538162596
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10059,19 +9987,7 @@ MonoBehaviour:
         m_CallState: 2
   _whenUnselected:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2073833746}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1690328650
 MonoBehaviour:
   m_ObjectHideFlags: 0

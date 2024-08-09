@@ -326,6 +326,9 @@ def get_hash(pos, n_grid):
     z_index = int(ti.floor(pos[2] * n_grid))
     return ti.Vector([x_index, y_index, z_index])
     
+
+
+
 @ti.func
 def min_bounding_box(seg_start, seg_end):
     return ti.Vector([min(seg_start[0], seg_end[0]),
@@ -338,39 +341,9 @@ def max_bounding_box(seg_start, seg_end):
                       max(seg_start[1], seg_end[1]),
                       max(seg_start[2], seg_end[2])])
     
-@ti.func
-def insert_segments(skeleton_segments: ti.types.ndarray(ndim=2),
-                    n_grid: ti.i32,
-                    hash_table: ti.types.ndarray(ndim=4),
-                    segments_count_per_cell: ti.types.ndarray(ndim=3)):
-    for i in range(skeleton_segments.shape[0]):
-        seg_start = skeleton_segments[i, 0]
-        seg_end = skeleton_segments[i, 1]
-        min_bb = min_bounding_box(seg_start, seg_end)
-        max_bb = max_bounding_box(seg_start, seg_end)
-        min_cell = get_hash(min_bb, n_grid)
-        max_cell = get_hash(max_bb, n_grid)
-        
-        for x in range(min_cell[0], max_cell[0] + 1):
-            if 0 <= x < n_grid:
-                for y in range(min_cell[1], max_cell[1] + 1):
-                    if 0 <= y < n_grid:
-                        for z in range(min_cell[2], max_cell[2] + 1):
-                            if 0 <= z < n_grid:
-                                idx = ti.atomic_add(segments_count_per_cell[x, y, z], 1)
-                                hash_table[x, y, z, idx] = i
+
     
-@ti.func
-def clear_hash_table(hash_table: ti.types.ndarray(ndim=4),
-                     segments_count_per_cell: ti.types.ndarray(ndim=3)):
-    # for i, j, k in ti.ndrange(n_grid, n_grid, n_grid):
-    #     segments_count_per_cell[i, j, k] = 0
-    #     for l in range(skeleton_segments.shape[0]):
-    #         hash_table[i, j, k, l] = -1
-    for I in ti.grouped(segments_count_per_cell):
-        segments_count_per_cell[I] = 0
-        for l in range(hash_table.shape[3]):
-            hash_table[I[0], I[1], I[2], l] = -1
+
 # endregion
 
 @ti.dataclass
@@ -379,12 +352,7 @@ class DistanceResult:
     b: ti.f32
     
 @ti.func
-def calculate_point_segment_distance(px: ti.f32, py: ti.f32, pz: ti.f32,
-                                     sx: ti.f32, sy: ti.f32, sz: ti.f32,
-                                     ex: ti.f32, ey: ti.f32, ez: ti.f32) -> DistanceResult:
-    point = ti.Vector([px, py, pz])
-    start = ti.Vector([sx, sy, sz])
-    end = ti.Vector([ex, ey, ez])
+def calculate_point_segment_distance(point: ti.types.vector(3, ti.f32), start: ti.types.vector(3, ti.f32), end: ti.types.vector(3, ti.f32)) -> DistanceResult:
     v = end - start
     w = point - start
     c1 = w.dot(v)

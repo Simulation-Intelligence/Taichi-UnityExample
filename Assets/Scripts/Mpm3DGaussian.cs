@@ -13,6 +13,7 @@ using System;
 using Oculus.Interaction;
 using UnityEngine.InputSystem;
 using static SkeletonRenderer;
+using NUnit.Framework.Internal;
 
 
 public class Mpm3DGaussian : MonoBehaviour
@@ -29,7 +30,8 @@ public class Mpm3DGaussian : MonoBehaviour
     private Kernel _Kernel_subsetep_reset_grid, _Kernel_substep_neohookean_p2g, _Kernel_substep_Kirchhoff_p2g,
     _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_update_grid_v, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity,
-     _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed,
+     _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_calculate_hand_sdf_hash, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle,
+    _Kernel_substep_get_max_speed,
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube;
 
     public enum RenderType
@@ -71,12 +73,13 @@ public class Mpm3DGaussian : MonoBehaviour
     private StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
     private NdArray<float> x, v, C, dg, grid_v, grid_m, sphere_pos, obstacle_velocities, sphere_velocities, sphere_radius, hand_sdf;
-
+    private NdArray<int> segments_count_per_cell, hash_table;
     public NdArray<float> skeleton_segments, skeleton_velocities, obstacle_normals, skeleton_capsule_radius, max_v;
 
     public NdArray<float> init_rotation, init_scale, init_sh, other_data, sh;
 
     private float[] hand_skeleton_segments, hand_skeleton_segments_prev, hand_skeleton_velocities, _skeleton_capsule_radius, sphere_positions, _sphere_velocities, sphere_radii;
+
 
     private Bounds bounds;
 
@@ -165,6 +168,9 @@ public class Mpm3DGaussian : MonoBehaviour
 
             // new added
             _Kernel_substep_calculate_hand_sdf = kernels["substep_calculate_hand_sdf"];
+            _Kernel_substep_calculate_hand_hash = kernels["substep_calculate_hand_hash"];
+            _Kernel_substep_calculate_hand_sdf_hash = kernels["substep_calculate_hand_sdf_hash"];
+            _Kernel_substep_adjust_particle = kernels["substep_adjust_particle"];
             _Kernel_substep_get_max_speed = kernels["substep_get_max_speed"];
 
             //gaussian
@@ -250,6 +256,9 @@ public class Mpm3DGaussian : MonoBehaviour
         hand_sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build(); // use a consistent radius for all capsules (at now)
         obstacle_normals = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
+        segments_count_per_cell = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid).Build();
+        hash_table = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid, skeleton_num_capsules * oculus_skeletons.Length).Build();
+
 
         //gaussian
         init_rotation = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).Build();
@@ -436,7 +445,9 @@ public class Mpm3DGaussian : MonoBehaviour
                     }
                     if (IntersectwithHand(oculus_hands))
                     {
-                        _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx);
+                        //_Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx);
+                        _Kernel_substep_calculate_hand_hash.LaunchAsync(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell);
+                        _Kernel_substep_calculate_hand_sdf_hash.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell);
                     }
                     break;
             }
@@ -481,6 +492,7 @@ public class Mpm3DGaussian : MonoBehaviour
                     dt = Mathf.Min(dt, time_left);
                 }
             }
+            _Kernel_substep_adjust_particle.LaunchAsync(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments);
             _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh);
         }
         if (renderType == RenderType.PointMesh)
