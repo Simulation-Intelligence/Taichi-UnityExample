@@ -14,7 +14,7 @@ using UnityEngine.InputSystem;
 using Oculus.Interaction;
 using static SkeletonRenderer;
 using GaussianSplatting.Runtime;
-
+using UnityEngine.Experimental.Rendering;
 
 public class Mpm3DGaussian_part_multi : MonoBehaviour
 {
@@ -633,6 +633,46 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         material = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
 
         Update_materials();
+    }
+    public void AdjustTextureColor(Color rgba)
+    {
+        var colorData = splatManager.m_color;
+        var asset = splatManager.m_Render.m_Asset;
+        // Adjust the color in the NativeArray
+        for (int i = 0; i < colorData.Length; i += 4)
+        {
+            colorData[i] *= rgba.r;     // Red channel
+            colorData[i + 1] *= rgba.g; // Green channel
+            colorData[i + 2] *= rgba.b; // Blue channel
+            colorData[i + 3] *= rgba.a; // Alpha channel
+
+        }
+        // Set the modified color data back to the texture
+        var (texWidth, texHeight) = GaussianSplatAsset.CalcTextureSize(asset.splatCount);
+        var texFormat = GaussianSplatAsset.ColorFormatToGraphics(asset.colorFormat);
+        var tex = new Texture2D(texWidth, texHeight, texFormat, TextureCreationFlags.DontInitializePixels | TextureCreationFlags.IgnoreMipmapLimit | TextureCreationFlags.DontUploadUponCreate) { name = "GaussianColorData" };
+        tex.SetPixelData(colorData, 0);
+        tex.Apply(false, true);
+        splatManager.m_Render.m_GpuColorData = tex;
+
+    }
+    public void AdjustTextureColorRed(float r)
+    {
+        var colorData = splatManager.m_color;
+        var asset = splatManager.m_Render.m_Asset;
+        // Adjust the color in the NativeArray
+        for (int i = 0; i < colorData.Length; i += 4)
+        {
+            colorData[i] *= r;     // Red channel
+
+        }
+        // Set the modified color data back to the texture
+        var (texWidth, texHeight) = GaussianSplatAsset.CalcTextureSize(asset.splatCount);
+        var texFormat = GaussianSplatAsset.ColorFormatToGraphics(asset.colorFormat);
+        var tex = new Texture2D(texWidth, texHeight, texFormat, TextureCreationFlags.DontInitializePixels | TextureCreationFlags.IgnoreMipmapLimit | TextureCreationFlags.DontUploadUponCreate) { name = "GaussianColorData" };
+        tex.SetPixelData(colorData, 0);
+        tex.Apply(false, true);
+        splatManager.m_Render.m_GpuColorData = tex;
     }
     public void Reset()
     {

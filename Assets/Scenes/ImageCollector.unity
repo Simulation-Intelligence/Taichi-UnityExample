@@ -421,7 +421,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8966646920969844540, guid: e3b826e8a7103bc49af231259b274c97, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -450,7 +450,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   model: {fileID: 476452675}
   numberOfSamples: 300
-  sphereRadius: 0.15
+  sphereRadius: 0.3
   Resolution: 1024
   captureCamera: {fileID: 403447150}
   savePath: Assets/NeRFImages/images
@@ -658,7 +658,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1571555043832058641, guid: 63b105a6ee122134295e170669579854, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8807312835454417492, guid: 63b105a6ee122134295e170669579854, type: 3}
       propertyPath: m_RootOrder

@@ -247,7 +247,9 @@ namespace GaussianSplatting.Runtime
         public GraphicsBuffer m_GpuPosData;
         public GraphicsBuffer m_GpuOtherData;
         public GraphicsBuffer m_GpuSHData;
-        Texture m_GpuColorData;
+        public Texture m_GpuColorData;
+
+        public Texture2D m_GpuColorData2D;
         internal GraphicsBuffer m_GpuChunks;
         internal bool m_GpuChunksValid;
         internal GraphicsBuffer m_GpuView;
@@ -375,10 +377,10 @@ namespace GaussianSplatting.Runtime
             m_GpuSHData.SetData(asset.shData.GetData<uint>());
             var (texWidth, texHeight) = GaussianSplatAsset.CalcTextureSize(asset.splatCount);
             var texFormat = GaussianSplatAsset.ColorFormatToGraphics(asset.colorFormat);
-            var tex = new Texture2D(texWidth, texHeight, texFormat, TextureCreationFlags.DontInitializePixels | TextureCreationFlags.IgnoreMipmapLimit | TextureCreationFlags.DontUploadUponCreate) { name = "GaussianColorData" };
-            tex.SetPixelData(asset.colorData.GetData<byte>(), 0);
-            tex.Apply(false, true);
-            m_GpuColorData = tex;
+            m_GpuColorData2D = new Texture2D(texWidth, texHeight, texFormat, TextureCreationFlags.DontInitializePixels | TextureCreationFlags.IgnoreMipmapLimit | TextureCreationFlags.DontUploadUponCreate) { name = "GaussianColorData" };
+            m_GpuColorData2D.SetPixelData(asset.colorData.GetData<byte>(), 0);
+            m_GpuColorData2D.Apply(false, false);
+            m_GpuColorData = m_GpuColorData2D;
             if (asset.chunkData != null && asset.chunkData.dataSize != 0)
             {
                 m_GpuChunks = new GraphicsBuffer(GraphicsBuffer.Target.Structured,

@@ -1,6 +1,7 @@
 using UnityEngine;
 using GaussianSplatting.Runtime;
 using System;
+using Unity.Collections;
 using Oculus.Platform;
 public class GaussianSplatRenderManager : MonoBehaviour, IDisposable
 {
@@ -13,7 +14,8 @@ public class GaussianSplatRenderManager : MonoBehaviour, IDisposable
     [NonSerialized]
     public float[] m_other;
     [NonSerialized]
-    public float[] m_color;
+    public NativeArray<float> m_color;
+
     [NonSerialized]
     public float[] m_SH;
 
@@ -42,6 +44,7 @@ public class GaussianSplatRenderManager : MonoBehaviour, IDisposable
         GetPos();
         GetOther();
         GetShs();
+        GetColor();
     }
     // Function to copy data from m_GpuPosData to m_pos and update splatsNum
     public void GetPos()
@@ -94,6 +97,17 @@ public class GaussianSplatRenderManager : MonoBehaviour, IDisposable
         gpuShsData.GetData(m_SH);
     }
 
+    public void GetColor()
+    {
+        if (m_Render == null)
+        {
+            Debug.LogError("GaussianSplatRenderSystem instance is not initialized.");
+            return;
+        }
+        m_color = new NativeArray<float>(m_Render.asset.colorData.GetData<float>().Length, Allocator.Persistent);
+        NativeArray<float>.Copy(m_Render.asset.colorData.GetData<float>(), m_color);
+    }
+
     public void ScaleToUnitCube()
     {
         // Find the bounding box of the splats
@@ -138,7 +152,7 @@ public class GaussianSplatRenderManager : MonoBehaviour, IDisposable
         // Manually release resources here
         m_pos = null;
         m_other = null;
-        m_color = null;
+        m_color = new NativeArray<float>();
         m_SH = null;
     }
     void OnDestroy()
