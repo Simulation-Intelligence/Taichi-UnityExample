@@ -218,8 +218,6 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         _sphere_velocities = new float[3 * sphere.Length];
         sphere_radii = new float[sphere.Length];
 
-        // new added
-        UnityEngine.Debug.Log("Num of bones at start: " + oculus_skeletons[0].Bones.Count());
         skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
         skeleton_velocities = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats
         hand_sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
@@ -271,9 +269,6 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
             volumeTextureUpdater.targetMaterial = GetComponent<Renderer>().material;
         }
 
-
-
-
         // 24 line segments with 24 capsules in total
         preset_capsule_radius = new float[] { 0,
                                               0,
@@ -305,7 +300,6 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
 
-
         if (renderType == RenderType.PointMesh)
         {
             _Mesh = new Mesh();
@@ -327,8 +321,6 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
             _MeshRenderer.material = pointMaterial;
             bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
         }
-
-
 
         if (UseRecordDate)
         {

@@ -39,6 +39,13 @@ public class Mpm3DGaussian_part : MonoBehaviour
         Raymarching,
         GaussianSplat
     }
+    public enum MaterialType
+    {
+        Customize,
+        Clay,
+        Dough,
+        Elastic_Material
+    }
     public enum PlasticityType
     {
         Von_Mises,
@@ -67,9 +74,11 @@ public class Mpm3DGaussian_part : MonoBehaviour
     [SerializeField]
     private Material raymarchingMaterial;
     [SerializeField]
-    private PlasticityType plasticityType = PlasticityType.Von_Mises;
+    public MaterialType materialType = MaterialType.Customize;
     [SerializeField]
-    private StressType stressType = StressType.NeoHookean;
+    public PlasticityType plasticityType = PlasticityType.Von_Mises;
+    [SerializeField]
+    public StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
     private NdArray<float> x, v, C, dg, grid_v, grid_m, sphere_pos, obstacle_velocities, sphere_velocities, sphere_radius, hand_sdf;
 
@@ -127,11 +136,13 @@ public class Mpm3DGaussian_part : MonoBehaviour
     private int NParticles;
     private float dx, p_vol, p_mass, v_allowed;
 
+    public bool isFixed = false;
+
     [Header("Scalars")]
     [SerializeField]
-    private float E = 1e4f;
+    public float E = 1e4f;
     [SerializeField]
-    private float SigY = 1000, nu = 0.3f, colide_factor = 0.5f, friction_k = 0.4f, p_rho = 1000, min_clamp = 0.1f, max_clamp = 0.1f, friction_angle = 30;
+    public float SigY = 1000, nu = 0.3f, colide_factor = 0.5f, friction_k = 0.4f, p_rho = 1000, min_clamp = 0.1f, max_clamp = 0.1f, friction_angle = 30;
 
     private float mu, lambda, sin_phi, alpha;
 
