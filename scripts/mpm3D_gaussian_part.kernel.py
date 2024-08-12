@@ -65,10 +65,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     neighbour = (3,) * dim
 
     @ti.kernel 
-    def substep_reset_grid(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3)):
+    def substep_reset_grid(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for I in ti.grouped(grid_m):
-            grid_v[I] = [0, 0, 0]
-            grid_m[I] = 0
+            # pos=I*dx+dx*0.5
+            # if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
+                grid_v[I] = [0, 0, 0]
+                grid_m[I] = 0
             
     @ti.kernel
     def substep_neohookean_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
@@ -393,7 +395,13 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             if(x[I][0]>min_x and x[I][0]<max_x and x[I][1]>min_y and x[I][1]<max_y and x[I][2]>min_z and x[I][2]<max_z):
                 max_speed[0] = ti.atomic_max(max_speed[0], v[I].norm())
     
-    
+    @ti.kernel
+    def normalize_m(grid_m: ti.types.ndarray(ndim=3),max_m:ti.f32):
+        for I in ti.grouped(grid_m):
+            grid_m[I] /= max_m
+            
+
+
     @ti.kernel
     def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2), 
                                    skeleton_velocities: ti.types.ndarray(ndim=2),
@@ -600,6 +608,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     p_mass = ti.ndarray(ti.f32, shape=(n_particles))
     p_vol = ti.ndarray(ti.f32, shape=(n_particles))
 
+    max_m=_p_mass*particle_per_grid
+
     #boundary
     min_x = 0.1
     max_x = 0.9
@@ -609,7 +619,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     max_z = 0.9
     
     def substep():
-        substep_reset_grid(grid_v, grid_m)
+        substep_reset_grid(grid_v, grid_m, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_p2g(x, v, C,  dg, grid_v, grid_m,E,nu,material,p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -625,6 +635,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_apply_Drucker_Prager_plasticity(dg, x,lambda_0, mu_0, _alpha, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_plasticity(dg, x,E,nu, material,SigY,alpha,min_clamp,max_clamp, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_get_max_speed(v,x, max_speed, min_x, max_x, min_y, max_y, min_z, max_z)
+        normalize_m(grid_m,max_m)
     
     def run_aot():
         mod = ti.aot.Module(arch)
@@ -653,6 +664,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(init_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'other_data': other_data})
         mod.add_kernel(substep_update_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'dg': dg, 'other_data': other_data, 'init_sh': init_sh, 'sh': sh, 'x': x})
         mod.add_kernel(scale_to_unit_cube, template_args={'x': x, 'other_data': other_data})
+
+        mod.add_kernel(normalize_m, template_args={'grid_m': grid_m})
 
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part.kernel.tcm")
         print("AOT done")

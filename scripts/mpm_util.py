@@ -369,3 +369,10 @@ def calculate_point_segment_distance(point: ti.types.vector(3, ti.f32), start: t
         Pb = start + b * v
         distance = (point - Pb)
     return DistanceResult(distance=distance, b=b)
+
+@ti.func
+def simplex_noise(p):
+    # Placeholder for Simplex Noise implementation.
+    # You can use an existing Simplex Noise function or implement it yourself.
+    # For now, let's return a dummy value (e.g., zero).
+    return ti.abs(ti.sin(p.x) * ti.sin(p.y) * ti.sin(p.z))

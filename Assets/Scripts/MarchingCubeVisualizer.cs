@@ -1,0 +1,58 @@
+using UnityEngine;
+
+namespace MarchingCubes
+{
+
+    class MarchingCubeVisualizer : MonoBehaviour
+    {
+        #region Editable attributes
+        public Vector3Int _dimensions = new Vector3Int(64, 64, 64);
+        public float _gridScale = 1.0f / 64;
+        [SerializeField] int _triangleBudget = 65536 * 16;
+
+        #endregion
+
+        #region Project asset references
+        [SerializeField] ComputeShader _builderCompute = null;
+
+        #endregion
+
+        #region Target isovalue
+
+        public float TargetValue = 0.4f;
+
+        #endregion
+
+        #region Private members
+
+        int VoxelCount => _dimensions.x * _dimensions.y * _dimensions.z;
+
+        public ComputeBuffer _voxelBuffer;
+        MeshBuilder _builder;
+
+        #endregion
+
+        #region MonoBehaviour implementation
+
+        public void Init()
+        {
+            _voxelBuffer = new ComputeBuffer(VoxelCount, sizeof(float));
+            _builder = new MeshBuilder(_dimensions, _triangleBudget, _builderCompute);
+        }
+
+        void OnDestroy()
+        {
+            _voxelBuffer.Dispose();
+            _builder.Dispose();
+        }
+
+        void Update()
+        {
+            _builder.BuildIsosurface(_voxelBuffer, TargetValue, _gridScale);
+            GetComponent<MeshFilter>().sharedMesh = _builder.Mesh;
+        }
+
+        #endregion
+    }
+
+} // namespace MarchingCubes
