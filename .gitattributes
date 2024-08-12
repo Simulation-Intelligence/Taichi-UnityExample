@@ -5,3 +5,4 @@
 *.a filter=lfs diff=lfs merge=lfs -text
 wolf.ply filter=lfs diff=lfs merge=lfs -text
 *.unity filter=lfs diff=lfs merge=lfs -text
+*.exr filter=lfs diff=lfs merge=lfs -text
