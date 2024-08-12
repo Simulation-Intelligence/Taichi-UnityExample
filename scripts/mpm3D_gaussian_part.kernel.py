@@ -383,6 +383,21 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         for i in range(x.shape[0]):
             x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size+ (0.5-cube_size/2), ti.random() * cube_size+(0.5-cube_size/2)]
             dg[i] = ti.Matrix.identity(float, dim)
+    
+    @ti.kernel
+    def init_sphere(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1),cube_size:ti.f32):
+        for i in range(x.shape[0]):
+            #init a sphere
+            dg[i] = ti.Matrix.identity(float, dim)
+            while True:
+                # 随机生成点的每一维度的坐标
+                rand_pos = ti.Vector([ti.random() * 2 - 1 for _ in range(dim)])
+                # 判断点是否在单位球内
+                if rand_pos.norm() <= 1.0:
+                    # 将点归一化后，缩放并平移到目标位置
+                    x[i] = rand_pos * cube_size + 0.5
+                    dg[i] = ti.Matrix.identity(float, dim)
+                    break
 
     @ti.kernel
     def init_dg(dg: ti.types.ndarray(ndim=1)):
@@ -648,6 +663,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_apply_Von_Mises_plasticity, template_args={'dg': dg,'x': x})
         mod.add_kernel(substep_apply_clamp_plasticity, template_args={'dg': dg,'x': x})
         mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'dg': dg})
+        mod.add_kernel(init_sphere, template_args={'x': x, 'dg': dg})
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'x': x,'max_speed': max_speed})
@@ -674,6 +690,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     if run:
         gui = ti.GUI('MPM3D', res=(800, 800))
         init_particles(x, v, dg,cube_size)
+        init_sphere(x, dg,cube_size)
         scale_to_unit_cube(x,  other_data, 0.1)
         init_dg(dg)
         init_gaussian_data(init_rotation, init_scale, other_data)

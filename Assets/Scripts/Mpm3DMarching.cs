@@ -32,7 +32,7 @@ public class Mpm3DMarching : MonoBehaviour
     _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_update_grid_v, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
-     _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube,
+     _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere,
      _Kernel_normalize_m;
 
     public enum RenderType
@@ -41,6 +41,11 @@ public class Mpm3DMarching : MonoBehaviour
         Raymarching,
         GaussianSplat,
         MarchingCubes
+    }
+    public enum InitShape
+    {
+        Cube,
+        Sphere,
     }
     public enum PlasticityType
     {
@@ -99,6 +104,9 @@ public class Mpm3DMarching : MonoBehaviour
 
     [SerializeField]
     MarchingCubeVisualizer marchingCubeVisualizer;
+
+    [SerializeField]
+    InitShape initShape = InitShape.Cube;
 
     [SerializeField]
     private Vector3 g = new(0, -9.8f, 0);
@@ -196,6 +204,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_scale_to_unit_cube = kernels["scale_to_unit_cube"];
 
             _Kernel_normalize_m = kernels["normalize_m"];
+            _Kernel_init_sphere = kernels["init_sphere"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -398,7 +407,10 @@ public class Mpm3DMarching : MonoBehaviour
         else
         {
             //kernel initialize
-            _Kernel_init_particles.LaunchAsync(x, v, dg, cube_size);
+            if (initShape == InitShape.Cube)
+                _Kernel_init_particles.LaunchAsync(x, v, dg, cube_size);
+            else if (initShape == InitShape.Sphere)
+                _Kernel_init_sphere.LaunchAsync(x, dg, cube_size / 2);
         }
     }
     public void Init_gaussian()
@@ -608,13 +620,13 @@ public class Mpm3DMarching : MonoBehaviour
                     }
                     if (IntersectwithHand(oculus_hands))
                     {
-                        // if (transform.localScale.x > 0.5f)
-                        // {
-                        //     _Kernel_substep_calculate_hand_hash.LaunchAsync(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell);
-                        //     _Kernel_substep_calculate_hand_sdf_hash.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell,
-                        //     boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                        // }
-                        // else
+                        if (transform.localScale.x > 1.0f)
+                        {
+                            _Kernel_substep_calculate_hand_hash.LaunchAsync(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell);
+                            _Kernel_substep_calculate_hand_sdf_hash.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell,
+                            boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                        }
+                        else
                         {
                             _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx,
                             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
