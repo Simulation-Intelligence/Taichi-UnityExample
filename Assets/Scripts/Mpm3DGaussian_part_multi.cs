@@ -583,6 +583,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         }
         Runtime.Submit();
     }
+    
     public void MergeAndUpdate(Mpm3DGaussian_part_multi other)
     {
         var otherRender = other.splatManager.m_Render;
@@ -597,6 +598,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         MergeMaterials(other);
         otherRender.gameObject.SetActive(false);
     }
+    
     private void MergeRenders(GaussianSplatRenderer otherRender)
     {
         var render = splatManager.m_Render;
@@ -611,6 +613,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         render.EditSetSplatCount(totalSplats);
         otherRender.EditCopySplatsInto(render, 0, copyDstOffset, otherRender.splatCount);
     }
+
     private void MergeMaterials(Mpm3DGaussian_part_multi other)
     {
         E_host = E_host.Concat(other.E_host).ToArray();
@@ -675,6 +678,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         tex.Apply(false, true);
         splatManager.m_Render.m_GpuColorData = tex;
     }
+
     public void Reset()
     {
         Init_gaussian();

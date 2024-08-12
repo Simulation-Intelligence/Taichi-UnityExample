@@ -17,6 +17,7 @@ class UIManager : MonoBehaviour
     private List<GameObject> createdObjectLists = new List<GameObject>(); 
     private GameObject selectedObject;
     
+    // UI Components
     public GameObject UI_canvas;
     public Transform UI_anchor;
     private Vector3 canvas_anchor_offset;
@@ -26,19 +27,15 @@ class UIManager : MonoBehaviour
     private OVRHand[] oculus_hands;
     [SerializeField]
     private OVRSkeleton[] oculus_skeletons;
-    [SerializeField]
-    private Button[] buttons;
-    [SerializeField]
-    private Toggle[] toggles;
-    [SerializeField]
-    private TMP_Dropdown[] dropdowns;
-    [SerializeField]
-    private InputField[] inputFields;
-    [SerializeField]
-    private TMP_InputField[] tmpInputFields;
-    [SerializeField]
+    public Button[] buttons;
+    public GameObject mergePrompt;
+    private bool isMerging = false;
+    public Toggle[] toggles;
+    public TMP_Dropdown[] dropdowns;
+    public InputField[] inputFields;
+    public TMP_InputField[] tmpInputFields;
     public GameObject[] parameterObjects;
-    private TouchScreenKeyboard overlayKeyboard;
+    public TouchScreenKeyboard overlayKeyboard;
 
     void Start()
     {
@@ -82,17 +79,38 @@ class UIManager : MonoBehaviour
     
     void Update()
     {
+        // Find the last grabbed object as the selected object for further manipulations
         if (createdObjectLists != null)
         {
             foreach (var createdObject in createdObjectLists)
             {
                 var _grabbable = createdObject.GetComponent<Grabbable>();
-                if (_grabbable.SelectingPointsCount > 0)
-                {
-                    selectedObject = createdObject;
-                    Debug.Log("Object " + selectedObject.name + " is selected");
-                    break;
-                }
+                // if (_grabbable.SelectingPointsCount > 0)
+                // {
+                //     // Merge the object with another object
+                //     if (isMerging)
+                //     {
+                //         GameObject objectToMerge = createdObject;
+                //         if (selectedObject != null && objectToMerge != null && selectedObject != objectToMerge)
+                //         {
+                //             Mpm3DGaussian_part_multi mpm3DSimulation = selectedObject.GetComponent<Mpm3DGaussian_part_multi>();
+                //             if (mpm3DSimulation != null)
+                //             {
+                //                 mpm3DSimulation.MergeAndUpdate(objectToMerge.GetComponent<Mpm3DGaussian_part_multi>());
+                //                 Debug.Log("Merge object " + selectedObject.name + " with object " + objectToMerge.name);
+                //                 isMerging = false;
+                //                 mergePrompt.SetActive(false);
+                //                 objectToMerge = null;
+                //             }
+                //         }              
+                //     }
+                //     else
+                //     {
+                //         selectedObject = createdObject;
+                //         Debug.Log("Object " + selectedObject.name + " is selected");
+                //     }
+                //     break;
+                // }
             }
         }
     }
@@ -159,15 +177,15 @@ class UIManager : MonoBehaviour
                 }
             }
             
-            Debug.Log("Mpm3DObject" + newMpm3DObject.name + " is created and selected");
-            Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
-            Debug.Log("materialType: " + mpm3DSimulation.materialType);
-            Debug.Log("plasticityType: " + mpm3DSimulation.plasticityType);
-            Debug.Log("stressType: " + mpm3DSimulation.stressType);
-            Debug.Log("E: " + mpm3DSimulation._E);
-            Debug.Log("SigY: " + mpm3DSimulation._SigY);
-            Debug.Log("nu: " + mpm3DSimulation._nu);
-            Debug.Log("colide_factor: " + mpm3DSimulation.colide_factor);
+            // Debug.Log("Mpm3DObject" + newMpm3DObject.name + " is created and selected");
+            // Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
+            // Debug.Log("materialType: " + mpm3DSimulation.materialType);
+            // Debug.Log("plasticityType: " + mpm3DSimulation.plasticityType);
+            // Debug.Log("stressType: " + mpm3DSimulation.stressType);
+            // Debug.Log("E: " + mpm3DSimulation._E);
+            // Debug.Log("SigY: " + mpm3DSimulation._SigY);
+            // Debug.Log("nu: " + mpm3DSimulation._nu);
+            // Debug.Log("colide_factor: " + mpm3DSimulation.colide_factor);
         }
     }
     
@@ -180,9 +198,35 @@ class UIManager : MonoBehaviour
         {
             CreateNewMpm3DObject();
         }
-        
-        // Reset the object with original parameters
         // Merge the object with another object
+        if (button.name == "Button_MergeObject")
+        {
+            if (selectedObject != null)
+            {
+                if (button.GetComponentInChildren<TMP_Text>().text == "Merge")
+                {
+                    button.GetComponentInChildren<TMP_Text>().text = "Cancel Merging";
+                    mergePrompt.SetActive(true);
+                    mergePrompt.GetComponent<TMP_Text>().text = "Please select an object to merge";
+                    isMerging = true;
+                }
+                else
+                {
+                    button.GetComponentInChildren<TMP_Text>().text = "Merge";
+                    mergePrompt.SetActive(false);
+                    isMerging = false;
+                }
+            }
+        }
+        // Reset the object with original parameters
+        if (button.name == "Button_ResetObject")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DGaussian_part_multi mpm3DSimulation = selectedObject.GetComponent<Mpm3DGaussian_part_multi>();
+                mpm3DSimulation.Reset();
+            }
+        }
         // Delete the object from the scene
     }
     
@@ -251,7 +295,6 @@ class UIManager : MonoBehaviour
             UI_canvas.transform.rotation = UI_anchor.rotation;
         }
     }
-
     public void ShowSlectedObjectCanvas()
     {
         if (UI_canvas != null && oculus_hands[1].IsTracked && sceneCamera != null)
