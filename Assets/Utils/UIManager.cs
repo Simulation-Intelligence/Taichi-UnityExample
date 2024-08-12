@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
+using Oculus.Interaction;
 
 class UIManager : MonoBehaviour
 {
@@ -81,13 +82,17 @@ class UIManager : MonoBehaviour
     
     void Update()
     {
-        foreach (var createdObject in createdObjectLists)
+        if (createdObjectLists != null)
         {
-            var grabbedEventSender = createdObject.GetComponent<ObjectGrabbedEventSender>();
-            if (grabbedEventSender != null && grabbedEventSender.isGrabbed)
+            foreach (var createdObject in createdObjectLists)
             {
-                selectedObject = createdObject;
-                break;
+                var _grabbable = createdObject.GetComponent<Grabbable>();
+                if (_grabbable.SelectingPointsCount > 0)
+                {
+                    selectedObject = createdObject;
+                    Debug.Log("Object " + selectedObject.name + " is selected");
+                    break;
+                }
             }
         }
     }
@@ -107,58 +112,52 @@ class UIManager : MonoBehaviour
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
             
-            // Add a collider for ray casting selection
-            // if (newMpm3DObject.GetComponent<Collider>() == null)
+            // Store the object parameters when creating the object
+            Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
+            
+            // foreach (Toggle toggle in toggles)
             // {
-            //     newMpm3DObject.AddComponent<BoxCollider>();
+            //     if (toggle.name == "Toggle_FixObject")
+            //     {
+            //         mpm3DSimulation.isFixed = toggle.isOn;
+            //     }
             // }
             
-            // Store the object parameters when creating the object
-            Mpm3DSolidSDF mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DSolidSDF>();
+            // foreach (TMP_Dropdown dropdown in dropdowns)
+            // {
+            //     if (dropdown.name == "Dropdown_MaterialType")
+            //     {
+            //         mpm3DSimulation.materialType = (Mpm3DGaussian_part_multi.MaterialType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.MaterialType), dropdown.value.ToString());
+            //     }
+            //     if (dropdown.name == "Dropdown_PlasticityType")
+            //     {
+            //         mpm3DSimulation.plasticityType = (Mpm3DGaussian_part_multi.PlasticityType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.PlasticityType), dropdown.value.ToString());
+            //     }
+            //     if (dropdown.name == "Dropdown_StressType")
+            //     {
+            //         mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
+            //     }
+            // }
             
-            foreach (Toggle toggle in toggles)
-            {
-                if (toggle.name == "Toggle_FixObject")
-                {
-                    mpm3DSimulation.isFixed = toggle.isOn;
-                }
-            }
-            
-            foreach (TMP_Dropdown dropdown in dropdowns)
-            {
-                if (dropdown.name == "Dropdown_MaterialType")
-                {
-                    mpm3DSimulation.materialType = (Mpm3DSolidSDF.MaterialType)Enum.Parse(typeof(Mpm3DSolidSDF.MaterialType), dropdown.value.ToString());
-                }
-                if (dropdown.name == "Dropdown_PlasticityType")
-                {
-                    mpm3DSimulation.plasticityType = (Mpm3DSolidSDF.PlasticityType)Enum.Parse(typeof(Mpm3DSolidSDF.PlasticityType), dropdown.value.ToString());
-                }
-                if (dropdown.name == "Dropdown_StressType")
-                {
-                    mpm3DSimulation.stressType = (Mpm3DSolidSDF.StressType)Enum.Parse(typeof(Mpm3DSolidSDF.StressType), dropdown.value.ToString());
-                }
-            }
-            
-            foreach (GameObject parameter in parameterObjects)
-            {
-                if (parameter.name == "Parameter_E")
-                {
-                    mpm3DSimulation.E = parameter.GetComponentInChildren<Slider>().value;
-                }
-                else if (parameter.name == "Parameter_SigY")
-                {
-                    mpm3DSimulation.SigY = parameter.GetComponentInChildren<Slider>().value;
-                }
-                else if (parameter.name == "Parameter_Nu")
-                {
-                    mpm3DSimulation.nu = parameter.GetComponentInChildren<Slider>().value;
-                }
-                else if (parameter.name == "Parameter_ColideFactor")
-                {
-                    mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
-                }
-            }
+            // foreach (GameObject parameter in parameterObjects)
+            // {
+            //     if (parameter.name == "Parameter_E")
+            //     {
+            //         mpm3DSimulation.E = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            //     else if (parameter.name == "Parameter_SigY")
+            //     {
+            //         mpm3DSimulation.SigY = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            //     else if (parameter.name == "Parameter_Nu")
+            //     {
+            //         mpm3DSimulation.nu = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            //     else if (parameter.name == "Parameter_ColideFactor")
+            //     {
+            //         mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            // }
         }
     }
     
@@ -250,7 +249,7 @@ class UIManager : MonoBehaviour
             // Open the UI canvas for the object just grabbed
             if (selectedObject != null)
             {
-                Mpm3DSolidSDF mpm3DSimulation = selectedObject.GetComponent<Mpm3DSolidSDF>();
+                Mpm3DGaussian_part_multi mpm3DSimulation = selectedObject.GetComponent<Mpm3DGaussian_part_multi>();
                 if (mpm3DSimulation != null)
                 {
                     // Set the toggle, dropdown, and slider values accordingly
@@ -282,15 +281,15 @@ class UIManager : MonoBehaviour
                     {
                         if (parameter.name == "Parameter_E")
                         {
-                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.E;
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation._E;
                         }
                         else if (parameter.name == "Parameter_SigY")
                         {
-                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.SigY;
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation._SigY;
                         }
                         else if (parameter.name == "Parameter_Nu")
                         {
-                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.nu;
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation._nu;
                         }
                         else if (parameter.name == "Parameter_ColideFactor")
                         {

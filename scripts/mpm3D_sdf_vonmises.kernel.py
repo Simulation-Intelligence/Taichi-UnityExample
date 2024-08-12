@@ -363,7 +363,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             pos = I * dx + dx * 0.5
             min_dist = float('inf')
             cell = get_hash(pos, n_grid)
-            norm= ti.Vector([0.0, 0.0, 0.0])
+            norm = ti.Vector([0.0, 0.0, 0.0])
 
             for offset_x, offset_y, offset_z in ti.ndrange((-2, 3), (-2, 3), (-2, 3)):
                 neighbor_cell = cell + ti.Vector([offset_x, offset_y, offset_z])

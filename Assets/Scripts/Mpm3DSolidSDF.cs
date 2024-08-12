@@ -68,7 +68,7 @@ public class Mpm3DSolidSDF : MonoBehaviour
     private Material pointMaterial;
     [SerializeField]
     private Material raymarchingMaterial;
-     [SerializeField]
+    [SerializeField]
     public MaterialType materialType = MaterialType.Customize;
     [SerializeField]
     public PlasticityType plasticityType = PlasticityType.Von_Mises;
