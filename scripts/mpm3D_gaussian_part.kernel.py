@@ -453,6 +453,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 if (0 <= I < n_grid).all():
                     idx = ti.atomic_add(segments_count_per_cell[I], 1)
                     hash_table[I, idx] = i
+    
     @ti.kernel
     def substep_calculate_hand_sdf_hash(skeleton_segments: ti.types.ndarray(ndim=2),
                                         skeleton_velocities: ti.types.ndarray(ndim=2),

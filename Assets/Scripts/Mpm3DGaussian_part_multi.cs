@@ -39,6 +39,13 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         Raymarching,
         GaussianSplat
     }
+    public enum MaterialType
+    {
+        Customize,
+        Clay,
+        Dough,
+        Elastic_Material
+    }
     public enum PlasticityType
     {
         Von_Mises,
@@ -67,9 +74,11 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
     [SerializeField]
     private Material raymarchingMaterial;
     [SerializeField]
-    private PlasticityType plasticityType = PlasticityType.Von_Mises;
+    public MaterialType materialType = MaterialType.Customize;
     [SerializeField]
-    private StressType stressType = StressType.NeoHookean;
+    public PlasticityType plasticityType = PlasticityType.Von_Mises;
+    [SerializeField]
+    public StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
     private NdArray<float> x, v, C, dg, grid_v, grid_m, sphere_pos, obstacle_velocities, sphere_velocities, sphere_radius, hand_sdf;
 
@@ -104,6 +113,8 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
     private float max_dt = 1e-4f, frame_time = 0.005f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
     [SerializeField]
     bool use_correct_cfl = false;
+    public bool isFixed = false;
+
 
     [SerializeField]
     private float hand_simulation_radius = 0.5f;
@@ -121,8 +132,6 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
     private OVRHand[] oculus_hands;
     [SerializeField]
     private OVRSkeleton[] oculus_skeletons;
-    [SerializeField]
-    private float Skeleton_capsule_radius = 0.01f;
     private float[] preset_capsule_radius;
     private int skeleton_num_capsules = 24; // use default 24
     private int NParticles;
@@ -130,13 +139,13 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
 
     [Header("Scalars")]
     [SerializeField]
-    private float _E = 1e4f;
+    public float _E = 1e4f;
     [SerializeField]
-    private float _SigY = 1000, _nu = 0.3f, colide_factor = 0.5f, friction_k = 0.4f, p_rho = 1000, _min_clamp = 0.1f, _max_clamp = 0.1f, friction_angle = 30;
+    public float _SigY = 1000, _nu = 0.3f, colide_factor = 0.5f, friction_k = 0.4f, p_rho = 1000, _min_clamp = 0.1f, _max_clamp = 0.1f, friction_angle = 30;
 
     private float[] E_host, SigY_host, nu_host, min_clamp_host, max_clamp_host, alpha_host, p_vol_host, p_mass_host;
 
-    private int[] material_host;//upper 16bits: 3: # Drucker_Prager  1:  # Von_Mises 2:  # Clamp 0:  # Elastic  lower 16bits: 0:  # neohookean 1:  # kirchhoff
+    private int[] material_host; //upper 16bits: 3: # Drucker_Prager  1:  # Von_Mises 2:  # Clamp 0:  # Elastic  lower 16bits: 0:  # neohookean 1:  # kirchhoff
 
     private float mu, lambda, sin_phi, _alpha;
 
@@ -209,8 +218,6 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         _sphere_velocities = new float[3 * sphere.Length];
         sphere_radii = new float[sphere.Length];
 
-        // new added
-        UnityEngine.Debug.Log("Num of bones at start: " + oculus_skeletons[0].Bones.Count());
         skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
         skeleton_velocities = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats
         hand_sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
@@ -262,9 +269,6 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
             volumeTextureUpdater.targetMaterial = GetComponent<Renderer>().material;
         }
 
-
-
-
         // 24 line segments with 24 capsules in total
         preset_capsule_radius = new float[] { 0,
                                               0,
@@ -296,7 +300,6 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
 
-
         if (renderType == RenderType.PointMesh)
         {
             _Mesh = new Mesh();
@@ -318,8 +321,6 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
             _MeshRenderer.material = pointMaterial;
             bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
         }
-
-
 
         if (UseRecordDate)
         {
@@ -582,6 +583,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         }
         Runtime.Submit();
     }
+    
     public void MergeAndUpdate(Mpm3DGaussian_part_multi other)
     {
         var otherRender = other.splatManager.m_Render;
@@ -596,6 +598,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         MergeMaterials(other);
         otherRender.gameObject.SetActive(false);
     }
+    
     private void MergeRenders(GaussianSplatRenderer otherRender)
     {
         var render = splatManager.m_Render;
@@ -610,6 +613,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         render.EditSetSplatCount(totalSplats);
         otherRender.EditCopySplatsInto(render, 0, copyDstOffset, otherRender.splatCount);
     }
+
     private void MergeMaterials(Mpm3DGaussian_part_multi other)
     {
         E_host = E_host.Concat(other.E_host).ToArray();
@@ -674,6 +678,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         tex.Apply(false, true);
         splatManager.m_Render.m_GpuColorData = tex;
     }
+
     public void Reset()
     {
         Init_gaussian();
