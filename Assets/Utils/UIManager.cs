@@ -123,13 +123,13 @@ class UIManager : MonoBehaviour
             Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
             
             GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
-            createdObjectLists.Add(newMpm3DObject);
-            // Use the just created object as the selected object
-            selectedObject = newMpm3DObject;
-            newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
+            // createdObjectLists.Add(newMpm3DObject);
+            // // Use the just created object as the selected object
+            // selectedObject = newMpm3DObject;
+            // newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
             
-            // Store the object parameters when creating the object
-            Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
+            // // Store the object parameters when creating the object
+            // Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
             
             // foreach (Toggle toggle in toggles)
             // {
