@@ -83,32 +83,39 @@ class UIManager : MonoBehaviour
             foreach (var createdObject in createdObjectLists)
             {
                 var _grabbable = createdObject.GetComponent<Grabbable>();
-                // if (_grabbable.SelectingPointsCount > 0)
-                // {
-                //     // Merge the object with another object
-                //     if (isMerging)
-                //     {
-                //         GameObject objectToMerge = createdObject;
-                //         if (selectedObject != null && objectToMerge != null && selectedObject != objectToMerge)
-                //         {
-                //             Mpm3DGaussian_part_multi mpm3DSimulation = selectedObject.GetComponent<Mpm3DGaussian_part_multi>();
-                //             if (mpm3DSimulation != null)
-                //             {
-                //                 mpm3DSimulation.MergeAndUpdate(objectToMerge.GetComponent<Mpm3DGaussian_part_multi>());
-                //                 Debug.Log("Merge object " + selectedObject.name + " with object " + objectToMerge.name);
-                //                 isMerging = false;
-                //                 mergePrompt.SetActive(false);
-                //                 objectToMerge = null;
-                //             }
-                //         }              
-                //     }
-                //     else
-                //     {
-                //         selectedObject = createdObject;
-                //         Debug.Log("Object " + selectedObject.name + " is selected");
-                //     }
-                //     break;
-                // }
+                if (_grabbable.SelectingPointsCount > 0)
+                {
+                    // Merge the object with another object
+                    if (isMerging)
+                    {
+                        GameObject objectToMerge = createdObject;
+                        if (selectedObject != null && objectToMerge != null && selectedObject != objectToMerge)
+                        {
+                            Mpm3DGaussian_part_multi mpm3DSimulation = selectedObject.GetComponent<Mpm3DGaussian_part_multi>();
+                            if (mpm3DSimulation != null)
+                            {
+                                mpm3DSimulation.MergeAndUpdate(objectToMerge.GetComponent<Mpm3DGaussian_part_multi>());
+                                Debug.Log("Merge object " + selectedObject.name + " with object " + objectToMerge.name);
+                                isMerging = false;
+                                mergePrompt.SetActive(false);
+                                objectToMerge = null;
+                                foreach (Button button in buttons)
+                                {
+                                    if (button.name == "Button_MergeObject")
+                                    {
+                                        button.GetComponentInChildren<TMP_Text>().text = "Merge";
+                                    }
+                                }
+                            }
+                        }              
+                    }
+                    else
+                    {
+                        selectedObject = createdObject;
+                        Debug.Log("Object " + selectedObject.name + " is selected");
+                    }
+                    break;
+                }
             }
         }
     }
@@ -123,57 +130,57 @@ class UIManager : MonoBehaviour
             Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
             
             GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
-            // createdObjectLists.Add(newMpm3DObject);
-            // // Use the just created object as the selected object
-            // selectedObject = newMpm3DObject;
-            // newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
+            createdObjectLists.Add(newMpm3DObject);
+            // Use the just created object as the selected object for further interactions
+            selectedObject = newMpm3DObject;
+            newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
             
-            // // Store the object parameters when creating the object
-            // Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
+            // Store the object parameters when creating the object
+            Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
             
-            // foreach (Toggle toggle in toggles)
-            // {
-            //     if (toggle.name == "Toggle_FixObject")
-            //     {
-            //         mpm3DSimulation.isFixed = toggle.isOn;
-            //     }
-            // }
+            foreach (Toggle toggle in toggles)
+            {
+                if (toggle.name == "Toggle_FixObject")
+                {
+                    mpm3DSimulation.isFixed = toggle.isOn;
+                }
+            }
             
-            // foreach (TMP_Dropdown dropdown in dropdowns)
-            // {
-            //     if (dropdown.name == "Dropdown_MaterialType")
-            //     {
-            //         mpm3DSimulation.materialType = (Mpm3DGaussian_part_multi.MaterialType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.MaterialType), dropdown.value.ToString());
-            //     }
-            //     if (dropdown.name == "Dropdown_PlasticityType")
-            //     {
-            //         mpm3DSimulation.plasticityType = (Mpm3DGaussian_part_multi.PlasticityType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.PlasticityType), dropdown.value.ToString());
-            //     }
-            //     if (dropdown.name == "Dropdown_StressType")
-            //     {
-            //         mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
-            //     }
-            // }
+            foreach (TMP_Dropdown dropdown in dropdowns)
+            {
+                if (dropdown.name == "Dropdown_MaterialType")
+                {
+                    mpm3DSimulation.materialType = (Mpm3DGaussian_part_multi.MaterialType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.MaterialType), dropdown.value.ToString());
+                }
+                if (dropdown.name == "Dropdown_PlasticityType")
+                {
+                    mpm3DSimulation.plasticityType = (Mpm3DGaussian_part_multi.PlasticityType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.PlasticityType), dropdown.value.ToString());
+                }
+                if (dropdown.name == "Dropdown_StressType")
+                {
+                    mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
+                }
+            }
             
-            // foreach (GameObject parameter in parameterObjects)
-            // {
-            //     if (parameter.name == "Parameter_E")
-            //     {
-            //         mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
-            //     }
-            //     else if (parameter.name == "Parameter_SigY")
-            //     {
-            //         mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
-            //     }
-            //     else if (parameter.name == "Parameter_Nu")
-            //     {
-            //         mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
-            //     }
-            //     else if (parameter.name == "Parameter_ColideFactor")
-            //     {
-            //         mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
-            //     }
-            // }
+            foreach (GameObject parameter in parameterObjects)
+            {
+                if (parameter.name == "Parameter_E")
+                {
+                    mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
+                }
+                else if (parameter.name == "Parameter_SigY")
+                {
+                    mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
+                }
+                else if (parameter.name == "Parameter_Nu")
+                {
+                    mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
+                }
+                else if (parameter.name == "Parameter_ColideFactor")
+                {
+                    mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
+                }
+            }
             
             // Debug.Log("Mpm3DObject" + newMpm3DObject.name + " is created and selected");
             // Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
