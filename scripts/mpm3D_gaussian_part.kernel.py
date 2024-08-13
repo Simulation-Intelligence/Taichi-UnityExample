@@ -563,7 +563,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 if x[i][2] > max_val[2]:
                     max_val[2] = x[i][2]
 
-
+    
         center = (min_val + max_val) / 2.0
         size = max_val - min_val
 
@@ -581,6 +581,44 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             other_data[i][2] = scaleFactor*other_data[i][2]
             other_data[i][3] = scaleFactor*other_data[i][3]
 
+    @ti.func
+    def transform_and_merge(x1: ti.types.ndarray(ndim=2), 
+                            x2: ti.types.ndarray(ndim=2), 
+                            x3: ti.types.ndarray(ndim=2), 
+                            mat2: ti.Matrix, 
+                            mat3: ti.Matrix):
+
+        n2 = x2.shape[0]
+        n3 = x3.shape[0]
+
+        # 临时存储合并后的顶点
+        temp_vertices = ti.Vector.field(3, dtype=ti.f32, shape=(n2 + n3))
+
+        # 将 x2 的顶点转换到世界坐标系并复制到 temp_vertices
+        for i in range(n2):
+            transformed_vertex = mat2 @ ti.Vector([x2[i][0], x2[i][1], x2[i][2], 1.0])
+            temp_vertices[i] = transformed_vertex.xyz
+
+        # 将 x3 的顶点转换到世界坐标系并复制到 temp_vertices
+        for i in range(n3):
+            transformed_vertex = mat3 @ ti.Vector([x3[i][0], x3[i][1], x3[i][2], 1.0])
+            temp_vertices[n2 + i] = transformed_vertex.xyz
+
+        # 计算包围盒
+        min_bound = ti.Vector([float('inf'), float('inf'), float('inf')])
+        max_bound = ti.Vector([-float('inf'), -float('inf'), -float('inf')])
+
+        for i in range(n2 + n3):
+            min_bound = ti.min(min_bound, temp_vertices[i])
+            max_bound = ti.max(max_bound, temp_vertices[i])
+
+        # 计算比例缩放因子
+        scale_factor = 1.0 / ti.max(max_bound - min_bound)
+
+        # 将顶点缩放并平移到单位立方体内，同时写入 x1
+        for i in range(n2 + n3):
+            scaled_vertex = (temp_vertices[i] - min_bound) * scale_factor
+            x1[i] = scaled_vertex + 0.5 * ti.Vector([1.0, 1.0, 1.0])
     
     # hand sdf
     hand_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))

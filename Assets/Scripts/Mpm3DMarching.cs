@@ -687,13 +687,13 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
             UnityEngine.Debug.LogError("Other render is null.");
             return;
         }
-        MergeRenders(otherRender);
+        MergeGaussianRenders(otherRender);
         splatManager.init_gaussians();
         Init_gaussian();
         MergeMaterials(other);
         otherRender.gameObject.SetActive(false);
     }
-    private void MergeRenders(GaussianSplatRenderer otherRender)
+    private void MergeGaussianRenders(GaussianSplatRenderer otherRender)
     {
         var render = splatManager.m_Render;
         int totalSplats = render.splatCount + otherRender.splatCount;
@@ -731,7 +731,30 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
 
         Update_materials();
     }
+
     public void AdjustTextureColor(Color rgba)
+    {
+        if (renderType == RenderType.GaussianSplat)
+        {
+            AdjustGaussianTextureColor(rgba);
+        }
+        else if (renderType == RenderType.MarchingCubes)
+        {
+            AdjustMarchingCubeTextureColor(rgba);
+        }
+    }
+    public void AdjustTextureColorRed(float r)
+    {
+        if (renderType == RenderType.GaussianSplat)
+        {
+            AdjustGaussianTextureColorRed(r);
+        }
+        else if (renderType == RenderType.MarchingCubes)
+        {
+            AdjustMarchingCubeTextureColorRed(r);
+        }
+    }
+    void AdjustGaussianTextureColor(Color rgba)
     {
         var colorData = splatManager.m_color;
         var asset = splatManager.m_Render.m_Asset;
@@ -753,7 +776,7 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
         splatManager.m_Render.m_GpuColorData = tex;
 
     }
-    public void AdjustTextureColorRed(float r)
+    void AdjustGaussianTextureColorRed(float r)
     {
         var colorData = splatManager.m_color;
         var asset = splatManager.m_Render.m_Asset;
@@ -770,6 +793,14 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
         tex.SetPixelData(colorData, 0);
         tex.Apply(false, true);
         splatManager.m_Render.m_GpuColorData = tex;
+    }
+    void AdjustMarchingCubeTextureColor(Color rgba)
+    {
+        marchingCubeVisualizer.GetComponent<MeshRenderer>().material.color = rgba;
+    }
+    void AdjustMarchingCubeTextureColorRed(float r)
+    {
+        marchingCubeVisualizer.GetComponent<MeshRenderer>().material.color = new Color(r, 0, 0, 1);
     }
     public void Reset()
     {
