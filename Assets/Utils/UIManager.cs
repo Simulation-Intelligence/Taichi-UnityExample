@@ -34,7 +34,7 @@ class UIManager : MonoBehaviour
     public TMP_InputField[] tmpInputFields;
     public GameObject[] parameterObjects;
     public TouchScreenKeyboard overlayKeyboard;
-
+    
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
@@ -256,8 +256,105 @@ class UIManager : MonoBehaviour
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
         Debug.Log(dropdown.name + " selected: " + dropdown.options[value].text);
+        
+        if (dropdown.name == "Dropdown_PrimitiveShape")
+        {
+            // Select a primitive shape
+            if (dropdown.options[value].text == "Sphere")
+            {
+                CreateMpm3DObject("Sphere");
+            }
+            else if (dropdown.options[value].text == "Cube")
+            {
+                CreateMpm3DObject("Cube");
+            }
+            else if (dropdown.options[value].text == "Cylinder")
+            {
+                CreateMpm3DObject("Cylinder");
+            }
+        }
+        
+        if (dropdown.name == "Dropdown_Color")
+        {
+            // Adjust the color of the primitive shape
+        }
     }
-
+    
+    void CreateMpm3DObject(string prefabName)
+    {   
+        GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/" + prefabName);
+        // if (Mpm3DObject != null)
+        // {
+        //     // Position and name
+        //     Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.1f;
+        //     position.x -= 0.2f;
+        //     Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
+            
+        //     GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
+        //     createdObjectLists.Add(newMpm3DObject);
+        //     // Use the just created object as the selected object for further interactions
+        //     selectedObject = newMpm3DObject;
+        //     newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
+            
+        //     // Store the object parameters when creating the object
+        //     Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
+            
+        //     foreach (Toggle toggle in toggles)
+        //     {
+        //         if (toggle.name == "Toggle_FixObject")
+        //         {
+        //             mpm3DSimulation.isFixed = toggle.isOn;
+        //         }
+        //     }
+            
+        //     foreach (TMP_Dropdown dropdown in dropdowns)
+        //     {
+        //         if (dropdown.name == "Dropdown_MaterialType")
+        //         {
+        //             mpm3DSimulation.materialType = (Mpm3DGaussian_part_multi.MaterialType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.MaterialType), dropdown.value.ToString());
+        //         }
+        //         if (dropdown.name == "Dropdown_PlasticityType")
+        //         {
+        //             mpm3DSimulation.plasticityType = (Mpm3DGaussian_part_multi.PlasticityType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.PlasticityType), dropdown.value.ToString());
+        //         }
+        //         if (dropdown.name == "Dropdown_StressType")
+        //         {
+        //             mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
+        //         }
+        //     }
+            
+        //     foreach (GameObject parameter in parameterObjects)
+        //     {
+        //         if (parameter.name == "Parameter_E")
+        //         {
+        //             mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
+        //         }
+        //         else if (parameter.name == "Parameter_SigY")
+        //         {
+        //             mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
+        //         }
+        //         else if (parameter.name == "Parameter_Nu")
+        //         {
+        //             mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
+        //         }
+        //         else if (parameter.name == "Parameter_ColideFactor")
+        //         {
+        //             mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
+        //         }
+        //     }
+            
+        //     // Debug.Log("Mpm3DObject" + newMpm3DObject.name + " is created and selected");
+        //     // Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
+        //     // Debug.Log("materialType: " + mpm3DSimulation.materialType);
+        //     // Debug.Log("plasticityType: " + mpm3DSimulation.plasticityType);
+        //     // Debug.Log("stressType: " + mpm3DSimulation.stressType);
+        //     // Debug.Log("E: " + mpm3DSimulation._E);
+        //     // Debug.Log("SigY: " + mpm3DSimulation._SigY);
+        //     // Debug.Log("nu: " + mpm3DSimulation._nu);
+        //     // Debug.Log("colide_factor: " + mpm3DSimulation.colide_factor);
+        // }
+    }
+    
     void OnInputFieldSelect(InputField inputField)
     {
         Debug.Log(inputField.name + " was selected!");
@@ -300,6 +397,7 @@ class UIManager : MonoBehaviour
             UI_canvas.transform.rotation = UI_anchor.rotation;
         }
     }
+    
     public void ShowSlectedObjectCanvas()
     {
         if (UI_canvas != null && oculus_hands[1].IsTracked && sceneCamera != null)
