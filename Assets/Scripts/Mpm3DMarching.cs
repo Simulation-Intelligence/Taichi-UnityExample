@@ -216,6 +216,12 @@ public class Mpm3DMarching : MonoBehaviour
         // Taichi Allocate memory, hostwrite are not considered
         grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
+
+        if (sphere == null || sphere.Length == 0)
+        {
+            sphere = new Sphere[] { GameObject.Find("SphereLeft").GetComponent<Sphere>(),
+                                    GameObject.Find("SphereRight").GetComponent<Sphere>() };
+        }
         sphere_pos = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
         sphere_velocities = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
         obstacle_velocities = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
@@ -227,6 +233,16 @@ public class Mpm3DMarching : MonoBehaviour
         sphere_radii = new float[sphere.Length];
 
         // new added
+        if (oculus_hands == null || oculus_hands.Length == 0)
+        {
+            oculus_hands = new OVRHand[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>(),
+                                    GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>() };
+        }
+        if (oculus_skeletons == null || oculus_skeletons.Length == 0)
+        {
+            oculus_skeletons = new OVRSkeleton[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>(),
+                                    GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>() };
+        }
         UnityEngine.Debug.Log("Num of bones at start: " + oculus_skeletons[0].Bones.Count());
         skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
         skeleton_velocities = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats

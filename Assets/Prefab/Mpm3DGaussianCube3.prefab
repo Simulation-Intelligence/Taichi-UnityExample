@@ -125,7 +125,7 @@ GameObject:
   - component: {fileID: 4251696651832615665}
   - component: {fileID: 3594406528518987807}
   m_Layer: 0
-  m_Name: Mpm3DMarchingCubes
+  m_Name: Mpm3DGaussianCube3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -140,7 +140,7 @@ Transform:
   m_GameObject: {fileID: 2207584077386710045}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1, y: 0.92, z: -0.9}
+  m_LocalPosition: {x: 1.66, y: 0.92, z: 1.27}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -214,7 +214,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   volumeTextureUpdater: {fileID: 7521454065021533629}
   Mpm3DModule: {fileID: -8196383504532815311, guid: 49d9fe7f16ccc4848a0a43e84fcedf3b, type: 3}
-  renderType: 3
+  renderType: 2
   handMaterial: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
@@ -235,17 +235,11 @@ MonoBehaviour:
   allowed_cfl: 0.5
   damping: 100
   use_correct_cfl: 0
-  hand_simulation_radius: 0.5
+  hand_simulation_radius: 0.3
   obstacleType: 1
-  sphere:
-  - {fileID: 0}
-  - {fileID: 0}
-  oculus_hands:
-  - {fileID: 0}
-  - {fileID: 0}
-  oculus_skeletons:
-  - {fileID: 0}
-  - {fileID: 0}
+  sphere: []
+  oculus_hands: []
+  oculus_skeletons: []
   Skeleton_capsule_radius: 0.01
   _E: 8000000
   _SigY: 800000
@@ -287,12 +281,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2207584077386710045}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 672671b527f5ea14ea207b5b9589d704, type: 2}
+  m_Asset: {fileID: 11400000, guid: d6501385453c5374191a6e7530511ac0, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
