@@ -154,9 +154,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
 
     private int handMotionIndex = 0;
     private InputAction spaceAction;
-
-    private OVRSkeletonRenderer ovrRend;
-
+    
     [Header("Hand Recording")]
     [SerializeField]
     private bool UseRecordDate = false;
@@ -638,6 +636,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
 
         Update_materials();
     }
+    
     public void AdjustTextureColor(Color rgba)
     {
         var colorData = splatManager.m_color;
@@ -660,6 +659,7 @@ public class Mpm3DGaussian_part_multi : MonoBehaviour
         splatManager.m_Render.m_GpuColorData = tex;
 
     }
+    
     public void AdjustTextureColorRed(float r)
     {
         var colorData = splatManager.m_color;
