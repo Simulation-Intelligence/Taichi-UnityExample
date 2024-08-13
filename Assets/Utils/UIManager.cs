@@ -12,8 +12,6 @@ class UIManager : MonoBehaviour
 {
     [SerializeField]
     private GameObject Mpm3DObject;
-    // use to count the number of Mpm3DObject created
-    private int Mpm3DObject_Count = 0; 
     private List<GameObject> createdObjectLists = new List<GameObject>(); 
     private GameObject selectedObject;
     
@@ -133,49 +131,49 @@ class UIManager : MonoBehaviour
             // Store the object parameters when creating the object
             Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
             
-            foreach (Toggle toggle in toggles)
-            {
-                if (toggle.name == "Toggle_FixObject")
-                {
-                    mpm3DSimulation.isFixed = toggle.isOn;
-                }
-            }
+            // foreach (Toggle toggle in toggles)
+            // {
+            //     if (toggle.name == "Toggle_FixObject")
+            //     {
+            //         mpm3DSimulation.isFixed = toggle.isOn;
+            //     }
+            // }
             
-            foreach (TMP_Dropdown dropdown in dropdowns)
-            {
-                if (dropdown.name == "Dropdown_MaterialType")
-                {
-                    mpm3DSimulation.materialType = (Mpm3DGaussian_part_multi.MaterialType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.MaterialType), dropdown.value.ToString());
-                }
-                if (dropdown.name == "Dropdown_PlasticityType")
-                {
-                    mpm3DSimulation.plasticityType = (Mpm3DGaussian_part_multi.PlasticityType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.PlasticityType), dropdown.value.ToString());
-                }
-                if (dropdown.name == "Dropdown_StressType")
-                {
-                    mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
-                }
-            }
+            // foreach (TMP_Dropdown dropdown in dropdowns)
+            // {
+            //     if (dropdown.name == "Dropdown_MaterialType")
+            //     {
+            //         mpm3DSimulation.materialType = (Mpm3DGaussian_part_multi.MaterialType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.MaterialType), dropdown.value.ToString());
+            //     }
+            //     if (dropdown.name == "Dropdown_PlasticityType")
+            //     {
+            //         mpm3DSimulation.plasticityType = (Mpm3DGaussian_part_multi.PlasticityType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.PlasticityType), dropdown.value.ToString());
+            //     }
+            //     if (dropdown.name == "Dropdown_StressType")
+            //     {
+            //         mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
+            //     }
+            // }
             
-            foreach (GameObject parameter in parameterObjects)
-            {
-                if (parameter.name == "Parameter_E")
-                {
-                    mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
-                }
-                else if (parameter.name == "Parameter_SigY")
-                {
-                    mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
-                }
-                else if (parameter.name == "Parameter_Nu")
-                {
-                    mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
-                }
-                else if (parameter.name == "Parameter_ColideFactor")
-                {
-                    mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
-                }
-            }
+            // foreach (GameObject parameter in parameterObjects)
+            // {
+            //     if (parameter.name == "Parameter_E")
+            //     {
+            //         mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            //     else if (parameter.name == "Parameter_SigY")
+            //     {
+            //         mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            //     else if (parameter.name == "Parameter_Nu")
+            //     {
+            //         mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            //     else if (parameter.name == "Parameter_ColideFactor")
+            //     {
+            //         mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            // }
             
             // Debug.Log("Mpm3DObject" + newMpm3DObject.name + " is created and selected");
             // Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
