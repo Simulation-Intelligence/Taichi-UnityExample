@@ -586,7 +586,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                             x2: ti.types.ndarray(ndim=2), 
                             x3: ti.types.ndarray(ndim=2), 
                             mat2: ti.Matrix, 
-                            mat3: ti.Matrix):
+                            mat3: ti.Matrix,
+                            eps:ti.f32):
 
         n2 = x2.shape[0]
         n3 = x3.shape[0]

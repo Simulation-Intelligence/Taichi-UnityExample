@@ -12,9 +12,9 @@ class UIManager : MonoBehaviour
 {
     [SerializeField]
     private GameObject Mpm3DObject;
-    private List<GameObject> createdObjectLists = new List<GameObject>(); 
+    private List<GameObject> createdObjectLists = new List<GameObject>();
     private GameObject selectedObject;
-    
+
     // UI Components
     public GameObject UI_canvas;
     public Transform UI_anchor;
@@ -34,11 +34,13 @@ class UIManager : MonoBehaviour
     public TMP_InputField[] tmpInputFields;
     public GameObject[] parameterObjects;
     public TouchScreenKeyboard overlayKeyboard;
-    
+
+    //Type Mpm = typeof(Mpm3DGaussian_part_multi);
+
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
-        
+
         foreach (Button button in buttons)
         {
             button.onClick.AddListener(() => OnButtonClick(button));
@@ -57,7 +59,7 @@ class UIManager : MonoBehaviour
         }
         foreach (TMP_InputField tmpInputField in tmpInputFields)
         {
-           tmpInputField.onSelect.AddListener((string value) => OnTMPInputFieldSelect(tmpInputField));
+            tmpInputField.onSelect.AddListener((string value) => OnTMPInputFieldSelect(tmpInputField));
         }
         foreach (GameObject parameter in parameterObjects)
         {
@@ -67,14 +69,14 @@ class UIManager : MonoBehaviour
             {
                 string initial_text = parameter_text.text;
                 parameter_text.text = initial_text + ": " + parameter_slider.value.ToString("F2");
-                parameter_slider.onValueChanged.AddListener((float value) => 
+                parameter_slider.onValueChanged.AddListener((float value) =>
                 {
                     parameter_text.text = initial_text + ": " + value.ToString("F2");
                 });
             }
         }
     }
-    
+
     void Update()
     {
         // Find the last grabbed object as the selected object for further manipulations
@@ -107,7 +109,7 @@ class UIManager : MonoBehaviour
                                     }
                                 }
                             }
-                        }              
+                        }
                     }
                     else
                     {
@@ -119,69 +121,88 @@ class UIManager : MonoBehaviour
             }
         }
     }
-    
+    void apply_material(GameObject newMpm3DObject)
+    {
+        Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
+        //set material value
+        {
+            // mpm3DSimulation._E = 1e6f;
+            // mpm3DSimulation._SigY = 1e5f;
+
+
+        }
+        if (newMpm3DObject != null)
+        {
+            newMpm3DObject.GetComponent<Mpm3DMarching>().Init_materials();
+            newMpm3DObject.GetComponent<Mpm3DMarching>().Update_materials();
+        }
+    }
+
     void CreateNewMpm3DObject()
-    {   
+    {
         if (Mpm3DObject != null)
         {
             // Position and name
             Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.1f;
             position.x -= 0.2f;
             Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
-            
+
             GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
             createdObjectLists.Add(newMpm3DObject);
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-            
+
             // Store the object parameters when creating the object
             Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
-            
-            foreach (Toggle toggle in toggles)
-            {
-                if (toggle.name == "Toggle_FixObject")
-                {
-                    mpm3DSimulation.isFixed = toggle.isOn;
-                }
-            }
-            
-            foreach (TMP_Dropdown dropdown in dropdowns)
-            {
-                if (dropdown.name == "Dropdown_MaterialType")
-                {
-                    mpm3DSimulation.materialType = (Mpm3DGaussian_part_multi.MaterialType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.MaterialType), dropdown.value.ToString());
-                }
-                if (dropdown.name == "Dropdown_PlasticityType")
-                {
-                    mpm3DSimulation.plasticityType = (Mpm3DGaussian_part_multi.PlasticityType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.PlasticityType), dropdown.value.ToString());
-                }
-                if (dropdown.name == "Dropdown_StressType")
-                {
-                    mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
-                }
-            }
-            
-            foreach (GameObject parameter in parameterObjects)
-            {
-                if (parameter.name == "Parameter_E")
-                {
-                    mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
-                }
-                else if (parameter.name == "Parameter_SigY")
-                {
-                    mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
-                }
-                else if (parameter.name == "Parameter_Nu")
-                {
-                    mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
-                }
-                else if (parameter.name == "Parameter_ColideFactor")
-                {
-                    mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
-                }
-            }
-            
+
+            //get the value from the UI
+
+            //apply_material(newMpm3DObject);
+            // foreach (Toggle toggle in toggles)
+            // {
+            //     if (toggle.name == "Toggle_FixObject")
+            //     {
+            //         mpm3DSimulation.isFixed = toggle.isOn;
+            //     }
+            // }
+
+            // foreach (TMP_Dropdown dropdown in dropdowns)
+            // {
+            //     if (dropdown.name == "Dropdown_MaterialType")
+            //     {
+            //         mpm3DSimulation.materialType = (Mpm3DGaussian_part_multi.MaterialType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.MaterialType), dropdown.value.ToString());
+            //     }
+            //     if (dropdown.name == "Dropdown_PlasticityType")
+            //     {
+            //         mpm3DSimulation.plasticityType = (Mpm3DGaussian_part_multi.PlasticityType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.PlasticityType), dropdown.value.ToString());
+            //     }
+            //     if (dropdown.name == "Dropdown_StressType")
+            //     {
+            //         mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
+            //     }
+            // }
+
+            // foreach (GameObject parameter in parameterObjects)
+            // {
+            //     if (parameter.name == "Parameter_E")
+            //     {
+            //         mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            //     else if (parameter.name == "Parameter_SigY")
+            //     {
+            //         mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            //     else if (parameter.name == "Parameter_Nu")
+            //     {
+            //         mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            //     else if (parameter.name == "Parameter_ColideFactor")
+            //     {
+            //         mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
+            //     }
+            // }
+
             // Debug.Log("Mpm3DObject" + newMpm3DObject.name + " is created and selected");
             // Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
             // Debug.Log("materialType: " + mpm3DSimulation.materialType);
@@ -193,11 +214,11 @@ class UIManager : MonoBehaviour
             // Debug.Log("colide_factor: " + mpm3DSimulation.colide_factor);
         }
     }
-    
+
     void OnButtonClick(Button button)
     {
         Debug.Log(button.name + " was clicked!");
-        
+
         // Create a new object in the scene
         if (button.name == "Button_CreateObject")
         {
@@ -232,9 +253,13 @@ class UIManager : MonoBehaviour
                 mpm3DSimulation.Reset();
             }
         }
+        if (button.name == "Button_ApplyMaterial")
+        {
+            apply_material(selectedObject);
+        }
         // Delete the object from the scene
     }
-    
+
     void OnToggleValueChanged(Toggle toggle, bool isOn)
     {
         Debug.Log("Toggle " + toggle.name + " is " + (isOn ? "On" : "Off"));
@@ -245,18 +270,18 @@ class UIManager : MonoBehaviour
             Text toggle_label = toggle.GetComponentInChildren<Text>();
             toggle_label.text = isOn ? "Exit Modeling Mode" : "Enter Modeling Mode";
         }
-        
+
         // Enable/Disable fix object in place
         if (toggle.name == "Toggle_FixObject")
         {
-            
+
         }
     }
 
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
         Debug.Log(dropdown.name + " selected: " + dropdown.options[value].text);
-        
+
         if (dropdown.name == "Dropdown_PrimitiveShape")
         {
             // Select a primitive shape
@@ -273,15 +298,15 @@ class UIManager : MonoBehaviour
                 CreateMpm3DObject("Cylinder");
             }
         }
-        
+
         if (dropdown.name == "Dropdown_Color")
         {
             // Adjust the color of the primitive shape
         }
     }
-    
+
     void CreateMpm3DObject(string prefabName)
-    {   
+    {
         GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/" + prefabName);
         // if (Mpm3DObject != null)
         // {
@@ -289,16 +314,16 @@ class UIManager : MonoBehaviour
         //     Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.1f;
         //     position.x -= 0.2f;
         //     Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
-            
+
         //     GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
         //     createdObjectLists.Add(newMpm3DObject);
         //     // Use the just created object as the selected object for further interactions
         //     selectedObject = newMpm3DObject;
         //     newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-            
+
         //     // Store the object parameters when creating the object
         //     Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
-            
+
         //     foreach (Toggle toggle in toggles)
         //     {
         //         if (toggle.name == "Toggle_FixObject")
@@ -306,7 +331,7 @@ class UIManager : MonoBehaviour
         //             mpm3DSimulation.isFixed = toggle.isOn;
         //         }
         //     }
-            
+
         //     foreach (TMP_Dropdown dropdown in dropdowns)
         //     {
         //         if (dropdown.name == "Dropdown_MaterialType")
@@ -322,7 +347,7 @@ class UIManager : MonoBehaviour
         //             mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
         //         }
         //     }
-            
+
         //     foreach (GameObject parameter in parameterObjects)
         //     {
         //         if (parameter.name == "Parameter_E")
@@ -342,7 +367,7 @@ class UIManager : MonoBehaviour
         //             mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
         //         }
         //     }
-            
+
         //     // Debug.Log("Mpm3DObject" + newMpm3DObject.name + " is created and selected");
         //     // Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
         //     // Debug.Log("materialType: " + mpm3DSimulation.materialType);
@@ -354,13 +379,13 @@ class UIManager : MonoBehaviour
         //     // Debug.Log("colide_factor: " + mpm3DSimulation.colide_factor);
         // }
     }
-    
+
     void OnInputFieldSelect(InputField inputField)
     {
         Debug.Log(inputField.name + " was selected!");
         overlayKeyboard = TouchScreenKeyboard.Open(inputField.text, TouchScreenKeyboardType.Default);
     }
-    
+
     void OnTMPInputFieldSelect(TMP_InputField inputField)
     {
         Debug.Log(inputField.name + " was selected!");
@@ -374,7 +399,7 @@ class UIManager : MonoBehaviour
             UI_canvas.SetActive(false);
         }
     }
-    
+
     public void ShowCanvas()
     {
         if (UI_canvas != null && oculus_hands[1].IsTracked && sceneCamera != null)
@@ -397,11 +422,11 @@ class UIManager : MonoBehaviour
             UI_canvas.transform.rotation = UI_anchor.rotation;
         }
     }
-    
+
     public void ShowSlectedObjectCanvas()
     {
         if (UI_canvas != null && oculus_hands[1].IsTracked && sceneCamera != null)
-        {   
+        {
             // Open the UI canvas for the object just grabbed
             if (selectedObject != null)
             {
@@ -416,7 +441,7 @@ class UIManager : MonoBehaviour
                             toggle.isOn = mpm3DSimulation.isFixed;
                         }
                     }
-                    
+
                     foreach (TMP_Dropdown dropdown in dropdowns)
                     {
                         if (dropdown.name == "Dropdown_MaterialType")
@@ -432,7 +457,7 @@ class UIManager : MonoBehaviour
                             dropdown.value = (int)mpm3DSimulation.stressType;
                         }
                     }
-                    
+
                     foreach (GameObject parameter in parameterObjects)
                     {
                         if (parameter.name == "Parameter_E")
@@ -454,7 +479,7 @@ class UIManager : MonoBehaviour
                     }
                 }
             }
-            
+
             // Set position and rotation of the UI canvas
             Vector3 handThumbTipPosition = Vector3.zero;
 
@@ -476,7 +501,7 @@ class UIManager : MonoBehaviour
 
     void OnDestroy()
     {
-        
+
     }
 }
 
@@ -497,7 +522,7 @@ public class ObjectParameters
         Clamp,
         Elastic
     }
-    
+
     public enum StressType
     {
         NeoHookean,
