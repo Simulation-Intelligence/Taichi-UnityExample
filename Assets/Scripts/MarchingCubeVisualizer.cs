@@ -20,6 +20,7 @@ namespace MarchingCubes
         #region Target isovalue
 
         public float TargetValue = 0.4f;
+        public bool shouldUpdate = false;
 
         #endregion
 
@@ -48,8 +49,13 @@ namespace MarchingCubes
 
         void Update()
         {
+            if (!shouldUpdate)
+            {
+                return;
+            }
             _builder.BuildIsosurface(_voxelBuffer, TargetValue, _gridScale);
             GetComponent<MeshFilter>().sharedMesh = _builder.Mesh;
+            shouldUpdate = false;
         }
 
         #endregion

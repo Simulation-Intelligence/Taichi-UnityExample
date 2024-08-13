@@ -581,45 +581,23 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             other_data[i][2] = scaleFactor*other_data[i][2]
             other_data[i][3] = scaleFactor*other_data[i][3]
 
-    @ti.func
-    def transform_and_merge(x1: ti.types.ndarray(ndim=2), 
-                            x2: ti.types.ndarray(ndim=2), 
-                            x3: ti.types.ndarray(ndim=2), 
-                            mat2: ti.Matrix, 
-                            mat3: ti.Matrix,
-                            eps:ti.f32):
+    @ti.kernel
+    def transform_and_merge(x1: ti.types.ndarray(ndim=1), 
+                            x2: ti.types.ndarray(ndim=1), 
+                            x3: ti.types.ndarray(ndim=1), 
+                            mat2: ti.types.ndarray(ndim=2), 
+                            mat3: ti.types.ndarray(ndim=2)):
 
         n2 = x2.shape[0]
         n3 = x3.shape[0]
 
-        # 临时存储合并后的顶点
-        temp_vertices = ti.Vector.field(3, dtype=ti.f32, shape=(n2 + n3))
-
-        # 将 x2 的顶点转换到世界坐标系并复制到 temp_vertices
         for i in range(n2):
-            transformed_vertex = mat2 @ ti.Vector([x2[i][0], x2[i][1], x2[i][2], 1.0])
-            temp_vertices[i] = transformed_vertex.xyz
+            # 将 x2 的顶点转换到世界坐标系并写入 x1
+            x1[i] = multiply_point(mat2, x2[i])
 
-        # 将 x3 的顶点转换到世界坐标系并复制到 temp_vertices
         for i in range(n3):
-            transformed_vertex = mat3 @ ti.Vector([x3[i][0], x3[i][1], x3[i][2], 1.0])
-            temp_vertices[n2 + i] = transformed_vertex.xyz
-
-        # 计算包围盒
-        min_bound = ti.Vector([float('inf'), float('inf'), float('inf')])
-        max_bound = ti.Vector([-float('inf'), -float('inf'), -float('inf')])
-
-        for i in range(n2 + n3):
-            min_bound = ti.min(min_bound, temp_vertices[i])
-            max_bound = ti.max(max_bound, temp_vertices[i])
-
-        # 计算比例缩放因子
-        scale_factor = 1.0 / ti.max(max_bound - min_bound)
-
-        # 将顶点缩放并平移到单位立方体内，同时写入 x1
-        for i in range(n2 + n3):
-            scaled_vertex = (temp_vertices[i] - min_bound) * scale_factor
-            x1[i] = scaled_vertex + 0.5 * ti.Vector([1.0, 1.0, 1.0])
+            # 将 x3 的顶点转换到世界坐标系并写入 x1
+            x1[i + n2] = multiply_point(mat3, x3[i])
     
     # hand sdf
     hand_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
@@ -672,6 +650,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     max_y = 0.9
     min_z = 0.1
     max_z = 0.9
+
+    #transform
+    mat2 = ti.ndarray(ti.f32, shape=(4, 4))
+    mat3 = ti.ndarray(ti.f32, shape=(4, 4))
     
     def substep():
         substep_reset_grid(grid_v, grid_m, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -722,6 +704,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(scale_to_unit_cube, template_args={'x': x, 'other_data': other_data})
 
         mod.add_kernel(normalize_m, template_args={'grid_m': grid_m})
+        mod.add_kernel(transform_and_merge, template_args={'x1': x, 'x2': x, 'x3': x, 'mat2': mat2, 'mat3': mat3})
 
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part.kernel.tcm")
         print("AOT done")

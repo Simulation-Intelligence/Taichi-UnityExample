@@ -33,7 +33,7 @@ public class Mpm3DMarching : MonoBehaviour
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere,
-     _Kernel_normalize_m;
+     _Kernel_normalize_m, _Kernel_transform_and_merge;
 
     public enum RenderType
     {
@@ -205,6 +205,7 @@ public class Mpm3DMarching : MonoBehaviour
 
             _Kernel_normalize_m = kernels["normalize_m"];
             _Kernel_init_sphere = kernels["init_sphere"];
+            _Kernel_transform_and_merge = kernels["transform_and_merge"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -378,20 +379,22 @@ public class Mpm3DMarching : MonoBehaviour
         _MeshFilter.mesh = _Mesh;
         _MeshRenderer.material = pointMaterial;
         bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
-
-        if (_Compute_Graph_g_init != null)
-        {
-            _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
+        if (initShape == InitShape.Cube)
+            if (_Compute_Graph_g_init != null)
+            {
+                _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
             {
                 { "x", x },
                 { "v", v }
             });
-        }
-        else
-        {
-            //kernel initialize
-            _Kernel_init_particles.LaunchAsync(x, v, dg, cube_size);
-        }
+            }
+            else
+            {
+                //kernel initialize
+                _Kernel_init_particles.LaunchAsync(x, v, dg, cube_size);
+            }
+        else if (initShape == InitShape.Sphere)
+            _Kernel_init_sphere.LaunchAsync(x, dg, cube_size / 2);
     }
 
     public void Init_MarchingCubes()
@@ -692,25 +695,36 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
         {
             _Kernel_normalize_m.LaunchAsync(grid_m, max_density);
             grid_m.CopyToNativeBufferAsync(marchingCubeVisualizer._voxelBuffer.GetNativeBufferPtr());
+            marchingCubeVisualizer.shouldUpdate = true;
+
         }
         Runtime.Submit();
     }
     public void MergeAndUpdate(Mpm3DMarching other)
     {
-        var otherRender = other.splatManager.m_Render;
+        if (other.renderType != renderType)
+        {
+            UnityEngine.Debug.LogError("Cannot merge different render types.");
+            return;
+        }
+        if (renderType == RenderType.GaussianSplat)
+        {
+            MergeGaussianRenders(other.splatManager.m_Render);
+        }
+        else
+        {
+            MergeParticles(other);
+        }
+        MergeMaterials(other);
+        other.gameObject.SetActive(false);
+    }
+    private void MergeGaussianRenders(GaussianSplatRenderer otherRender)
+    {
         if (otherRender == null)
         {
             UnityEngine.Debug.LogError("Other render is null.");
             return;
         }
-        MergeGaussianRenders(otherRender);
-        splatManager.init_gaussians();
-        Init_gaussian();
-        MergeMaterials(other);
-        otherRender.gameObject.SetActive(false);
-    }
-    private void MergeGaussianRenders(GaussianSplatRenderer otherRender)
-    {
         var render = splatManager.m_Render;
         int totalSplats = render.splatCount + otherRender.splatCount;
         if (totalSplats > GaussianSplatAsset.kMaxSplats)
@@ -722,6 +736,36 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
         int copyDstOffset = render.splatCount;
         render.EditSetSplatCount(totalSplats);
         otherRender.EditCopySplatsInto(render, 0, copyDstOffset, otherRender.splatCount);
+        splatManager.init_gaussians();
+        Init_gaussian();
+    }
+    private void MergeParticles(Mpm3DMarching other)
+    {
+        int totalParticles = NParticles + other.NParticles;
+        Matrix4x4 transform1 = transform.localToWorldMatrix;
+        Matrix4x4 transform2 = other.transform.localToWorldMatrix;
+        NdArray<float> new_x = new NdArrayBuilder<float>().Shape(totalParticles).ElemShape(3).Build();
+        NdArray<float> t1 = new NdArrayBuilder<float>().Shape(4, 4).HostWrite(true).Build();
+        NdArray<float> t2 = new NdArrayBuilder<float>().Shape(4, 4).HostWrite(true).Build();
+        t1.CopyFromArray(MatrixtoFloatArray(transform1));
+        t2.CopyFromArray(MatrixtoFloatArray(transform2));
+        _Kernel_transform_and_merge.LaunchAsync(new_x, x, other.x, t1, t2);
+        // float[] host_x = new float[3 * totalParticles];
+        // for (int i = 0; i < totalParticles * 3; i++)
+        // {
+        // }
+        //new_x.CopyToArray(host_x);
+        NParticles = totalParticles;
+
+        NdArray<float> _other_data = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).Build();
+        _Kernel_scale_to_unit_cube.LaunchAsync(new_x, _other_data, bounding_eps);
+
+        x = new_x;
+        v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
+        C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+        dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+
+        _Kernel_init_dg.LaunchAsync(dg);
     }
     private void MergeMaterials(Mpm3DMarching other)
     {
@@ -1042,5 +1086,26 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
             sb.AppendFormat("Byte {0}: {1:X2} ", i, data[i]);
         }
         UnityEngine.Debug.Log(sb.ToString());
+    }
+    private float[] MatrixtoFloatArray(Matrix4x4 matrix)
+    {
+        float[] array = new float[16];
+        array[0] = matrix.m00;
+        array[1] = matrix.m01;
+        array[2] = matrix.m02;
+        array[3] = matrix.m03;
+        array[4] = matrix.m10;
+        array[5] = matrix.m11;
+        array[6] = matrix.m12;
+        array[7] = matrix.m13;
+        array[8] = matrix.m20;
+        array[9] = matrix.m21;
+        array[10] = matrix.m22;
+        array[11] = matrix.m23;
+        array[12] = matrix.m30;
+        array[13] = matrix.m31;
+        array[14] = matrix.m32;
+        array[15] = matrix.m33;
+        return array;
     }
 }

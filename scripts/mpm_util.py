@@ -376,3 +376,25 @@ def simplex_noise(p):
     # You can use an existing Simplex Noise function or implement it yourself.
     # For now, let's return a dummy value (e.g., zero).
     return ti.abs(ti.sin(p.x) * ti.sin(p.y) * ti.sin(p.z))
+
+@ti.func
+def multiply_point(matrix: ti.template(), point: ti.template()):
+    # 使用Matrix4x4乘以Vector3点，并进行透视除法
+    result = ti.Vector([0.0, 0.0, 0.0])
+    
+    # 计算result的x、y、z分量
+    result[0] = matrix[0, 0] * point[0] + matrix[0, 1] * point[1] + matrix[0, 2] * point[2] + matrix[0, 3]
+    result[1] = matrix[1, 0] * point[0] + matrix[1, 1] * point[1] + matrix[1, 2] * point[2] + matrix[1, 3]
+    result[2] = matrix[2, 0] * point[0] + matrix[2, 1] * point[1] + matrix[2, 2] * point[2] + matrix[2, 3]
+    
+    # 计算透视除法的w分量
+    w = matrix[3, 0] * point[0] + matrix[3, 1] * point[1] + matrix[3, 2] * point[2] + matrix[3, 3]
+    
+    # 如果w不为0，进行透视除法
+    if w != 0:
+        w = 1.0 / w
+        result[0] *= w
+        result[1] *= w
+        result[2] *= w
+    
+    return result

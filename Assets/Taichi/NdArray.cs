@@ -2,8 +2,10 @@
 using System;
 using Taichi.Generated;
 
-namespace Taichi {
-    public class NdArray<T> : IDisposable where T : struct {
+namespace Taichi
+{
+    public class NdArray<T> : IDisposable where T : struct
+    {
         private int[] _Shape;
         private int[] _ElemShape;
         private Memory _Memory;
@@ -17,12 +19,15 @@ namespace Taichi {
 
 
 
-        private static int Shape2Count(int[] shape) {
+        private static int Shape2Count(int[] shape)
+        {
             int size = 1;
-            foreach (var dim in shape) {
+            foreach (var dim in shape)
+            {
                 size *= dim;
             }
-            if (size == 0) {
+            if (size == 0)
+            {
                 throw new ArgumentException("NdArray shape cannot be zero");
             }
             return size;
@@ -30,7 +35,8 @@ namespace Taichi {
 
 
 
-        public NdArray(int[] shape, int[] elemShape, bool hostRead, bool hostWrite, TiMemoryUsageFlagBits usage) {
+        public NdArray(int[] shape, int[] elemShape, bool hostRead, bool hostWrite, TiMemoryUsageFlagBits usage)
+        {
             if (shape == null) shape = new int[0];
             if (elemShape == null) elemShape = new int[0];
             _Shape = shape;
@@ -45,29 +51,36 @@ namespace Taichi {
 
 
 
-        public void CopyFromArray(T[] data) {
-            if (data.Length * Marshal.SizeOf<T>() != SizeInBytes) {
+        public void CopyFromArray(T[] data)
+        {
+            if (data.Length * Marshal.SizeOf<T>() != SizeInBytes)
+            {
                 throw new ArgumentException(nameof(data));
             }
             _Memory.Write(data);
         }
 
-        public static NdArray<T> FromArray(T[] data, int[] shape) {
+        public static NdArray<T> FromArray(T[] data, int[] shape)
+        {
             var rv = new NdArray<T>(shape);
             rv.CopyFromArray(data);
             return rv;
         }
 
-        public void CopyToArray(T[] data) {
-            if (data.Length == 0) {
+        public void CopyToArray(T[] data)
+        {
+            if (data.Length == 0)
+            {
                 return;
             }
-            if (data.Length * Marshal.SizeOf<T>() != SizeInBytes) {
+            if (data.Length * Marshal.SizeOf<T>() != SizeInBytes)
+            {
                 throw new ArgumentException(nameof(data));
             }
             _Memory.Read(data);
         }
-        public T[] ToArray() {
+        public T[] ToArray()
+        {
             var rv = new T[Shape2Count(Shape)];
             CopyToArray(rv);
             return rv;
@@ -75,8 +88,10 @@ namespace Taichi {
 
 
 
-        public void CopyToNativeBufferAsync(IntPtr native_buffer_ptr) {
-            if (native_buffer_ptr == IntPtr.Zero) {
+        public void CopyToNativeBufferAsync(IntPtr native_buffer_ptr)
+        {
+            if (native_buffer_ptr == IntPtr.Zero)
+            {
                 throw new ArgumentNullException("`native_buffer_ptr` cannot be null");
             }
             _Memory.CopyToNativeBufferAsync(native_buffer_ptr);
@@ -84,49 +99,78 @@ namespace Taichi {
 
 
 
-        public TiNdArray ToTiNdArray() {
+        public TiNdArray ToTiNdArray()
+        {
             var shape = new uint[16];
-            for (int i = 0; i < _Shape.Length; ++i) {
+            for (int i = 0; i < _Shape.Length; ++i)
+            {
                 shape[i] = (uint)_Shape[i];
             }
             var elemShape = new uint[16];
-            for (int i = 0; i < _ElemShape.Length; ++i) {
+            for (int i = 0; i < _ElemShape.Length; ++i)
+            {
                 elemShape[i] = (uint)_ElemShape[i];
             }
 
             TiDataType elemType;
-            if (typeof(T) == typeof(byte)) {
+            if (typeof(T) == typeof(byte))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_U8;
-            } else if (typeof(T) == typeof(sbyte)) {
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_I8;
-            } else if (typeof(T) == typeof(short)) {
+            }
+            else if (typeof(T) == typeof(short))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_I16;
-            } else if (typeof(T) == typeof(ushort)) {
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_U16;
-            } else if (typeof(T) == typeof(int)) {
+            }
+            else if (typeof(T) == typeof(int))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_I32;
-            } else if (typeof(T) == typeof(uint)) {
+            }
+            else if (typeof(T) == typeof(uint))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_U32;
-            } else if (typeof(T) == typeof(long)) {
+            }
+            else if (typeof(T) == typeof(long))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_I64;
-            } else if (typeof(T) == typeof(ulong)) {
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_U64;
-            } else if (typeof(T) == typeof(IntPtr)) {
+            }
+            else if (typeof(T) == typeof(IntPtr))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_GEN;
-            } else if (typeof(T) == typeof(float)) {
+            }
+            else if (typeof(T) == typeof(float))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_F32;
-            } else if (typeof(T) == typeof(double)) {
+            }
+            else if (typeof(T) == typeof(double))
+            {
                 elemType = TiDataType.TI_DATA_TYPE_F64;
-            } else {
+            }
+            else
+            {
                 throw new InvalidOperationException("Unsupported type for read access");
             }
 
-            return new TiNdArray {
-                shape = new TiNdShape {
+            return new TiNdArray
+            {
+                shape = new TiNdShape
+                {
                     dim_count = (uint)Shape.Length,
                     dims = shape,
                 },
-                elem_shape = new TiNdShape {
+                elem_shape = new TiNdShape
+                {
                     dim_count = (uint)ElemShape.Length,
                     dims = elemShape,
                 },
@@ -134,7 +178,8 @@ namespace Taichi {
                 memory = _Memory.Handle,
             };
         }
-        public TiMemorySlice ToTiMemorySlice() {
+        public TiMemorySlice ToTiMemorySlice()
+        {
             return _Memory.ToTiMemorySlice(0, SizeInBytes);
         }
 
@@ -142,47 +187,58 @@ namespace Taichi {
 
         public bool IsDisposed => disposedValue;
         private bool disposedValue;
-        protected virtual void Dispose(bool disposing) {
-            if (!disposedValue) {
-                if (disposing) {
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
                     _Memory.Dispose();
                 }
                 disposedValue = true;
             }
         }
-        ~NdArray() {
+        ~NdArray()
+        {
             Dispose(disposing: false);
         }
-        public void Dispose() {
+        public void Dispose()
+        {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
     }
 
-    public class NdArrayBuilder<T> where T : struct {
+    public class NdArrayBuilder<T> where T : struct
+    {
         private int[] _Shape;
         private int[] _ElemShape;
         private bool _HostRead;
         private bool _HostWrite;
 
-        public NdArrayBuilder<T> Shape(params int[] shape) {
+        public NdArrayBuilder<T> Shape(params int[] shape)
+        {
             _Shape = shape;
             return this;
         }
-        public NdArrayBuilder<T> ElemShape(params int[] elemShape) {
+        public NdArrayBuilder<T> ElemShape(params int[] elemShape)
+        {
             _ElemShape = elemShape;
             return this;
         }
-        public NdArrayBuilder<T> HostRead(bool hostRead = true) {
+        public NdArrayBuilder<T> HostRead(bool hostRead = true)
+        {
             _HostRead = hostRead;
             return this;
         }
-        public NdArrayBuilder<T> HostWrite(bool hostWrite = true) {
+        public NdArrayBuilder<T> HostWrite(bool hostWrite = true)
+        {
             _HostWrite = hostWrite;
             return this;
         }
 
-        public NdArray<T> Build() {
+        public NdArray<T> Build()
+        {
             return new NdArray<T>(_Shape, _ElemShape, _HostRead, _HostWrite, TiMemoryUsageFlagBits.TI_MEMORY_USAGE_STORAGE_BIT);
         }
 
