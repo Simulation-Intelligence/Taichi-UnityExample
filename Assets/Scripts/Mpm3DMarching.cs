@@ -649,6 +649,7 @@ public class Mpm3DMarching : MonoBehaviour
                     }
                     if (IntersectwithHand(oculus_hands))
                     {
+                        // Use different sdf calculation method for hand based on the scale of the object
                         if (transform.localScale.x > 1.0f)
                         {
                             _Kernel_substep_calculate_hand_hash.LaunchAsync(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell);
