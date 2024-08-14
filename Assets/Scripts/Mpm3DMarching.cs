@@ -12,6 +12,7 @@ using System.Text;
 using System;
 using UnityEngine.InputSystem;
 using Oculus.Interaction;
+using Oculus.Interaction.HandGrab;
 using static SkeletonRenderer;
 using GaussianSplatting.Runtime;
 using UnityEngine.Experimental.Rendering;
@@ -351,7 +352,7 @@ public class Mpm3DMarching : MonoBehaviour
                                               0.006425985f };
         for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
         {
-            _skeleton_capsule_radius[i] = preset_capsule_radius[i % 24] / transform.localScale.x;
+            _skeleton_capsule_radius[i] = preset_capsule_radius[i % 24] / transform.lossyScale.x;
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
 
@@ -649,7 +650,7 @@ public class Mpm3DMarching : MonoBehaviour
                     }
                     if (IntersectwithHand(oculus_hands))
                     {
-                        if (transform.localScale.x > 1.0f)
+                        if (transform.lossyScale.x > 1.0f)
                         {
                             _Kernel_substep_calculate_hand_hash.LaunchAsync(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell);
                             _Kernel_substep_calculate_hand_sdf_hash.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell,
@@ -801,6 +802,10 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
 
         Update_materials();
     }
+    public void MergeGrabbable(GameObject object2)
+    {
+        object2.transform.SetParent(gameObject.transform);
+    }
 
     public void AdjustTextureColor(Color rgba)
     {
@@ -922,7 +927,7 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
                             handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
                         }
                         UpdateHandSkeletonSegment(init + j * 6, start, end, frame_time);
-                        _skeleton_capsule_radius[i * skeleton_num_capsules + j] = preset_capsule_radius[j] / transform.localScale.x;
+                        _skeleton_capsule_radius[i * skeleton_num_capsules + j] = preset_capsule_radius[j] / transform.lossyScale.x;
                     }
                     skeleton_segments.CopyFromArray(hand_skeleton_segments);
                     skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
@@ -931,8 +936,8 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
             }
         }
         Center /= oculus_skeletons.Length;
-        boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.localScale.x;
-        boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.localScale.x;
+        boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.lossyScale.x;
+        boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.lossyScale.x;
     }
 
     void SaveHandMotionData()
@@ -1054,7 +1059,7 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
     {
         for (int i = 0; i < o.Length; i++)
         {
-            Bounds b = new(o[i].transform.position, o[i].transform.localScale);
+            Bounds b = new(o[i].transform.position, o[i].transform.lossyScale);
 
             if (b == null)
             {
@@ -1090,7 +1095,7 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
     {
 
         byte* data = (byte*)ptr.ToPointer();
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new();
         for (int i = 0; i < size; i++)
         {
             sb.AppendFormat("Byte {0}: {1:X2} ", i, data[i]);
