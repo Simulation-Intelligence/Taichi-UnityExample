@@ -42,6 +42,13 @@ public class Mpm3DMarching : MonoBehaviour
         GaussianSplat,
         MarchingCubes
     }
+    public enum MaterialType
+    {
+        Customize,
+        Clay,
+        Dough,
+        Elastic_Material
+    }
     public enum InitShape
     {
         Cube,
@@ -75,9 +82,11 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private Material raymarchingMaterial;
     [SerializeField]
-    private PlasticityType plasticityType = PlasticityType.Von_Mises;
+    public MaterialType materialType = MaterialType.Customize;
     [SerializeField]
-    private StressType stressType = StressType.NeoHookean;
+    public PlasticityType plasticityType = PlasticityType.Von_Mises;
+    [SerializeField]
+    public StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
     private NdArray<float> x, v, C, dg, grid_v, grid_m, sphere_pos, obstacle_velocities, sphere_velocities, sphere_radius, hand_sdf;
 
@@ -97,6 +106,7 @@ public class Mpm3DMarching : MonoBehaviour
     [Header("Scene Settings")]
     [SerializeField]
     bool RunSimulation = true;
+    public bool isFixed = false;
     private bool updated = false;
     private Grabbable _grabbable;
     [SerializeField]
@@ -144,9 +154,9 @@ public class Mpm3DMarching : MonoBehaviour
 
     [Header("Scalars")]
     [SerializeField]
-    private float _E = 1e4f;
+    public float _E = 1e4f;
     [SerializeField]
-    private float _SigY = 1000, _nu = 0.3f, colide_factor = 0.5f, friction_k = 0.4f, p_rho = 1000, _min_clamp = 0.1f, _max_clamp = 0.1f, friction_angle = 30;
+    public float _SigY = 1000, _nu = 0.3f, colide_factor = 0.5f, friction_k = 0.4f, p_rho = 1000, _min_clamp = 0.1f, _max_clamp = 0.1f, friction_angle = 30;
 
     private float[] E_host, SigY_host, nu_host, min_clamp_host, max_clamp_host, alpha_host, p_vol_host, p_mass_host;
 
@@ -237,12 +247,12 @@ public class Mpm3DMarching : MonoBehaviour
         if (oculus_hands == null || oculus_hands.Length == 0)
         {
             oculus_hands = new OVRHand[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>(),
-                                    GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>() };
+                                           GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>() };
         }
         if (oculus_skeletons == null || oculus_skeletons.Length == 0)
         {
             oculus_skeletons = new OVRSkeleton[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>(),
-                                    GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>() };
+                                                   GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>() };
         }
         UnityEngine.Debug.Log("Num of bones at start: " + oculus_skeletons[0].Bones.Count());
         skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats

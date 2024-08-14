@@ -35,7 +35,7 @@ class UIManager : MonoBehaviour
     public GameObject[] parameterObjects;
     public TouchScreenKeyboard overlayKeyboard;
 
-    //Type Mpm = typeof(Mpm3DGaussian_part_multi);
+    //Type Mpm = typeof(Mpm3DMarching);
 
     void Start()
     {
@@ -76,7 +76,7 @@ class UIManager : MonoBehaviour
             }
         }
     }
-
+    
     void Update()
     {
         // Find the last grabbed object as the selected object for further manipulations
@@ -93,10 +93,10 @@ class UIManager : MonoBehaviour
                         GameObject objectToMerge = createdObject;
                         if (selectedObject != null && objectToMerge != null && selectedObject != objectToMerge)
                         {
-                            Mpm3DGaussian_part_multi mpm3DSimulation = selectedObject.GetComponent<Mpm3DGaussian_part_multi>();
+                            Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                             if (mpm3DSimulation != null)
                             {
-                                mpm3DSimulation.MergeAndUpdate(objectToMerge.GetComponent<Mpm3DGaussian_part_multi>());
+                                mpm3DSimulation.MergeAndUpdate(objectToMerge.GetComponent<Mpm3DMarching>());
                                 Debug.Log("Merge object " + selectedObject.name + " with object " + objectToMerge.name);
                                 isMerging = false;
                                 mergePrompt.SetActive(false);
@@ -121,14 +121,15 @@ class UIManager : MonoBehaviour
             }
         }
     }
+    
     void apply_material(GameObject newMpm3DObject)
     {
-        Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
+        Mpm3DMarching mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DMarching>();
         //set material value
         {
             // mpm3DSimulation._E = 1e6f;
             // mpm3DSimulation._SigY = 1e5f;
-
+            
 
         }
         if (newMpm3DObject != null)
@@ -152,12 +153,12 @@ class UIManager : MonoBehaviour
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-
+            
             // Store the object parameters when creating the object
-            Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
-
-            //get the value from the UI
-
+            Mpm3DMarching mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DMarching>();
+            
+            // Get the value from the UI to create the object
+            
             //apply_material(newMpm3DObject);
             // foreach (Toggle toggle in toggles)
             // {
@@ -171,15 +172,15 @@ class UIManager : MonoBehaviour
             // {
             //     if (dropdown.name == "Dropdown_MaterialType")
             //     {
-            //         mpm3DSimulation.materialType = (Mpm3DGaussian_part_multi.MaterialType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.MaterialType), dropdown.value.ToString());
+            //         mpm3DSimulation.materialType = (Mpm3DMarching.MaterialType)Enum.Parse(typeof(Mpm3DMarching.MaterialType), dropdown.value.ToString());
             //     }
             //     if (dropdown.name == "Dropdown_PlasticityType")
             //     {
-            //         mpm3DSimulation.plasticityType = (Mpm3DGaussian_part_multi.PlasticityType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.PlasticityType), dropdown.value.ToString());
+            //         mpm3DSimulation.plasticityType = (Mpm3DMarching.PlasticityType)Enum.Parse(typeof(Mpm3DMarching.PlasticityType), dropdown.value.ToString());
             //     }
             //     if (dropdown.name == "Dropdown_StressType")
             //     {
-            //         mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
+            //         mpm3DSimulation.stressType = (Mpm3DMarching.StressType)Enum.Parse(typeof(Mpm3DMarching.StressType), dropdown.value.ToString());
             //     }
             // }
 
@@ -249,7 +250,7 @@ class UIManager : MonoBehaviour
         {
             if (selectedObject != null)
             {
-                Mpm3DGaussian_part_multi mpm3DSimulation = selectedObject.GetComponent<Mpm3DGaussian_part_multi>();
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                 mpm3DSimulation.Reset();
             }
         }
@@ -259,7 +260,7 @@ class UIManager : MonoBehaviour
         }
         // Delete the object from the scene
     }
-
+    
     void OnToggleValueChanged(Toggle toggle, bool isOn)
     {
         Debug.Log("Toggle " + toggle.name + " is " + (isOn ? "On" : "Off"));
@@ -322,7 +323,7 @@ class UIManager : MonoBehaviour
         //     newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
 
         //     // Store the object parameters when creating the object
-        //     Mpm3DGaussian_part_multi mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DGaussian_part_multi>();
+        //     Mpm3DMarching mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DMarching>();
 
         //     foreach (Toggle toggle in toggles)
         //     {
@@ -336,15 +337,15 @@ class UIManager : MonoBehaviour
         //     {
         //         if (dropdown.name == "Dropdown_MaterialType")
         //         {
-        //             mpm3DSimulation.materialType = (Mpm3DGaussian_part_multi.MaterialType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.MaterialType), dropdown.value.ToString());
+        //             mpm3DSimulation.materialType = (Mpm3DMarching.MaterialType)Enum.Parse(typeof(Mpm3DMarching.MaterialType), dropdown.value.ToString());
         //         }
         //         if (dropdown.name == "Dropdown_PlasticityType")
         //         {
-        //             mpm3DSimulation.plasticityType = (Mpm3DGaussian_part_multi.PlasticityType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.PlasticityType), dropdown.value.ToString());
+        //             mpm3DSimulation.plasticityType = (Mpm3DMarching.PlasticityType)Enum.Parse(typeof(Mpm3DMarching.PlasticityType), dropdown.value.ToString());
         //         }
         //         if (dropdown.name == "Dropdown_StressType")
         //         {
-        //             mpm3DSimulation.stressType = (Mpm3DGaussian_part_multi.StressType)Enum.Parse(typeof(Mpm3DGaussian_part_multi.StressType), dropdown.value.ToString());
+        //             mpm3DSimulation.stressType = (Mpm3DMarching.StressType)Enum.Parse(typeof(Mpm3DMarching.StressType), dropdown.value.ToString());
         //         }
         //     }
 
@@ -430,7 +431,7 @@ class UIManager : MonoBehaviour
             // Open the UI canvas for the object just grabbed
             if (selectedObject != null)
             {
-                Mpm3DGaussian_part_multi mpm3DSimulation = selectedObject.GetComponent<Mpm3DGaussian_part_multi>();
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                 if (mpm3DSimulation != null)
                 {
                     // Set the toggle, dropdown, and slider values accordingly
