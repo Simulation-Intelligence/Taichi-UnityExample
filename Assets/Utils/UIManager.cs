@@ -34,9 +34,7 @@ class UIManager : MonoBehaviour
     public TMP_InputField[] tmpInputFields;
     public GameObject[] parameterObjects;
     public TouchScreenKeyboard overlayKeyboard;
-
-    //Type Mpm = typeof(Mpm3DMarching);
-
+    
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
@@ -122,23 +120,73 @@ class UIManager : MonoBehaviour
         }
     }
     
-    void apply_material(GameObject newMpm3DObject)
+    void apply_material(GameObject slectedMpm3DObject)
     {
-        Mpm3DMarching mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DMarching>();
-        //set material value
+        // Store the object parameters when creating the object
+        Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
+        
+        // Get the value from the UI to create the object
+        foreach (Toggle toggle in toggles)
         {
-            // mpm3DSimulation._E = 1e6f;
-            // mpm3DSimulation._SigY = 1e5f;
-            
-
+            if (toggle.name == "Toggle_FixObject")
+            {
+                mpm3DSimulation.isFixed = toggle.isOn;
+            }
         }
-        if (newMpm3DObject != null)
+
+        foreach (TMP_Dropdown dropdown in dropdowns)
         {
-            newMpm3DObject.GetComponent<Mpm3DMarching>().Init_materials();
-            newMpm3DObject.GetComponent<Mpm3DMarching>().Update_materials();
+            if (dropdown.name == "Dropdown_MaterialType")
+            {
+                mpm3DSimulation.materialType = (Mpm3DMarching.MaterialType)Enum.Parse(typeof(Mpm3DMarching.MaterialType), dropdown.value.ToString());
+            }
+            if (dropdown.name == "Dropdown_PlasticityType")
+            {
+                mpm3DSimulation.plasticityType = (Mpm3DMarching.PlasticityType)Enum.Parse(typeof(Mpm3DMarching.PlasticityType), dropdown.value.ToString());
+            }
+            if (dropdown.name == "Dropdown_StressType")
+            {
+                mpm3DSimulation.stressType = (Mpm3DMarching.StressType)Enum.Parse(typeof(Mpm3DMarching.StressType), dropdown.value.ToString());
+            }
+        }
+
+        foreach (GameObject parameter in parameterObjects)
+        {
+            if (parameter.name == "Parameter_E")
+            {
+                mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
+            }
+            else if (parameter.name == "Parameter_SigY")
+            {
+                mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
+            }
+            else if (parameter.name == "Parameter_Nu")
+            {
+                mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
+            }
+            else if (parameter.name == "Parameter_ColideFactor")
+            {
+                mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
+            }
+        }
+        
+        Debug.Log("Mpm3DObject" + slectedMpm3DObject.name + " is created and selected");
+        Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
+        Debug.Log("materialType: " + mpm3DSimulation.materialType);
+        Debug.Log("plasticityType: " + mpm3DSimulation.plasticityType);
+        Debug.Log("stressType: " + mpm3DSimulation.stressType);
+        Debug.Log("E: " + mpm3DSimulation._E);
+        Debug.Log("SigY: " + mpm3DSimulation._SigY);
+        Debug.Log("nu: " + mpm3DSimulation._nu);
+        Debug.Log("colide_factor: " + mpm3DSimulation.colide_factor);
+        
+        if (slectedMpm3DObject != null)
+        {
+            slectedMpm3DObject.GetComponent<Mpm3DMarching>().Init_materials();
+            slectedMpm3DObject.GetComponent<Mpm3DMarching>().Update_materials();
         }
     }
-
+    
     void CreateNewMpm3DObject()
     {
         if (Mpm3DObject != null)
@@ -154,68 +202,11 @@ class UIManager : MonoBehaviour
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
             
-            // Store the object parameters when creating the object
-            Mpm3DMarching mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DMarching>();
-            
-            // Get the value from the UI to create the object
-            
-            //apply_material(newMpm3DObject);
-            // foreach (Toggle toggle in toggles)
-            // {
-            //     if (toggle.name == "Toggle_FixObject")
-            //     {
-            //         mpm3DSimulation.isFixed = toggle.isOn;
-            //     }
-            // }
-
-            // foreach (TMP_Dropdown dropdown in dropdowns)
-            // {
-            //     if (dropdown.name == "Dropdown_MaterialType")
-            //     {
-            //         mpm3DSimulation.materialType = (Mpm3DMarching.MaterialType)Enum.Parse(typeof(Mpm3DMarching.MaterialType), dropdown.value.ToString());
-            //     }
-            //     if (dropdown.name == "Dropdown_PlasticityType")
-            //     {
-            //         mpm3DSimulation.plasticityType = (Mpm3DMarching.PlasticityType)Enum.Parse(typeof(Mpm3DMarching.PlasticityType), dropdown.value.ToString());
-            //     }
-            //     if (dropdown.name == "Dropdown_StressType")
-            //     {
-            //         mpm3DSimulation.stressType = (Mpm3DMarching.StressType)Enum.Parse(typeof(Mpm3DMarching.StressType), dropdown.value.ToString());
-            //     }
-            // }
-
-            // foreach (GameObject parameter in parameterObjects)
-            // {
-            //     if (parameter.name == "Parameter_E")
-            //     {
-            //         mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
-            //     }
-            //     else if (parameter.name == "Parameter_SigY")
-            //     {
-            //         mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
-            //     }
-            //     else if (parameter.name == "Parameter_Nu")
-            //     {
-            //         mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
-            //     }
-            //     else if (parameter.name == "Parameter_ColideFactor")
-            //     {
-            //         mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
-            //     }
-            // }
-
-            // Debug.Log("Mpm3DObject" + newMpm3DObject.name + " is created and selected");
-            // Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
-            // Debug.Log("materialType: " + mpm3DSimulation.materialType);
-            // Debug.Log("plasticityType: " + mpm3DSimulation.plasticityType);
-            // Debug.Log("stressType: " + mpm3DSimulation.stressType);
-            // Debug.Log("E: " + mpm3DSimulation._E);
-            // Debug.Log("SigY: " + mpm3DSimulation._SigY);
-            // Debug.Log("nu: " + mpm3DSimulation._nu);
-            // Debug.Log("colide_factor: " + mpm3DSimulation.colide_factor);
+            // Apply materials specified from UI
+            apply_material(newMpm3DObject);
         }
     }
-
+    
     void OnButtonClick(Button button)
     {
         Debug.Log(button.name + " was clicked!");
