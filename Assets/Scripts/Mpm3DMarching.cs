@@ -62,7 +62,6 @@ public class Mpm3DMarching : MonoBehaviour
         Clamp,
         Elastic
     }
-
     public enum StressType
     {
         NeoHookean,
@@ -75,7 +74,7 @@ public class Mpm3DMarching : MonoBehaviour
     }
     [Header("Material")]
     [SerializeField]
-    private RenderType renderType = RenderType.GaussianSplat;
+    public RenderType renderType = RenderType.GaussianSplat;
     [SerializeField]
     private Material handMaterial;
     [SerializeField]
@@ -116,7 +115,7 @@ public class Mpm3DMarching : MonoBehaviour
     MarchingCubeVisualizer marchingCubeVisualizer;
 
     [SerializeField]
-    InitShape initShape = InitShape.Cube;
+    public InitShape initShape = InitShape.Cube;
 
     [SerializeField]
     private Vector3 g = new(0, -9.8f, 0);
@@ -126,10 +125,10 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private float bounding_eps = 0.1f;
     [SerializeField]
-    private float max_dt = 1e-4f, frame_time = 0.005f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
+    public float max_dt = 1e-4f, frame_time = 0.005f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
     [SerializeField]
     bool use_correct_cfl = false;
-
+    
     [SerializeField]
     private float hand_simulation_radius = 0.5f;
 
@@ -141,12 +140,10 @@ public class Mpm3DMarching : MonoBehaviour
 
     private float fix_radius = 0.2f;
 
-
-
-
+    
     [Header("Obstacle")]
     [SerializeField]
-    private ObstacleType obstacleType = ObstacleType.Sphere;
+    public ObstacleType obstacleType = ObstacleType.Sphere;
     [SerializeField]
     private Sphere[] sphere;
 
@@ -155,7 +152,6 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private OVRSkeleton[] oculus_skeletons;
     [SerializeField]
-    private float Skeleton_capsule_radius = 0.01f;
     private float[] preset_capsule_radius;
     private int skeleton_num_capsules = 24; // use default 24
     private int NParticles;
@@ -189,7 +185,7 @@ public class Mpm3DMarching : MonoBehaviour
 
     private bool RendererInitialized = false;
     private List<CapsuleVisualization> _capsuleVisualizations = new();
-
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -527,7 +523,7 @@ public class Mpm3DMarching : MonoBehaviour
         p_mass = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
 
         material = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
-
+        
         E.CopyFromArray(E_host);
         SigY.CopyFromArray(SigY_host);
         nu.CopyFromArray(nu_host);
@@ -556,7 +552,7 @@ public class Mpm3DMarching : MonoBehaviour
             }
             return;
         }
-
+        
         if (_Compute_Graph_g_substep != null)
         {
             UpdateHandSDF();
@@ -787,14 +783,12 @@ public class Mpm3DMarching : MonoBehaviour
     {
         object2.transform.SetParent(gameObject.transform);
     }
-
     public void FixObject(Vector3 center, float radius)
     {
         is_fixed = true;
         fix_center = center;
         fix_radius = radius;
     }
-
     public void SetFixed(bool fixed_)
     {
         is_fixed = fixed_;
@@ -839,7 +833,6 @@ public class Mpm3DMarching : MonoBehaviour
         }
         // Init_materials();
         // Update_materials();
-
     }
 
     public void IncreaseGridSize()

@@ -14,6 +14,7 @@ class UIManager : MonoBehaviour
     private GameObject Mpm3DObject;
     private List<GameObject> createdObjectLists = new List<GameObject>();
     private GameObject selectedObject;
+    private GameObject prevSelectedObject;
 
     // UI Components
     public GameObject UI_canvas;
@@ -74,7 +75,7 @@ class UIManager : MonoBehaviour
             }
         }
     }
-
+    
     void Update()
     {
         // Find the last grabbed object as the selected object for further manipulations
@@ -119,8 +120,29 @@ class UIManager : MonoBehaviour
             }
         }
     }
+    
+    void CreateNewMpm3DObject()
+    {
+        if (Mpm3DObject != null)
+        {
+            // Position and name
+            Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.1f;
+            position.x -= 0.2f;
+            Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
 
-    void apply_material(GameObject slectedMpm3DObject)
+            GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
+            createdObjectLists.Add(newMpm3DObject);
+            
+            // Use the just created object as the selected object for further interactions
+            selectedObject = newMpm3DObject;
+            newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
+
+            // Apply materials specified from UI
+            applyMaterial(newMpm3DObject);
+        }
+    }
+    
+    void applyMaterial(GameObject slectedMpm3DObject)
     {
         // Store the object parameters when creating the object
         Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
@@ -133,7 +155,7 @@ class UIManager : MonoBehaviour
                 mpm3DSimulation.is_fixed = toggle.isOn;
             }
         }
-
+        
         foreach (TMP_Dropdown dropdown in dropdowns)
         {
             if (dropdown.name == "Dropdown_MaterialType")
@@ -168,10 +190,26 @@ class UIManager : MonoBehaviour
             {
                 mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
             }
+            else if (parameter.name == "Parameter_FrictionK")
+            {
+                mpm3DSimulation.friction_k = parameter.GetComponentInChildren<Slider>().value;
+            }
+            else if (parameter.name == "Parameter_P_Rho")
+            {
+                mpm3DSimulation.p_rho = parameter.GetComponentInChildren<Slider>().value;
+            }
+            else if (parameter.name == "Parameter_FrictionAngle")
+            {
+                mpm3DSimulation.friction_angle = parameter.GetComponentInChildren<Slider>().value;
+            }
+            else if (parameter.name == "Parameter_Damping")
+            {
+                mpm3DSimulation.damping = parameter.GetComponentInChildren<Slider>().value;
+            }
         }
-
+        
         Debug.Log("Mpm3DObject" + slectedMpm3DObject.name + " is created and selected");
-        //Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
+        Debug.Log("Object is fixed: " + mpm3DSimulation.is_fixed);
         Debug.Log("materialType: " + mpm3DSimulation.materialType);
         Debug.Log("plasticityType: " + mpm3DSimulation.plasticityType);
         Debug.Log("stressType: " + mpm3DSimulation.stressType);
@@ -179,34 +217,17 @@ class UIManager : MonoBehaviour
         Debug.Log("SigY: " + mpm3DSimulation._SigY);
         Debug.Log("nu: " + mpm3DSimulation._nu);
         Debug.Log("colide_factor: " + mpm3DSimulation.colide_factor);
+        Debug.Log("friction_k: " + mpm3DSimulation.friction_k);
+        Debug.Log("p_rho: " + mpm3DSimulation.p_rho);
+        Debug.Log("friction_angle: " + mpm3DSimulation.friction_angle);
 
-        if (slectedMpm3DObject != null)
-        {
-            slectedMpm3DObject.GetComponent<Mpm3DMarching>().Init_materials();
-            slectedMpm3DObject.GetComponent<Mpm3DMarching>().Update_materials();
-        }
+        // if (slectedMpm3DObject != null)
+        // {
+        //     slectedMpm3DObject.GetComponent<Mpm3DMarching>().Init_materials();
+        //     slectedMpm3DObject.GetComponent<Mpm3DMarching>().Update_materials();
+        // }
     }
-
-    void CreateNewMpm3DObject()
-    {
-        if (Mpm3DObject != null)
-        {
-            // Position and name
-            Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.1f;
-            position.x -= 0.2f;
-            Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
-
-            GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
-            createdObjectLists.Add(newMpm3DObject);
-            // Use the just created object as the selected object for further interactions
-            selectedObject = newMpm3DObject;
-            newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-
-            // Apply materials specified from UI
-            apply_material(newMpm3DObject);
-        }
-    }
-
+    
     void OnButtonClick(Button button)
     {
         Debug.Log(button.name + " was clicked!");
@@ -241,35 +262,73 @@ class UIManager : MonoBehaviour
         {
             if (selectedObject != null)
             {
-                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-                mpm3DSimulation.Reset();
+                // Store the original position, scale, rotation, and prefab name
+                Vector3 originalPosition = selectedObject.transform.position;
+                Vector3 originalScale = selectedObject.transform.localScale;
+                Quaternion originalRotation = selectedObject.transform.rotation;
+                string prefabName = selectedObject.GetComponent<Mpm3DMarching>().initShape.ToString();
+                
+                // Color
+                Color originalColor = selectedObject.transform.Find("MarchingCubeVisualizer").gameObject.GetComponent<MeshRenderer>().material.color;
+
+                // Destroy the object
+                createdObjectLists.Remove(selectedObject);
+                Destroy(selectedObject);
+                
+                // Create a new object
+                GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/Mpm3DMarching" + prefabName);
+                if (Mpm3DObject != null)
+                {
+                    GameObject newMpm3DObject = Instantiate(Mpm3DObject, originalPosition, originalRotation);
+                    newMpm3DObject.transform.localScale = originalScale;
+                    createdObjectLists.Add(newMpm3DObject);
+                    selectedObject = newMpm3DObject;
+                    newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
+                    Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                    mpm3DSimulation.AdjustTextureColor(originalColor);
+                    applyMaterial(newMpm3DObject);
+                }
             }
         }
         if (button.name == "Button_ApplyMaterial")
         {
-            apply_material(selectedObject);
+            applyMaterial(selectedObject);
         }
         // Delete the object from the scene
+        if (button.name == "Button_DeleteObject")
+        {
+            if (selectedObject != null)
+            {
+                createdObjectLists.Remove(selectedObject);
+                Destroy(selectedObject);
+                selectedObject = null;
+            }
+        }        
     }
-
+    
     void OnToggleValueChanged(Toggle toggle, bool isOn)
     {
         Debug.Log("Toggle " + toggle.name + " is " + (isOn ? "On" : "Off"));
 
-        // Enable/Disable the edit mode
+        // Enable/Disable the edit mode (bool runSimulation)
         if (toggle.name == "Toggle_EnterModelingMode")
         {
             Text toggle_label = toggle.GetComponentInChildren<Text>();
             toggle_label.text = isOn ? "Exit Modeling Mode" : "Enter Modeling Mode";
         }
-
+        
         // Enable/Disable fix object in place
         if (toggle.name == "Toggle_FixObject")
         {
-
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.SetFixed(!mpm3DSimulation.is_fixed);
+                Debug.Log("Object " + selectedObject.name + " is " + (mpm3DSimulation.is_fixed ? "Fixed" : "Unfixed"));
+            }
         }
     }
-
+    
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
         Debug.Log(dropdown.name + " selected: " + dropdown.options[value].text);
@@ -279,99 +338,86 @@ class UIManager : MonoBehaviour
             // Select a primitive shape
             if (dropdown.options[value].text == "Sphere")
             {
-                CreateMpm3DObject("Sphere");
+                CreateMpm3DObjectFromPrefab("Sphere");
             }
             else if (dropdown.options[value].text == "Cube")
             {
-                CreateMpm3DObject("Cube");
+                CreateMpm3DObjectFromPrefab("Cube");
             }
             else if (dropdown.options[value].text == "Cylinder")
             {
-                CreateMpm3DObject("Cylinder");
+                CreateMpm3DObjectFromPrefab("Cylinder");
+            }
+            else if (dropdown.options[value].text == "Torus")
+            {
+                CreateMpm3DObjectFromPrefab("Torus");
             }
         }
-
+        
         if (dropdown.name == "Dropdown_Color")
         {
             // Adjust the color of the primitive shape
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                if (mpm3DSimulation != null)
+                {
+                    if (dropdown.options[value].text == "Red")
+                    {
+                        mpm3DSimulation.AdjustTextureColor(Color.red);
+                    }
+                    else if (dropdown.options[value].text == "Orange")
+                    {
+                        mpm3DSimulation.AdjustTextureColor(new Color(1.0f, 0.5f, 0.0f));
+                    }
+                    else if (dropdown.options[value].text == "Green")
+                    {
+                        mpm3DSimulation.AdjustTextureColor(Color.green);
+                    }
+                    else if (dropdown.options[value].text == "Blue")
+                    {
+                        mpm3DSimulation.AdjustTextureColor(Color.blue);
+                    }
+                    else if (dropdown.options[value].text == "Yellow")
+                    {
+                        mpm3DSimulation.AdjustTextureColor(Color.yellow);
+                    }
+                    else if (dropdown.options[value].text == "White")
+                    {
+                        mpm3DSimulation.AdjustTextureColor(Color.white);
+                    }
+                    else if (dropdown.options[value].text == "Black")
+                    {
+                        mpm3DSimulation.AdjustTextureColor(Color.black);
+                    }
+                }
+            }
         }
     }
 
-    void CreateMpm3DObject(string prefabName)
+    void CreateMpm3DObjectFromPrefab(string prefabName)
     {
-        GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/" + prefabName);
-        // if (Mpm3DObject != null)
-        // {
-        //     // Position and name
-        //     Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.1f;
-        //     position.x -= 0.2f;
-        //     Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
+        GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/Mpm3DMarching" + prefabName);
+        
+        if (Mpm3DObject != null)
+        {
+            // Position and name
+            Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.1f;
+            position.x -= 0.2f;
+            Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
 
-        //     GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
-        //     createdObjectLists.Add(newMpm3DObject);
-        //     // Use the just created object as the selected object for further interactions
-        //     selectedObject = newMpm3DObject;
-        //     newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-
-        //     // Store the object parameters when creating the object
-        //     Mpm3DMarching mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DMarching>();
-
-        //     foreach (Toggle toggle in toggles)
-        //     {
-        //         if (toggle.name == "Toggle_FixObject")
-        //         {
-        //             mpm3DSimulation.isFixed = toggle.isOn;
-        //         }
-        //     }
-
-        //     foreach (TMP_Dropdown dropdown in dropdowns)
-        //     {
-        //         if (dropdown.name == "Dropdown_MaterialType")
-        //         {
-        //             mpm3DSimulation.materialType = (Mpm3DMarching.MaterialType)Enum.Parse(typeof(Mpm3DMarching.MaterialType), dropdown.value.ToString());
-        //         }
-        //         if (dropdown.name == "Dropdown_PlasticityType")
-        //         {
-        //             mpm3DSimulation.plasticityType = (Mpm3DMarching.PlasticityType)Enum.Parse(typeof(Mpm3DMarching.PlasticityType), dropdown.value.ToString());
-        //         }
-        //         if (dropdown.name == "Dropdown_StressType")
-        //         {
-        //             mpm3DSimulation.stressType = (Mpm3DMarching.StressType)Enum.Parse(typeof(Mpm3DMarching.StressType), dropdown.value.ToString());
-        //         }
-        //     }
-
-        //     foreach (GameObject parameter in parameterObjects)
-        //     {
-        //         if (parameter.name == "Parameter_E")
-        //         {
-        //             mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
-        //         }
-        //         else if (parameter.name == "Parameter_SigY")
-        //         {
-        //             mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
-        //         }
-        //         else if (parameter.name == "Parameter_Nu")
-        //         {
-        //             mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
-        //         }
-        //         else if (parameter.name == "Parameter_ColideFactor")
-        //         {
-        //             mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
-        //         }
-        //     }
-
-        //     // Debug.Log("Mpm3DObject" + newMpm3DObject.name + " is created and selected");
-        //     // Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
-        //     // Debug.Log("materialType: " + mpm3DSimulation.materialType);
-        //     // Debug.Log("plasticityType: " + mpm3DSimulation.plasticityType);
-        //     // Debug.Log("stressType: " + mpm3DSimulation.stressType);
-        //     // Debug.Log("E: " + mpm3DSimulation._E);
-        //     // Debug.Log("SigY: " + mpm3DSimulation._SigY);
-        //     // Debug.Log("nu: " + mpm3DSimulation._nu);
-        //     // Debug.Log("colide_factor: " + mpm3DSimulation.colide_factor);
-        // }
+            GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
+            createdObjectLists.Add(newMpm3DObject);
+            
+            // Use the just created object as the selected object for further interactions
+            selectedObject = newMpm3DObject;
+            newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
+            
+            // Apply materials specified from UI
+            applyMaterial(newMpm3DObject);
+        }
     }
-
+    
     void OnInputFieldSelect(InputField inputField)
     {
         Debug.Log(inputField.name + " was selected!");
@@ -415,7 +461,7 @@ class UIManager : MonoBehaviour
         }
     }
 
-    public void ShowSlectedObjectCanvas()
+    public void ShowSelectedObjectCanvas()
     {
         if (UI_canvas != null && oculus_hands[1].IsTracked && sceneCamera != null)
         {
@@ -433,7 +479,7 @@ class UIManager : MonoBehaviour
                             toggle.isOn = mpm3DSimulation.is_fixed;
                         }
                     }
-
+                    
                     foreach (TMP_Dropdown dropdown in dropdowns)
                     {
                         if (dropdown.name == "Dropdown_MaterialType")
@@ -468,10 +514,22 @@ class UIManager : MonoBehaviour
                         {
                             parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.colide_factor;
                         }
+                        else if (parameter.name == "Parameter_FrictionK")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.friction_k;
+                        }
+                        else if (parameter.name == "Parameter_P_Rho")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.p_rho;
+                        }
+                        else if (parameter.name == "Parameter_FrictionAngle")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.friction_angle;
+                        }
                     }
                 }
             }
-
+            
             // Set position and rotation of the UI canvas
             Vector3 handThumbTipPosition = Vector3.zero;
 
