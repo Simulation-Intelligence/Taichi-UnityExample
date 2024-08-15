@@ -34,7 +34,7 @@ class UIManager : MonoBehaviour
     public TMP_InputField[] tmpInputFields;
     public GameObject[] parameterObjects;
     public TouchScreenKeyboard overlayKeyboard;
-    
+
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
@@ -74,7 +74,7 @@ class UIManager : MonoBehaviour
             }
         }
     }
-    
+
     void Update()
     {
         // Find the last grabbed object as the selected object for further manipulations
@@ -119,18 +119,18 @@ class UIManager : MonoBehaviour
             }
         }
     }
-    
+
     void apply_material(GameObject slectedMpm3DObject)
     {
         // Store the object parameters when creating the object
         Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
-        
+
         // Get the value from the UI to create the object
         foreach (Toggle toggle in toggles)
         {
             if (toggle.name == "Toggle_FixObject")
             {
-                mpm3DSimulation.isFixed = toggle.isOn;
+                mpm3DSimulation.is_fixed = toggle.isOn;
             }
         }
 
@@ -169,9 +169,9 @@ class UIManager : MonoBehaviour
                 mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
             }
         }
-        
+
         Debug.Log("Mpm3DObject" + slectedMpm3DObject.name + " is created and selected");
-        Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
+        //Debug.Log("isFixed: " + mpm3DSimulation.isFixed);
         Debug.Log("materialType: " + mpm3DSimulation.materialType);
         Debug.Log("plasticityType: " + mpm3DSimulation.plasticityType);
         Debug.Log("stressType: " + mpm3DSimulation.stressType);
@@ -179,14 +179,14 @@ class UIManager : MonoBehaviour
         Debug.Log("SigY: " + mpm3DSimulation._SigY);
         Debug.Log("nu: " + mpm3DSimulation._nu);
         Debug.Log("colide_factor: " + mpm3DSimulation.colide_factor);
-        
+
         if (slectedMpm3DObject != null)
         {
             slectedMpm3DObject.GetComponent<Mpm3DMarching>().Init_materials();
             slectedMpm3DObject.GetComponent<Mpm3DMarching>().Update_materials();
         }
     }
-    
+
     void CreateNewMpm3DObject()
     {
         if (Mpm3DObject != null)
@@ -201,12 +201,12 @@ class UIManager : MonoBehaviour
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-            
+
             // Apply materials specified from UI
             apply_material(newMpm3DObject);
         }
     }
-    
+
     void OnButtonClick(Button button)
     {
         Debug.Log(button.name + " was clicked!");
@@ -251,7 +251,7 @@ class UIManager : MonoBehaviour
         }
         // Delete the object from the scene
     }
-    
+
     void OnToggleValueChanged(Toggle toggle, bool isOn)
     {
         Debug.Log("Toggle " + toggle.name + " is " + (isOn ? "On" : "Off"));
@@ -430,7 +430,7 @@ class UIManager : MonoBehaviour
                     {
                         if (toggle.name == "Toggle_FixObject")
                         {
-                            toggle.isOn = mpm3DSimulation.isFixed;
+                            toggle.isOn = mpm3DSimulation.is_fixed;
                         }
                     }
 

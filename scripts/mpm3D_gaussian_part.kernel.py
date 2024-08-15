@@ -258,7 +258,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
                 grid_v[I] = ti.select(cond, 0, grid_v[I])
                 grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
-                sdf[I] = 1
+                sdf[I] = float('inf')
                 obstacle_normals[I] = [0,0,0]
 
     @ti.kernel
@@ -415,15 +415,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     @ti.kernel
     def substep_fix_object(grid_v: ti.types.ndarray(ndim=3),
-                           dx: ti.f32,
                            fix_center_x: ti.f32, fix_center_y: ti.f32, fix_center_z: ti.f32, 
                            fix_range: ti.f32):
+        dx=1/grid_v.shape[0]
         for I in ti.grouped(grid_v):
-            # dist_to_center = ti.sqrt((I[0] - fix_center_x * n_grid) ** 2 +
-            #                          (I[1] - fix_center_y * n_grid) ** 2 +
-            #                          (I[2] - fix_center_z * n_grid) ** 2)
-            # if dist_to_center < fix_range * n_grid:
-            #     grid_v[I] = ti.Vector([0.0, 0.0, 0.0])
             pos = I * dx + dx * 0.5
             dist_to_center = (pos - ti.Vector([fix_center_x, fix_center_y, fix_center_z])).norm()
             if dist_to_center < fix_range:
@@ -439,6 +434,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                                    dx:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for I in ti.grouped(hand_sdf):
             pos = I * dx + dx * 0.5
+            obstacle_velocities[I]=ti.Vector([0.0, 0.0, 0.0])
             if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
                 min_dist = float('inf')
                 norm= ti.Vector([0.0, 0.0, 0.0])
@@ -495,6 +491,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         # calculate hand sdf
         for I in ti.grouped(hand_sdf):
             pos = I * dx + dx * 0.5
+            obstacle_velocities[I]=ti.Vector([0.0, 0.0, 0.0])
             if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
                 min_dist = float('inf')
                 norm= ti.Vector([0.0, 0.0, 0.0])
@@ -678,7 +675,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_calculate_hand_sdf_hash(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals ,obstacle_velocities,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid,dx,bound,min_x,max_x,min_y,max_y,min_z,max_z)
         # fix in place
-        substep_fix_object(grid_v, dx, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=0.2)
+        substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=0.2)
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_Von_Mises_plasticity(dg,x, mu_0, _SigY, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -719,6 +716,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
         mod.add_kernel(normalize_m, template_args={'grid_m': grid_m})
         mod.add_kernel(transform_and_merge, template_args={'x1': x, 'x2': x, 'x3': x, 'mat2': mat2, 'mat3': mat3})
+        mod.add_kernel(substep_fix_object, template_args={'grid_v': grid_v})
 
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part.kernel.tcm")
         print("AOT done")
@@ -736,7 +734,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             # substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    # run_aot()
+    run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph

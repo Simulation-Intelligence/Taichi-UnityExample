@@ -41,7 +41,7 @@ namespace MarchingCubes
             _builder = new MeshBuilder(_dimensions, _triangleBudget, _builderCompute);
         }
 
-        void OnDestroy()
+        public void OnDestroy()
         {
             _voxelBuffer.Dispose();
             _builder.Dispose();

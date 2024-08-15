@@ -35,9 +35,34 @@ public class SkeletonRenderer : MonoBehaviour
     private Material skeletonMaterial;
     [SerializeField]
     private Material capsuleMaterial;
-    
+
     private float[] _skeleton_capsule_radius;
-    
+
+    public static readonly float[] preset_capsule_radius =  { 0,
+                                              0,
+                                              0,
+                                              0.015382f,
+                                              0.013382f,
+                                              0.01028295f,
+                                              0.01822828f,
+                                              0.01029526f,
+                                              0.008038102f,
+                                              0.02323196f,
+                                              0.01117394f,
+                                              0.008030958f,
+                                              0.01608828f,
+                                              0.009922137f,
+                                              0.007611672f,
+                                              0.01823196f,
+                                              0.015f,
+                                              0.008483353f,
+                                              0.006764194f,
+                                              0.009768805f,
+                                              0.007636196f,
+                                              0.007629411f,
+                                              0.007231089f,
+                                              0.006425985f };
+
     private void Start()
     {
         if (handType.ToString() == "HandLeft")
@@ -53,7 +78,7 @@ public class SkeletonRenderer : MonoBehaviour
         _segmentVisualizations = new List<SegmentVisualization>();
         _capsuleVisualizations = new List<CapsuleVisualization>();
         _ovrCapsuleVisualizations = new List<OVRCapsuleVisualization>();
-        
+
         if (skeletonMaterial == null)
         {
             skeletonMaterial = new Material(Shader.Find("Diffuse"));
@@ -90,16 +115,16 @@ public class SkeletonRenderer : MonoBehaviour
                                                 0.007629411f,
                                                 0.007231089f,
                                                 0.006425985f };
-        
+
         if (false)
         {
             // Only use for testing radius of each bone
             for (int i = 0; i < leftHandJoints.Count; i++)
-                {
-                    var start = leftHandJoints[i];
-                    var end = leftHandJoints[i].parent;
-                    var capsuleVis = new CapsuleVisualization(start.position, end.position, _skeleton_capsule_radius[i], capsuleMaterial);
-                }
+            {
+                var start = leftHandJoints[i];
+                var end = leftHandJoints[i].parent;
+                var capsuleVis = new CapsuleVisualization(start.position, end.position, _skeleton_capsule_radius[i], capsuleMaterial);
+            }
             for (int j = 1; j < leftHandJoints.Count; j++)
             {
                 var start = leftHandJoints[j];
@@ -120,7 +145,7 @@ public class SkeletonRenderer : MonoBehaviour
             }
         }
     }
-    
+
     private void Update()
     {
         if (!isInitialized)
@@ -131,90 +156,90 @@ public class SkeletonRenderer : MonoBehaviour
         {
             //for (int i = 0; i < 1; i++)
             //{
-                if (oculus_hands[handIndex].IsTracked && oculus_hands[handIndex].HandConfidence == OVRHand.TrackingConfidence.High)
-                {
-                    // Update skeleton capsules
-                    if (useCustomCapsules)
-                    {
-                        for (int j = 0; j < oculus_skeletons[handIndex].Bones.Count; j++)
-                        {
-                            var start = oculus_skeletons[handIndex].Bones[j].Transform;
-                            var end = oculus_skeletons[handIndex].Bones[j].Transform.parent;
-                            _capsuleVisualizations[j].Update(start.position, end.position);
-                        }
-                    }
-                    else
-                    {
-                        for (int j = 0; j < _ovrCapsuleVisualizations.Count; j++)
-                        {
-                            _ovrCapsuleVisualizations[j].Update(1f);
-                        }
-                    }
-
-                    // Update skeleton line segments
-                    for (int j = 0; j < oculus_skeletons[handIndex].Bones.Count; j++)
-                    {
-                        _segmentVisualizations[j].Update();
-                    }
-                }
-            }
-        //}
-    }
-    
-    private void Initialize()
-    {
-        //for (int i = 0; i < 1; i++)
-        //{
             if (oculus_hands[handIndex].IsTracked && oculus_hands[handIndex].HandConfidence == OVRHand.TrackingConfidence.High)
             {
+                // Update skeleton capsules
                 if (useCustomCapsules)
                 {
-                    // Initialize skeleton capsules by customized capsules
-                    if (renderPhysicsCapsules && oculus_skeletons[handIndex].Bones.Count > 0)
-                    {
-                        Debug.Log("Num of customized capsules in initialization: " + _skeleton_capsule_radius.Length);
-                        for (int j = 0; j < oculus_skeletons[handIndex].Bones.Count; j++)
-                        {
-                            var start = oculus_skeletons[handIndex].Bones[j].Transform;
-                            var end = oculus_skeletons[handIndex].Bones[j].Transform.parent;
-
-                            var capsuleVis = new CapsuleVisualization(start.position, end.position, _skeleton_capsule_radius[j], capsuleMaterial);
-                            _capsuleVisualizations.Add(capsuleVis);
-                        }
-                        isInitialized = true;
-                    }
-                }
-                else
-                {
-                    // Initialize skeleton capsules by Oculus OVRBoneCapsule
-                    if (renderPhysicsCapsules && oculus_skeletons[handIndex].Capsules.Count > 0)
-                    {
-                        Debug.Log("Num of OVRBoneCapsules in initialization: " + oculus_skeletons[handIndex].Capsules.Count);
-                        for (int j = 0; j < oculus_skeletons[handIndex].Capsules.Count; j++)
-                        {
-                            var capsuleVis = new OVRCapsuleVisualization(oculus_skeletons[handIndex].Capsules[j], capsuleMaterial);
-                            _ovrCapsuleVisualizations.Add(capsuleVis);
-                        }
-                        isInitialized = true;
-                    }
-                }
-                
-                // Initialize skeleton line segments
-                if (renderSegment && oculus_skeletons[handIndex].Bones.Count > 0)
-                {
-                    Debug.Log("Num of Bones in initialization: " + oculus_skeletons[handIndex].Bones.Count);
                     for (int j = 0; j < oculus_skeletons[handIndex].Bones.Count; j++)
                     {
                         var start = oculus_skeletons[handIndex].Bones[j].Transform;
                         var end = oculus_skeletons[handIndex].Bones[j].Transform.parent;
-                        var segmentVis = new SegmentVisualization(start, end, skeletonMaterial);
-                        _segmentVisualizations.Add(segmentVis);
+                        _capsuleVisualizations[j].Update(start.position, end.position);
                     }
                 }
+                else
+                {
+                    for (int j = 0; j < _ovrCapsuleVisualizations.Count; j++)
+                    {
+                        _ovrCapsuleVisualizations[j].Update(1f);
+                    }
+                }
+
+                // Update skeleton line segments
+                for (int j = 0; j < oculus_skeletons[handIndex].Bones.Count; j++)
+                {
+                    _segmentVisualizations[j].Update();
+                }
             }
+        }
         //}
     }
-    
+
+    private void Initialize()
+    {
+        //for (int i = 0; i < 1; i++)
+        //{
+        if (oculus_hands[handIndex].IsTracked && oculus_hands[handIndex].HandConfidence == OVRHand.TrackingConfidence.High)
+        {
+            if (useCustomCapsules)
+            {
+                // Initialize skeleton capsules by customized capsules
+                if (renderPhysicsCapsules && oculus_skeletons[handIndex].Bones.Count > 0)
+                {
+                    Debug.Log("Num of customized capsules in initialization: " + _skeleton_capsule_radius.Length);
+                    for (int j = 0; j < oculus_skeletons[handIndex].Bones.Count; j++)
+                    {
+                        var start = oculus_skeletons[handIndex].Bones[j].Transform;
+                        var end = oculus_skeletons[handIndex].Bones[j].Transform.parent;
+
+                        var capsuleVis = new CapsuleVisualization(start.position, end.position, _skeleton_capsule_radius[j], capsuleMaterial);
+                        _capsuleVisualizations.Add(capsuleVis);
+                    }
+                    isInitialized = true;
+                }
+            }
+            else
+            {
+                // Initialize skeleton capsules by Oculus OVRBoneCapsule
+                if (renderPhysicsCapsules && oculus_skeletons[handIndex].Capsules.Count > 0)
+                {
+                    Debug.Log("Num of OVRBoneCapsules in initialization: " + oculus_skeletons[handIndex].Capsules.Count);
+                    for (int j = 0; j < oculus_skeletons[handIndex].Capsules.Count; j++)
+                    {
+                        var capsuleVis = new OVRCapsuleVisualization(oculus_skeletons[handIndex].Capsules[j], capsuleMaterial);
+                        _ovrCapsuleVisualizations.Add(capsuleVis);
+                    }
+                    isInitialized = true;
+                }
+            }
+
+            // Initialize skeleton line segments
+            if (renderSegment && oculus_skeletons[handIndex].Bones.Count > 0)
+            {
+                Debug.Log("Num of Bones in initialization: " + oculus_skeletons[handIndex].Bones.Count);
+                for (int j = 0; j < oculus_skeletons[handIndex].Bones.Count; j++)
+                {
+                    var start = oculus_skeletons[handIndex].Bones[j].Transform;
+                    var end = oculus_skeletons[handIndex].Bones[j].Transform.parent;
+                    var segmentVis = new SegmentVisualization(start, end, skeletonMaterial);
+                    _segmentVisualizations.Add(segmentVis);
+                }
+            }
+        }
+        //}
+    }
+
     // Visualize hand skeleton by capsules (custom method)
     public class CapsuleVisualization
     {
@@ -223,7 +248,7 @@ public class SkeletonRenderer : MonoBehaviour
         private MeshRenderer Renderer;
         private Material RenderMaterial;
         private float capsult_radius;
-        
+
         public CapsuleVisualization(Vector3 BoneBegin, Vector3 BoneEnd, float radius, Material renderMat)
         {
             CapsuleGO = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -245,7 +270,7 @@ public class SkeletonRenderer : MonoBehaviour
             Vector3 orientation = (BoneEnd - BoneBegin).normalized;
             CapsuleGO.transform.rotation = Quaternion.LookRotation(orientation) * Quaternion.Euler(90, 0, 0);
         }
-        
+
         public CapsuleVisualization(float radius, Material renderMat)
         {
             CapsuleGO = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -285,7 +310,7 @@ public class SkeletonRenderer : MonoBehaviour
         private LineRenderer Line;
         private Material RenderMaterial;
         private const float LINE_RENDERER_WIDTH = 0.004f;
-        
+
         public SegmentVisualization(Transform begin, Transform end, Material renderMat)
         {
             RenderMaterial = renderMat;
@@ -300,14 +325,14 @@ public class SkeletonRenderer : MonoBehaviour
             Line.sharedMaterial = RenderMaterial;
             Line.useWorldSpace = true;
             Line.positionCount = 2;
-            
+
             Line.SetPosition(0, BoneBegin.position);
             Line.SetPosition(1, BoneEnd.position);
 
             Line.startWidth = LINE_RENDERER_WIDTH;
             Line.endWidth = LINE_RENDERER_WIDTH;
         }
-        
+
         public void Update()
         {
             Line.SetPosition(0, BoneBegin.position);

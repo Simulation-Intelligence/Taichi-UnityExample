@@ -34,7 +34,7 @@ public class Mpm3DMarching : MonoBehaviour
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere,
-     _Kernel_normalize_m, _Kernel_transform_and_merge;
+     _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object;
 
     public enum RenderType
     {
@@ -107,7 +107,6 @@ public class Mpm3DMarching : MonoBehaviour
     [Header("Scene Settings")]
     [SerializeField]
     bool RunSimulation = true;
-    public bool isFixed = false;
     private bool updated = false;
     private Grabbable _grabbable;
     [SerializeField]
@@ -123,6 +122,7 @@ public class Mpm3DMarching : MonoBehaviour
     private Vector3 g = new(0, -9.8f, 0);
     [SerializeField]
     private int n_grid = 32, bound = 3;
+
     [SerializeField]
     private float bounding_eps = 0.1f;
     [SerializeField]
@@ -134,6 +134,14 @@ public class Mpm3DMarching : MonoBehaviour
     private float hand_simulation_radius = 0.5f;
 
     private Vector3 boundary_min, boundary_max;
+
+    public bool is_fixed = false;
+
+    private Vector3 fix_center = new Vector3(0.5f, 0.5f, 0.5f);
+
+    private float fix_radius = 0.2f;
+
+
 
 
     [Header("Obstacle")]
@@ -217,6 +225,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_normalize_m = kernels["normalize_m"];
             _Kernel_init_sphere = kernels["init_sphere"];
             _Kernel_transform_and_merge = kernels["transform_and_merge"];
+            _Kernel_substep_fix_object = kernels["substep_fix_object"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -225,9 +234,6 @@ public class Mpm3DMarching : MonoBehaviour
             _Compute_Graph_g_init = cgraphs["init"];
             _Compute_Graph_g_substep = cgraphs["substep"];
         }
-        // Taichi Allocate memory, hostwrite are not considered
-        grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
-        grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
 
         if (sphere == null || sphere.Length == 0)
         {
@@ -236,7 +242,6 @@ public class Mpm3DMarching : MonoBehaviour
         }
         sphere_pos = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
         sphere_velocities = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
-        obstacle_velocities = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         sphere_radius = new NdArrayBuilder<float>().Shape(sphere.Length).HostWrite(true).Build();
         max_v = new NdArrayBuilder<float>().Shape(1).HostRead(true).Build();
 
@@ -258,11 +263,9 @@ public class Mpm3DMarching : MonoBehaviour
         UnityEngine.Debug.Log("Num of bones at start: " + oculus_skeletons[0].Bones.Count());
         skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
         skeleton_velocities = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats
-        hand_sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build(); // use a consistent radius for all capsules (at now)
-        obstacle_normals = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
-        segments_count_per_cell = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid).Build();
-        hash_table = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid, skeleton_num_capsules * oculus_skeletons.Length).Build();
+
+        InitGrid();
 
 
         //skeleton_num_capsules = oculus_skeletons[0].Bones.Count();
@@ -323,33 +326,8 @@ public class Mpm3DMarching : MonoBehaviour
         }
 
 
-
-
         // 24 line segments with 24 capsules in total
-        preset_capsule_radius = new float[] { 0,
-                                              0,
-                                              0,
-                                              0.015382f,
-                                              0.013382f,
-                                              0.01028295f,
-                                              0.01822828f,
-                                              0.01029526f,
-                                              0.008038102f,
-                                              0.02323196f,
-                                              0.01117394f,
-                                              0.008030958f,
-                                              0.01608828f,
-                                              0.009922137f,
-                                              0.007611672f,
-                                              0.01823196f,
-                                              0.015f,
-                                              0.008483353f,
-                                              0.006764194f,
-                                              0.009768805f,
-                                              0.007636196f,
-                                              0.007629411f,
-                                              0.007231089f,
-                                              0.006425985f };
+        preset_capsule_radius = SkeletonRenderer.preset_capsule_radius;
         for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
         {
             _skeleton_capsule_radius[i] = preset_capsule_radius[i % 24] / transform.lossyScale.x;
@@ -423,7 +401,6 @@ public class Mpm3DMarching : MonoBehaviour
         marchingCubeVisualizer._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
         marchingCubeVisualizer._gridScale = dx;
 
-        //marchingCubeVisualizer.TargetValue = particle_per_grid * _p_mass / 10;
         marchingCubeVisualizer.Init();
 
         if (_Compute_Graph_g_init != null)
@@ -488,6 +465,7 @@ public class Mpm3DMarching : MonoBehaviour
     {
         _p_vol = dx * dx * dx / particle_per_grid;
         _p_mass = _p_vol * p_rho;
+        max_density = particle_per_grid * _p_mass;
         sin_phi = Mathf.Sin(friction_angle * Mathf.Deg2Rad);
         _alpha = Mathf.Sqrt(2.0f / 3.0f) * 2 * sin_phi / (3 - sin_phi);
 
@@ -578,6 +556,7 @@ public class Mpm3DMarching : MonoBehaviour
             }
             return;
         }
+
         if (_Compute_Graph_g_substep != null)
         {
             UpdateHandSDF();
@@ -671,6 +650,8 @@ public class Mpm3DMarching : MonoBehaviour
                 _Kernel_substep_p2g.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound,
                 boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                if (is_fixed)
+                    _Kernel_substep_fix_object.LaunchAsync(grid_v, fix_center.x, fix_center.y, fix_center.z, fix_radius);
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_apply_plasticity.LaunchAsync(dg, x, E, nu, material, SigY, alpha, min_clamp, max_clamp, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 if (use_correct_cfl)
@@ -684,7 +665,11 @@ public class Mpm3DMarching : MonoBehaviour
                     dt = Mathf.Min(dt, time_left);
                 }
             }
-            _Kernel_substep_adjust_particle.LaunchAsync(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+            if (transform.lossyScale.x > 1.0f)
+            {
+                _Kernel_substep_adjust_particle.LaunchAsync(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+            }
+
         }
         if (renderType == RenderType.PointMesh)
         {
@@ -697,7 +682,7 @@ public class Mpm3DMarching : MonoBehaviour
         else if (renderType == RenderType.GaussianSplat)
         {
             _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh, x,
-boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+        boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
             sh.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuSHData.GetNativeBufferPtr());
             x.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
@@ -761,11 +746,7 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
         t1.CopyFromArray(MatrixtoFloatArray(transform1));
         t2.CopyFromArray(MatrixtoFloatArray(transform2));
         _Kernel_transform_and_merge.LaunchAsync(new_x, x, other.x, t1, t2);
-        // float[] host_x = new float[3 * totalParticles];
-        // for (int i = 0; i < totalParticles * 3; i++)
-        // {
-        // }
-        //new_x.CopyToArray(host_x);
+
         NParticles = totalParticles;
 
         NdArray<float> _other_data = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).Build();
@@ -807,6 +788,78 @@ boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min
         object2.transform.SetParent(gameObject.transform);
     }
 
+    public void FixObject(Vector3 center, float radius)
+    {
+        is_fixed = true;
+        fix_center = center;
+        fix_radius = radius;
+    }
+
+    public void SetFixed(bool fixed_)
+    {
+        is_fixed = fixed_;
+    }
+    public void InitGrid()
+    {
+        grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
+        grid_m = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
+        hand_sdf = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).Build();
+        obstacle_velocities = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
+        obstacle_normals = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
+        segments_count_per_cell = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid).Build();
+        hash_table = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid, skeleton_num_capsules * oculus_skeletons.Length).Build();
+    }
+    public void DiposeGrid()
+    {
+        grid_v.Dispose();
+        grid_m.Dispose();
+        hand_sdf.Dispose();
+        obstacle_velocities.Dispose();
+        obstacle_normals.Dispose();
+        segments_count_per_cell.Dispose();
+        hash_table.Dispose();
+    }
+    public void SetGridSize(int n)
+    {
+        particle_per_grid = particle_per_grid * (n_grid * n_grid * n_grid) / (n * n * n);
+        max_density = particle_per_grid * _p_mass;
+        n_grid = n;
+        dx = 1.0f / n_grid;
+
+
+        DiposeGrid();
+        InitGrid();
+
+        if (renderType == RenderType.MarchingCubes)
+        {
+            marchingCubeVisualizer.OnDestroy();
+            marchingCubeVisualizer._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
+            marchingCubeVisualizer._gridScale = dx;
+            marchingCubeVisualizer.Init();
+        }
+        // Init_materials();
+        // Update_materials();
+
+    }
+
+    public void IncreaseGridSize()
+    {
+        if (n_grid == 150)
+        {
+            UnityEngine.Debug.LogWarning("Cannot increase grid size anymore.");
+            return;
+        }
+        SetGridSize(n_grid + 20);
+    }
+    public void DecreaseGridSize()
+    {
+        if (n_grid == 50)
+        {
+            UnityEngine.Debug.LogWarning("Cannot decrease grid size anymore.");
+            return;
+        }
+        SetGridSize(n_grid - 20);
+    }
     public void AdjustTextureColor(Color rgba)
     {
         if (renderType == RenderType.GaussianSplat)
