@@ -244,12 +244,12 @@ MonoBehaviour:
   n_grid: 64
   bound: 3
   bounding_eps: 0.1
-  max_dt: 0.0001
-  frame_time: 0.001
+  max_dt: 0.00001
+  frame_time: 0.0001
   cube_size: 0.4
   particle_per_grid: 8
   allowed_cfl: 0.5
-  damping: 10
+  damping: 300
   use_correct_cfl: 0
   hand_simulation_radius: 0.3
   is_fixed: 0
@@ -257,9 +257,9 @@ MonoBehaviour:
   sphere: []
   oculus_hands: []
   oculus_skeletons: []
-  Skeleton_capsule_radius: 0.01
-  _E: 8000000
-  _SigY: 800000
+  preset_capsule_radius: []
+  _E: 200000000
+  _SigY: 10000000
   _nu: 0.3
   colide_factor: 0.5
   friction_k: 0.4

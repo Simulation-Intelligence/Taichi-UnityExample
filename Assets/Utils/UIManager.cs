@@ -126,8 +126,9 @@ class UIManager : MonoBehaviour
         if (Mpm3DObject != null)
         {
             // Position and name
-            Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.1f;
-            position.x -= 0.2f;
+            Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.2f;
+            position.x -= 0.1f;
+            position.y -= 0.2f;
             Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
 
             GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
@@ -138,7 +139,7 @@ class UIManager : MonoBehaviour
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
 
             // Apply materials specified from UI
-            applyMaterial(newMpm3DObject);
+            // applyMaterial(newMpm3DObject);
         }
     }
     
@@ -220,12 +221,11 @@ class UIManager : MonoBehaviour
         Debug.Log("friction_k: " + mpm3DSimulation.friction_k);
         Debug.Log("p_rho: " + mpm3DSimulation.p_rho);
         Debug.Log("friction_angle: " + mpm3DSimulation.friction_angle);
-
-        // if (slectedMpm3DObject != null)
-        // {
-        //     slectedMpm3DObject.GetComponent<Mpm3DMarching>().Init_materials();
-        //     slectedMpm3DObject.GetComponent<Mpm3DMarching>().Update_materials();
-        // }
+        Debug.Log("damping: " + mpm3DSimulation.damping);
+        
+        // Adjust materials
+        mpm3DSimulation.Init_materials();
+        mpm3DSimulation.Update_materials();
     }
     
     void OnButtonClick(Button button)
@@ -236,6 +236,22 @@ class UIManager : MonoBehaviour
         if (button.name == "Button_CreateObject")
         {
             CreateNewMpm3DObject();
+        }
+        // Adjust materials during the modeling process
+        if (button.name == "Button_ApplyMaterials")
+        {
+            if (selectedObject != null)
+            {
+                applyMaterial(selectedObject);
+            }
+            if (button.GetComponentInChildren<TMP_Text>().text == "Apply Materials")
+            {
+                button.GetComponentInChildren<TMP_Text>().text = "Applyed!";
+            }
+            else
+            {
+                button.GetComponentInChildren<TMP_Text>().text = "Apply Materials";
+            }
         }
         // Merge the object with another object
         if (button.name == "Button_MergeObject")
@@ -262,13 +278,11 @@ class UIManager : MonoBehaviour
         {
             if (selectedObject != null)
             {
-                // Store the original position, scale, rotation, and prefab name
+                // Store the original color, position, scale, rotation, and prefab name
                 Vector3 originalPosition = selectedObject.transform.position;
                 Vector3 originalScale = selectedObject.transform.localScale;
                 Quaternion originalRotation = selectedObject.transform.rotation;
                 string prefabName = selectedObject.GetComponent<Mpm3DMarching>().initShape.ToString();
-                
-                // Color
                 Color originalColor = selectedObject.transform.Find("MarchingCubeVisualizer").gameObject.GetComponent<MeshRenderer>().material.color;
 
                 // Destroy the object
@@ -289,10 +303,6 @@ class UIManager : MonoBehaviour
                     applyMaterial(newMpm3DObject);
                 }
             }
-        }
-        if (button.name == "Button_ApplyMaterial")
-        {
-            applyMaterial(selectedObject);
         }
         // Delete the object from the scene
         if (button.name == "Button_DeleteObject")
@@ -389,6 +399,10 @@ class UIManager : MonoBehaviour
                     else if (dropdown.options[value].text == "Black")
                     {
                         mpm3DSimulation.AdjustTextureColor(Color.black);
+                    }
+                    else if (dropdown.options[value].text == "Brown")
+                    {
+                        mpm3DSimulation.AdjustTextureColor(new Color(0.6f, 0.3f, 0.0f));
                     }
                 }
             }
