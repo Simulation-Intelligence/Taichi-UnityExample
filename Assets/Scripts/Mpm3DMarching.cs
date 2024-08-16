@@ -123,6 +123,8 @@ public class Mpm3DMarching : MonoBehaviour
 
     [SerializeField]
     private Vector3 g = new(0, -9.8f, 0);
+
+    private float gy;
     [SerializeField]
     private int n_grid = 32, bound = 3;
 
@@ -482,7 +484,9 @@ public class Mpm3DMarching : MonoBehaviour
         p_vol_host = new float[NParticles];
         p_mass_host = new float[NParticles];
 
-        point_color_host = new int[NParticles];
+        if (marchingCubeVisualizers.Length == 1)
+            point_color_host = new int[NParticles];
+
         material_host = new int[NParticles];
 
         for (int i = 0; i < NParticles; i++)
@@ -496,7 +500,8 @@ public class Mpm3DMarching : MonoBehaviour
             p_vol_host[i] = _p_vol;
             p_mass_host[i] = _p_mass;
             material_host[i] = 0;
-            point_color_host[i] = 0;
+            if (marchingCubeVisualizers.Length == 1)
+                point_color_host[i] = 0;
             switch (plasticityType)
             {
                 case PlasticityType.Von_Mises:
@@ -565,7 +570,7 @@ public class Mpm3DMarching : MonoBehaviour
             }
             return;
         }
-
+        UpdateGravity();
         if (_Compute_Graph_g_substep != null)
         {
             UpdateHandSDF();
@@ -1002,7 +1007,11 @@ public class Mpm3DMarching : MonoBehaviour
 
     public void SetGravity(float y)
     {
-        g.y = y;
+        gy = y;
+    }
+    private void UpdateGravity()
+    {
+        g = transform.InverseTransformDirection(new Vector3(0, gy, 0));
     }
     void UpdateSphereSDF()
     {
