@@ -34,7 +34,7 @@ public class Mpm3DMarching : MonoBehaviour
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere,
-     _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object;
+     _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi;
 
     public enum RenderType
     {
@@ -89,13 +89,13 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     public StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
-    private NdArray<float> x, v, C, dg, grid_v, grid_m, sphere_pos, obstacle_velocities, sphere_velocities, sphere_radius, hand_sdf;
+    private NdArray<float> x, v, C, dg, grid_v, grid_m, sphere_pos, obstacle_velocities, sphere_velocities, sphere_radius, hand_sdf, marching_m;
 
     public NdArray<float> skeleton_segments, skeleton_velocities, obstacle_normals, skeleton_capsule_radius, max_v;
     public NdArray<float> E, SigY, nu, min_clamp, max_clamp, alpha, p_vol, p_mass;
 
     public NdArray<float> init_rotation, init_scale, init_sh, other_data, sh;
-    private NdArray<int> segments_count_per_cell, hash_table, material;
+    private NdArray<int> segments_count_per_cell, hash_table, material, point_color;
 
     private float[] hand_skeleton_segments, hand_skeleton_segments_prev, hand_skeleton_velocities, _skeleton_capsule_radius, sphere_positions, _sphere_velocities, sphere_radii;
 
@@ -113,7 +113,11 @@ public class Mpm3DMarching : MonoBehaviour
     public GaussianSplatRenderManager splatManager;
 
     [SerializeField]
-    MarchingCubeVisualizer marchingCubeVisualizer;
+    MarchingCubeVisualizer[] marchingCubeVisualizers;
+
+    public ComputeShader copyShader;
+
+    private ComputeBuffer marching_m_computeBuffer;
 
     [SerializeField]
     InitShape initShape = InitShape.Cube;
@@ -169,7 +173,7 @@ public class Mpm3DMarching : MonoBehaviour
 
     private float[] E_host, SigY_host, nu_host, min_clamp_host, max_clamp_host, alpha_host, p_vol_host, p_mass_host;
 
-    private int[] material_host;//upper 16bits: 3: # Drucker_Prager  1:  # Von_Mises 2:  # Clamp 0:  # Elastic  lower 16bits: 0:  # neohookean 1:  # kirchhoff
+    private int[] material_host, point_color_host;//upper 16bits: 3: # Drucker_Prager  1:  # Von_Mises 2:  # Clamp 0:  # Elastic  lower 16bits: 0:  # neohookean 1:  # kirchhoff
 
     private float mu, lambda, sin_phi, _alpha, max_density;
 
@@ -226,6 +230,8 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_init_sphere = kernels["init_sphere"];
             _Kernel_transform_and_merge = kernels["transform_and_merge"];
             _Kernel_substep_fix_object = kernels["substep_fix_object"];
+
+            _Kernel_substep_p2g_multi = kernels["substep_p2g_multi"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -394,14 +400,16 @@ public class Mpm3DMarching : MonoBehaviour
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
 
+
+
         _p_vol = dx * dx * dx / particle_per_grid;
         _p_mass = _p_vol * p_rho;
         max_density = particle_per_grid * _p_mass;
 
-        marchingCubeVisualizer._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
-        marchingCubeVisualizer._gridScale = dx;
+        marchingCubeVisualizers[0]._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
+        marchingCubeVisualizers[0]._gridScale = dx;
 
-        marchingCubeVisualizer.Init();
+        marchingCubeVisualizers[0].Init();
 
         if (_Compute_Graph_g_init != null)
         {
@@ -477,6 +485,8 @@ public class Mpm3DMarching : MonoBehaviour
         alpha_host = new float[NParticles];
         p_vol_host = new float[NParticles];
         p_mass_host = new float[NParticles];
+
+        point_color_host = new int[NParticles];
         material_host = new int[NParticles];
 
         for (int i = 0; i < NParticles; i++)
@@ -490,6 +500,7 @@ public class Mpm3DMarching : MonoBehaviour
             p_vol_host[i] = _p_vol;
             p_mass_host[i] = _p_mass;
             material_host[i] = 0;
+            point_color_host[i] = 0;
             switch (plasticityType)
             {
                 case PlasticityType.Von_Mises:
@@ -527,6 +538,7 @@ public class Mpm3DMarching : MonoBehaviour
         p_mass = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
 
         material = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
+        point_color = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
 
         E.CopyFromArray(E_host);
         SigY.CopyFromArray(SigY_host);
@@ -537,6 +549,7 @@ public class Mpm3DMarching : MonoBehaviour
         p_vol.CopyFromArray(p_vol_host);
         p_mass.CopyFromArray(p_mass_host);
         material.CopyFromArray(material_host);
+        point_color.CopyFromArray(point_color_host);
     }
 
     // Update is called once per frame
@@ -646,8 +659,9 @@ public class Mpm3DMarching : MonoBehaviour
             while (time_left > 0)
             {
                 time_left -= dt;
-                _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                _Kernel_substep_p2g.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m, marching_m, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                //_Kernel_substep_p2g.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, point_color, marching_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound,
                 boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 if (is_fixed)
@@ -689,10 +703,20 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else if (renderType == RenderType.MarchingCubes)
         {
-            _Kernel_normalize_m.LaunchAsync(grid_m, max_density);
-            grid_m.CopyToNativeBufferAsync(marchingCubeVisualizer._voxelBuffer.GetNativeBufferPtr());
-            marchingCubeVisualizer.shouldUpdate = true;
-
+            _Kernel_normalize_m.LaunchAsync(marching_m, max_density);
+            marching_m.CopyToNativeBufferAsync(marching_m_computeBuffer.GetNativeBufferPtr());
+            int kernelId = copyShader.FindKernel("CopySubBuffer");
+            copyShader.SetBuffer(kernelId, "sourceBuffer", marching_m_computeBuffer);
+            int num = marchingCubeVisualizers[0]._voxelBuffer.count;
+            for (int i = 0; i < marchingCubeVisualizers.Length; i++)
+            {
+                copyShader.SetInt("sourceOffset", i * num);
+                copyShader.SetBuffer(kernelId, "destinationBuffer", marchingCubeVisualizers[i]._voxelBuffer);
+                int threadGroupSize = 1024; // 1024 threads per group
+                int threadGroups = Mathf.CeilToInt((float)num / threadGroupSize);
+                copyShader.Dispatch(kernelId, threadGroups, 1, 1);
+                marchingCubeVisualizers[i].shouldUpdate = true;
+            }
         }
         Runtime.Submit();
     }
@@ -710,6 +734,10 @@ public class Mpm3DMarching : MonoBehaviour
         else
         {
             MergeParticles(other);
+            if (renderType == RenderType.MarchingCubes)
+            {
+                MergeMarchingCubes(other);
+            }
         }
         MergeMaterials(other);
         other.gameObject.SetActive(false);
@@ -735,6 +763,32 @@ public class Mpm3DMarching : MonoBehaviour
         splatManager.init_gaussians();
         Init_gaussian();
     }
+    private void MergeMarchingCubes(Mpm3DMarching other)
+    {
+        Transform[] allChildren = other.gameObject.GetComponentsInChildren<Transform>(true);
+        string childName = "MarchingCubeVisualizer";
+        for (int i = 0; i < other.NParticles; i++)
+        {
+            other.point_color_host[i] += marchingCubeVisualizers.Length;
+        }
+        foreach (Transform child in allChildren)
+        {
+            if (child.name == childName)
+            {
+                if (child.TryGetComponent<MarchingCubeVisualizer>(out var m))
+                {
+                    m._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
+                    m._gridScale = dx;
+                    m.Init();
+                    marchingCubeVisualizers = marchingCubeVisualizers.Concat(new MarchingCubeVisualizer[] { m }).ToArray();
+                    child.SetParent(transform, false);
+                }
+            }
+        }
+        marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, n_grid, n_grid, n_grid).Build();
+        marching_m_computeBuffer = new ComputeBuffer(n_grid * n_grid * n_grid * marchingCubeVisualizers.Length, sizeof(float));
+    }
+
     private void MergeParticles(Mpm3DMarching other)
     {
         int totalParticles = NParticles + other.NParticles;
@@ -770,6 +824,7 @@ public class Mpm3DMarching : MonoBehaviour
         p_vol_host = p_vol_host.Concat(other.p_vol_host).ToArray();
         p_mass_host = p_mass_host.Concat(other.p_mass_host).ToArray();
         material_host = material_host.Concat(other.material_host).ToArray();
+        point_color_host = point_color_host.Concat(other.point_color_host).ToArray();
 
         E = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
         SigY = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
@@ -780,6 +835,7 @@ public class Mpm3DMarching : MonoBehaviour
         p_vol = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
         p_mass = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
         material = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
+        point_color = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
 
         Update_materials();
     }
@@ -808,6 +864,10 @@ public class Mpm3DMarching : MonoBehaviour
         obstacle_normals = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         segments_count_per_cell = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid).Build();
         hash_table = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid, skeleton_num_capsules * oculus_skeletons.Length).Build();
+
+        marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, n_grid, n_grid, n_grid).Build();
+
+        marching_m_computeBuffer = new ComputeBuffer(n_grid * n_grid * n_grid * marchingCubeVisualizers.Length, sizeof(float));
     }
     public void DiposeGrid()
     {
@@ -832,10 +892,13 @@ public class Mpm3DMarching : MonoBehaviour
 
         if (renderType == RenderType.MarchingCubes)
         {
-            marchingCubeVisualizer.OnDestroy();
-            marchingCubeVisualizer._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
-            marchingCubeVisualizer._gridScale = dx;
-            marchingCubeVisualizer.Init();
+            for (int i = 0; i < marchingCubeVisualizers.Length; i++)
+            {
+                marchingCubeVisualizers[i].OnDestroy();
+                marchingCubeVisualizers[i]._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
+                marchingCubeVisualizers[i]._gridScale = dx;
+                marchingCubeVisualizers[i].Init();
+            }
         }
         // Init_materials();
         // Update_materials();
@@ -922,17 +985,26 @@ public class Mpm3DMarching : MonoBehaviour
         tex.Apply(false, true);
         splatManager.m_Render.m_GpuColorData = tex;
     }
-    void AdjustMarchingCubeTextureColor(Color rgba)
+    void AdjustMarchingCubeTextureColor(Color rgba, int index = 0)
     {
-        marchingCubeVisualizer.GetComponent<MeshRenderer>().material.color = rgba;
+        marchingCubeVisualizers[index].GetComponent<MeshRenderer>().material.color = rgba;
     }
-    void AdjustMarchingCubeTextureColorRed(float r)
+    void AdjustMarchingCubeTextureColorRed(float r, int index = 0)
     {
-        marchingCubeVisualizer.GetComponent<MeshRenderer>().material.color = new Color(r, 0, 0, 1);
+        marchingCubeVisualizers[index].GetComponent<MeshRenderer>().material.color = new Color(r, 0, 0, 1);
     }
     public void Reset()
     {
-        Init_gaussian();
+        if (renderType == RenderType.GaussianSplat)
+        {
+            Init_gaussian();
+        }
+        else
+        {
+            Init_MarchingCubes();
+            Init_materials();
+            Update_materials();
+        }
     }
 
     public void SetGravity(float y)

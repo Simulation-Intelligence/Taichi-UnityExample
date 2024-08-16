@@ -63,12 +63,14 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     neighbour = (3,) * dim
     
     @ti.kernel
-    def substep_reset_grid(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+    def substep_reset_grid(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),marching_m:ti.types.ndarray(ndim=4),min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for I in ti.grouped(grid_m):
             # pos=I*dx+dx*0.5
             # if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
                 grid_v[I] = [0, 0, 0]
                 grid_m[I] = 0
+        for I in ti.grouped(marching_m):
+            marching_m[I] = 0
             
     @ti.kernel
     def substep_neohookean_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
@@ -160,7 +162,47 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         weight *= w[offset[i]][i]
                     grid_v[base + offset] += weight * (p_mass[p] * v[p] + affine @ dpos)
                     grid_m[base + offset] += weight * p_mass[p]
+    @ti.kernel
+    def substep_p2g_multi(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
+                    dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),point_color:ti.types.ndarray(ndim=1),marching_m:ti.types.ndarray(ndim=4),
+                    E: ti.types.ndarray(ndim=1), nu: ti.types.ndarray(ndim=1), material: ti.types.ndarray(ndim=1),
+                    p_vol:ti.types.ndarray(ndim=1), p_mass:ti.types.ndarray(ndim=1), dx:ti.f32, dt:ti.f32, min_x:ti.f32, max_x:ti.f32, 
+                    min_y:ti.f32, max_y:ti.f32, min_z:ti.f32, max_z:ti.f32):
+        for p in x:
+            if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
+                Xp = x[p] / dx
+                base = int(Xp - 0.5)
+                fx = Xp - base
+                w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
 
+                dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
+
+                mu = E[p] / (2 * (1 + nu[p]))
+                la = E[p] * nu[p] / ((1 + nu[p]) * (1 - 2 * nu[p]))
+                stress = ti.Matrix([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+                # Calculate stress based on material type
+                if material[p] & 0xFFFF == 1:  # kirchhoff
+                    U, sig, V = ti.svd(dg[p])
+                    J_new = sig[0, 0] * sig[1, 1] * sig[2, 2]
+                    stress = 2 * mu * (dg[p] - U @ V.transpose()) @ dg[p].transpose() + \
+                             ti.Matrix.identity(float, dim) * la * J_new * (J_new - 1)
+                    stress = (-dt * p_vol[p] * 4) * stress / dx**2
+                else :  # neohookean
+                    J = dg[p].determinant()
+                    cauchy = mu * (dg[p] @ dg[p].transpose()) + ti.Matrix.identity(float, dim) * (la * ti.log(J) - mu)
+                    stress = -(dt * p_vol[p] * 4 / dx**2) * cauchy
+
+                affine = stress + p_mass[p] * C[p]
+
+                for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
+                    dpos = (offset - fx) * dx
+                    weight = 1.0
+                    for i in ti.static(range(dim)):
+                        weight *= w[offset[i]][i]
+                    grid_v[base + offset] += weight * (p_mass[p] * v[p] + affine @ dpos)
+                    grid_m[base + offset] += weight * p_mass[p]
+                    color=point_color[p]
+                    marching_m[color,base + offset] += weight * p_mass[p]
 
     @ti.kernel
     def substep_apply_plasticity(dg: ti.types.ndarray(ndim=1), x: ti.types.ndarray(ndim=1), 
@@ -409,9 +451,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 max_speed[0] = ti.atomic_max(max_speed[0], v[I].norm())
     
     @ti.kernel
-    def normalize_m(grid_m: ti.types.ndarray(ndim=3),max_m:ti.f32):
-        for I in ti.grouped(grid_m):
-            grid_m[I] /= max_m
+    def normalize_m(marching_m: ti.types.ndarray(ndim=4),max_m:ti.f32):
+        for I in ti.grouped(marching_m):
+            marching_m[I] /= max_m
     
     @ti.kernel
     def substep_fix_object(grid_v: ti.types.ndarray(ndim=3),
@@ -652,6 +694,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
     max_m=_p_mass*particle_per_grid
 
+    point_color = ti.Vector.ndarray(1, ti.i32, shape=(n_particles))
+    marching_m = ti.ndarray(ti.f32, shape=(3,n_grid, n_grid, n_grid))
+
     #boundary
     min_x = 0.1
     max_x = 0.9
@@ -665,10 +710,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     mat3 = ti.ndarray(ti.f32, shape=(4, 4))
     
     def substep():
-        substep_reset_grid(grid_v, grid_m, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_reset_grid(grid_v, grid_m,marching_m, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_p2g(x, v, C,  dg, grid_v, grid_m,E,nu,material,p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_p2g_multi(x, v, C,  dg, grid_v, grid_m,point_color, marching_m,E, nu, material, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt,min_x,max_x,min_y,max_y,min_z,max_z)
         substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_calculate_hand_hash(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell)
@@ -683,11 +729,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_apply_Drucker_Prager_plasticity(dg, x,lambda_0, mu_0, _alpha, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_plasticity(dg, x,E,nu, material,SigY,alpha,min_clamp,max_clamp, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_get_max_speed(v,x, max_speed, min_x, max_x, min_y, max_y, min_z, max_z)
-        normalize_m(grid_m,max_m)
+        normalize_m(marching_m,max_m)
     
     def run_aot():
         mod = ti.aot.Module(arch)
-        mod.add_kernel(substep_reset_grid, template_args={'grid_v': grid_v, 'grid_m': grid_m})
+        mod.add_kernel(substep_reset_grid, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'marching_m': marching_m})
         mod.add_kernel(substep_kirchhoff_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})  
         mod.add_kernel(substep_neohookean_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})
         mod.add_kernel(substep_g2p, template_args={'x': x, 'v': v, 'C': C, 'grid_v': grid_v})
@@ -701,6 +747,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'x': x,'max_speed': max_speed})
         mod.add_kernel(init_dg, template_args={'dg': dg})
         mod.add_kernel(substep_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m,'E':E,'nu':nu,'material':material,'p_vol':p_vol,'p_mass':p_mass})
+        mod.add_kernel(substep_p2g_multi, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m,'point_color':point_color,'marching_m':marching_m,'E':E,'nu':nu,'material':material,'p_vol':p_vol,'p_mass':p_mass})
         mod.add_kernel(substep_apply_plasticity, template_args={'dg': dg,'x': x,'material':material,"E":E,"nu":nu,"SigY":SigY,"alpha":alpha,"min_clamp":min_clamp,"max_clamp":max_clamp})
         
         # hand sdf functions
@@ -714,7 +761,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_update_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'dg': dg, 'other_data': other_data, 'init_sh': init_sh, 'sh': sh, 'x': x})
         mod.add_kernel(scale_to_unit_cube, template_args={'x': x, 'other_data': other_data})
 
-        mod.add_kernel(normalize_m, template_args={'grid_m': grid_m})
+        mod.add_kernel(normalize_m, template_args={'marching_m': marching_m})
         mod.add_kernel(transform_and_merge, template_args={'x1': x, 'x2': x, 'x3': x, 'mat2': mat2, 'mat3': mat3})
         mod.add_kernel(substep_fix_object, template_args={'grid_v': grid_v})
 
