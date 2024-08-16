@@ -85,3 +85,4 @@ sparse/
 Assets/GaussianAssets/*.bytes
 
 !Packages/
+!Assets/GaussianAssets/*.meta
