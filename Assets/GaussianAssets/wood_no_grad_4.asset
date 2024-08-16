@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: wood_no_grad_4
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 138196
+  m_BoundsMin: {x: -0.16767994, y: -0.22359885, z: -0.38091}
+  m_BoundsMax: {x: 0.6561624, y: 0.6022736, z: 0.55369985}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 3bba50b485df2ebc4029ae56d7e00fa1
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: fece7877eb30d1445a62cd6c609d982d, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 83f8b5997428a444da4de2a1d0124c0a, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 3b35b4133f1014f43b999b85e5ea44da, type: 3}
+  m_SHData: {fileID: 4900000, guid: 66e98ac1dd7a0f3499cf59cc20d92b01, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

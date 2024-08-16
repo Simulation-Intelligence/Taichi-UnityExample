@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: truck-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 121873
+  m_BoundsMin: {x: -2.5974479, y: -1.9027624, z: -0.648008}
+  m_BoundsMax: {x: 2.9422643, y: 0.103025675, z: 1.6926348}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: b6b1d9fa4f5eba58d7a41d314a93ba7d
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: a573e3be569bc344ea6367967c0c1245, type: 3}
+  m_ColorData: {fileID: 4900000, guid: b72a972ee0bc01c4795abb8b102e8c66, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 7e4a07b3a6992d64c9bf316ae1056141, type: 3}
+  m_SHData: {fileID: 4900000, guid: 3a94f7fcdef29124188e0e488ccbd110, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
