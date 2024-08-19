@@ -442,23 +442,23 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     @ti.kernel
     def init_cylinder(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cylinder_height: ti.f32, cylinder_radius: ti.f32):
         for i in range(x.shape[0]):
-            dg[i] = ti.Matrix.identity(float, dim)
             while True:
                 rand_x = (ti.random() * 2 - 1) * cylinder_radius
                 rand_y = (ti.random() * 2 - 1) * cylinder_radius
                 if rand_x ** 2 + rand_y ** 2 <= cylinder_radius ** 2:
                     x[i] = ti.Vector([rand_x + 0.5, rand_y + 0.5, ti.random() * cylinder_height])
+                    dg[i] = ti.Matrix.identity(float, dim)
                     break
     
     @ti.kernel
     def init_torus(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), torus_radius: ti.f32, torus_tube_radius: ti.f32):
         for i in range(x.shape[0]):
-            dg[i] = ti.Matrix.identity(float, dim)
             rand_theta = ti.random() * 2 * pi
             rand_phi = ti.random() * 2 * pi
             rand_r = torus_tube_radius * ti.cos(rand_phi) + torus_radius
             x[i] = ti.Vector([rand_r * ti.cos(rand_theta) + 0.5, rand_r * ti.sin(rand_theta) + 0.5, torus_tube_radius * ti.sin(rand_phi) + 0.5])
-                
+            dg[i] = ti.Matrix.identity(float, dim)
+
     @ti.kernel
     def init_dg(dg: ti.types.ndarray(ndim=1)):
         for i in range(dg.shape[0]):
