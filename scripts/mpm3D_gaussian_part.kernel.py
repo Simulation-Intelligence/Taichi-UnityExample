@@ -2,7 +2,7 @@ import argparse
 import os
 import numpy as np
 import taichi as ti
-import json
+from math import pi
 
 from mpm_util import *
 
@@ -419,15 +419,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 dg[p] = U @ sig @ V.transpose()
 
     @ti.kernel
-    def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1),cube_size:ti.f32):
+    def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cube_size:ti.f32):
         for i in range(x.shape[0]):
             x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size+ (0.5-cube_size/2), ti.random() * cube_size+(0.5-cube_size/2)]
             dg[i] = ti.Matrix.identity(float, dim)
     
     @ti.kernel
-    def init_sphere(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1),cube_size:ti.f32):
+    def init_sphere(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cube_size: ti.f32):
         for i in range(x.shape[0]):
-            #init a sphere
+            # init a sphere
             dg[i] = ti.Matrix.identity(float, dim)
             while True:
                 # 随机生成点的每一维度的坐标
@@ -438,7 +438,27 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     x[i] = rand_pos * cube_size + 0.5
                     dg[i] = ti.Matrix.identity(float, dim)
                     break
-
+                    
+    @ti.kernel
+    def init_cylinder(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cylinder_height: ti.f32, cylinder_radius: ti.f32):
+        for i in range(x.shape[0]):
+            dg[i] = ti.Matrix.identity(float, dim)
+            while True:
+                rand_x = (ti.random() * 2 - 1) * cylinder_radius
+                rand_y = (ti.random() * 2 - 1) * cylinder_radius
+                if rand_x ** 2 + rand_y ** 2 <= cylinder_radius ** 2:
+                    x[i] = ti.Vector([rand_x + 0.5, rand_y + 0.5, ti.random() * cylinder_height])
+                    break
+    
+    @ti.kernel
+    def init_torus(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), torus_radius: ti.f32, torus_tube_radius: ti.f32):
+        for i in range(x.shape[0]):
+            dg[i] = ti.Matrix.identity(float, dim)
+            rand_theta = ti.random() * 2 * pi
+            rand_phi = ti.random() * 2 * pi
+            rand_r = torus_tube_radius * ti.cos(rand_phi) + torus_radius
+            x[i] = ti.Vector([rand_r * ti.cos(rand_theta) + 0.5, rand_r * ti.sin(rand_theta) + 0.5, torus_tube_radius * ti.sin(rand_phi) + 0.5])
+                
     @ti.kernel
     def init_dg(dg: ti.types.ndarray(ndim=1)):
         for i in range(dg.shape[0]):
@@ -572,7 +592,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 U, sig, V = ti.svd(dg_matrix)
                 R = U @ V.transpose()  # 旋转矩阵
                 S = V @ sig @ V.transpose()  # 尺度矩阵
-    
+                
                 # 将旋转矩阵 R 转换为四元数 rot
                 rot = rotation_matrix_to_quaternion(R)
     
@@ -720,7 +740,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_calculate_hand_hash(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell)
         substep_calculate_hand_sdf_hash(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals ,obstacle_velocities,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid,dx,bound,min_x,max_x,min_y,max_y,min_z,max_z)
-        substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=0.2)
+        substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=1)
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_Von_Mises_plasticity(dg,x, mu_0, _SigY, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -741,6 +761,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_apply_clamp_plasticity, template_args={'dg': dg,'x': x})
         mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'dg': dg})
         mod.add_kernel(init_sphere, template_args={'x': x, 'dg': dg})
+        mod.add_kernel(init_cylinder, template_args={'x': x, 'dg': dg})
+        mod.add_kernel(init_torus, template_args={'x': x, 'dg': dg})
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'x': x,'max_speed': max_speed})
@@ -763,16 +785,18 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(normalize_m, template_args={'marching_m': marching_m})
         mod.add_kernel(transform_and_merge, template_args={'x1': x, 'x2': x, 'x3': x, 'mat2': mat2, 'mat3': mat3})
         mod.add_kernel(substep_fix_object, template_args={'grid_v': grid_v})
-
+        
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part.kernel.tcm")
         print("AOT done")
-    
+        
     if run:
         gui = ti.GUI('MPM3D', res=(800, 800))
-        init_particles(x, v, dg,cube_size)
-        init_sphere(x, dg,cube_size)
-        scale_to_unit_cube(x,  other_data, 0.1)
-        init_dg(dg)
+        # init_particles(x, v, dg, cube_size)
+        # init_sphere(x, dg, cube_size)
+        # init_cylinder(x, dg, 1, 0.05)
+        init_torus(x, dg, 0.3, 0.05)
+        # scale_to_unit_cube(x,  other_data, 0.1)
+        # init_dg(dg)
         # init_gaussian_data(init_rotation, init_scale, other_data)
         while gui.running and not gui.get_event(gui.ESCAPE):
             for i in range(50):

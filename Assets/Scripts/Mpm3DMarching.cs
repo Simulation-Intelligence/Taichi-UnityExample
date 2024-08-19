@@ -552,7 +552,7 @@ public class Mpm3DMarching : MonoBehaviour
         material.CopyFromArray(material_host);
         point_color.CopyFromArray(point_color_host);
     }
-
+    
     // Update is called once per frame
     void Update()
     {
@@ -1066,7 +1066,7 @@ public class Mpm3DMarching : MonoBehaviour
         boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.lossyScale.x;
         boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.lossyScale.x;
     }
-
+    
     void SaveHandMotionData()
     {
         using StreamWriter writer = new(filePath);

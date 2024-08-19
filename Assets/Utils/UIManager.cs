@@ -279,6 +279,17 @@ class UIManager : MonoBehaviour
                 }
             }
         }
+        // Copy the object
+        if (button.name == "Button_Copy")
+        {
+            if (selectedObject != null)
+            {
+                GameObject copiedObject = Instantiate(selectedObject);
+                createdObjectLists.Add(copiedObject);
+                copiedObject.name = "Mpm3DObject_" + createdObjectLists.Count;
+                selectedObject = copiedObject;
+            }
+        }
         // Reset the object with original parameters
         if (button.name == "Button_ResetObject")
         {
@@ -318,6 +329,23 @@ class UIManager : MonoBehaviour
                 createdObjectLists.Remove(selectedObject);
                 Destroy(selectedObject);
                 selectedObject = null;
+            }
+        }
+        // Increase or decrease grid size for marching cubes
+        if (button.name == "Button_IncreaseGridSize")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.IncreaseGridSize();
+            }
+        }
+        if (button.name == "Button_DecreaseGridSize")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.DecreaseGridSize();
             }
         }
     }
@@ -563,7 +591,7 @@ class UIManager : MonoBehaviour
                 }
             }
             UI_canvas.SetActive(true);
-            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.2f;
+            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.3f;
             UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
             UI_canvas.transform.position = UI_anchor.position + canvas_anchor_offset;
             UI_canvas.transform.rotation = UI_anchor.rotation;
