@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: wolf
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 173455
+  m_BoundsMin: {x: -0.35223803, y: -0.2648943, z: -0.2061075}
+  m_BoundsMax: {x: 0.2271192, y: 0.23534885, z: 0.42951956}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: f832d85bfac83c30b9f805195d969529
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 68e10a3cf7f2a054d9d9b9a402736083, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 719e59fb9286b2e42ac08c9517805007, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 2d6d209a29368ea49b8619847973f375, type: 3}
+  m_SHData: {fileID: 4900000, guid: 57274ca6753e4f349af07b2829e2d453, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

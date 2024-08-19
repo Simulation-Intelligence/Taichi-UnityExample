@@ -36,6 +36,8 @@ class UIManager : MonoBehaviour
     public GameObject[] parameterObjects;
     public TouchScreenKeyboard overlayKeyboard;
 
+    private int lastValue = -1;
+
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
@@ -137,7 +139,7 @@ class UIManager : MonoBehaviour
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-
+            
             // Apply materials specified from UI
             // applyMaterial(newMpm3DObject);
         }
@@ -319,7 +321,7 @@ class UIManager : MonoBehaviour
             }
         }
     }
-
+    
     void OnToggleValueChanged(Toggle toggle, bool isOn)
     {
         Debug.Log("Toggle " + toggle.name + " is " + (isOn ? "On" : "Off"));
@@ -342,7 +344,7 @@ class UIManager : MonoBehaviour
             }
         }
     }
-
+    
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
         Debug.Log(dropdown.name + " selected: " + dropdown.options[value].text);
@@ -350,24 +352,20 @@ class UIManager : MonoBehaviour
         if (dropdown.name == "Dropdown_PrimitiveShape")
         {
             // Select a primitive shape
-            if (dropdown.options[value].text == "Sphere")
+            string prefabName = dropdown.options[value].text;
+            dropdown.value = 0;
+            dropdown.Hide();
+            CreateMpm3DObjectFromPrefab(prefabName);
+        }
+        
+        if (dropdown.name == "Dropdown_RenderingType")
+        {
+            // Select a rendering type
+            if (selectedObject != null)
             {
-                CreateMpm3DObjectFromPrefab("Sphere");
-            }
-            else if (dropdown.options[value].text == "Cube")
-            {
-                CreateMpm3DObjectFromPrefab("Cube");
-            }
-            else if (dropdown.options[value].text == "Cylinder")
-            {
-                CreateMpm3DObjectFromPrefab("Cylinder");
-            }
-            else if (dropdown.options[value].text == "Torus")
-            {
-                CreateMpm3DObjectFromPrefab("Torus");
             }
         }
-
+        
         if (dropdown.name == "Dropdown_Color")
         {
             // Adjust the color of the primitive shape
@@ -411,8 +409,13 @@ class UIManager : MonoBehaviour
                 }
             }
         }
+        
+        if (dropdown.name == "Dropdown_SelectTool")
+        {
+            // Select a tool for modeling    
+        }
     }
-
+    
     void CreateMpm3DObjectFromPrefab(string prefabName)
     {
         GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/Mpm3DMarching" + prefabName);
