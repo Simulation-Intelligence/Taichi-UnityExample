@@ -291,7 +291,7 @@ class UIManager : MonoBehaviour
                 }
             }
         }
-        // Copy the object
+        // Copy the object with changed shape
         if (button.name == "Button_Copy")
         {
             if (selectedObject != null)
@@ -308,29 +308,33 @@ class UIManager : MonoBehaviour
             if (selectedObject != null)
             {
                 // Store the original color, position, scale, rotation, and prefab name
-                Vector3 originalPosition = selectedObject.transform.position;
-                Vector3 originalScale = selectedObject.transform.localScale;
-                Quaternion originalRotation = selectedObject.transform.rotation;
-                string prefabName = selectedObject.GetComponent<Mpm3DMarching>().initShape.ToString();
-                Color originalColor = selectedObject.transform.Find("MarchingCubeVisualizer").gameObject.GetComponent<MeshRenderer>().material.color;
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.Reset();
                 
-                // Destroy the object
-                createdObjectLists.Remove(selectedObject);
-                Destroy(selectedObject);
+                // Reset from prefab
+                // Vector3 originalPosition = selectedObject.transform.position;
+                // Vector3 originalScale = selectedObject.transform.localScale;
+                // Quaternion originalRotation = selectedObject.transform.rotation;
+                // string prefabName = selectedObject.GetComponent<Mpm3DMarching>().initShape.ToString();
+                // Color originalColor = selectedObject.transform.Find("MarchingCubeVisualizer").gameObject.GetComponent<MeshRenderer>().material.color;
                 
-                // Create a new object
-                GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/Mpm3DMarching" + prefabName);
-                if (Mpm3DObject != null)
-                {
-                    GameObject newMpm3DObject = Instantiate(Mpm3DObject, originalPosition, originalRotation);
-                    newMpm3DObject.transform.localScale = originalScale;
-                    createdObjectLists.Add(newMpm3DObject);
-                    selectedObject = newMpm3DObject;
-                    newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-                    Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-                    mpm3DSimulation.AdjustTextureColor(originalColor);
-                    applyMaterial(newMpm3DObject);
-                }
+                // // Destroy the object
+                // createdObjectLists.Remove(selectedObject);
+                // Destroy(selectedObject);
+                
+                // // Create a new object
+                // GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/Mpm3DMarching" + prefabName);
+                // if (Mpm3DObject != null)
+                // {
+                //     GameObject newMpm3DObject = Instantiate(Mpm3DObject, originalPosition, originalRotation);
+                //     newMpm3DObject.transform.localScale = originalScale;
+                //     createdObjectLists.Add(newMpm3DObject);
+                //     selectedObject = newMpm3DObject;
+                //     newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
+                //     Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                //     mpm3DSimulation.AdjustTextureColor(originalColor);
+                //     applyMaterial(newMpm3DObject);
+                // }
             }
         }
         // Delete the object from the scene

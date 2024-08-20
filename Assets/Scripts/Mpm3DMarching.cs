@@ -1056,6 +1056,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else
         {
+            Init_Particles();
             Init_MarchingCubes();
             Init_materials();
             Update_materials();
