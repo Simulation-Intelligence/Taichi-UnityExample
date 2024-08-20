@@ -178,7 +178,7 @@ MonoBehaviour:
   copyShader: {fileID: 7200000, guid: 1d32da0d43641244b9432112ab3ce4b8, type: 3}
   initShape: 0
   g: {x: 0, y: 0, z: 0}
-  n_grid: 32
+  n_grid: 64
   bound: 3
   bounding_eps: 0.1
   max_dt: 0.0001

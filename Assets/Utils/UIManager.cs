@@ -211,6 +211,11 @@ class UIManager : MonoBehaviour
             {
                 mpm3DSimulation.SetGravity(parameter.GetComponentInChildren<Slider>().value);
             }
+            else if (parameter.name == "Parameter_n_grid")
+            {
+                mpm3DSimulation.SetGridSize((int)parameter.GetComponentInChildren<Slider>().value);
+            }
+
         }
 
         Debug.Log("Mpm3DObject" + slectedMpm3DObject.name + " is created and selected");

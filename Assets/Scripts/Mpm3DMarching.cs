@@ -75,6 +75,8 @@ public class Mpm3DMarching : MonoBehaviour
     [Header("Material")]
     [SerializeField]
     public RenderType renderType = RenderType.GaussianSplat;
+
+    private RenderType lastRenderType = RenderType.GaussianSplat;
     [SerializeField]
     private Material handMaterial;
     [SerializeField]
@@ -292,14 +294,18 @@ public class Mpm3DMarching : MonoBehaviour
             splatManager.init_gaussians();
             Init_gaussian();
         }
-        if (renderType == RenderType.PointMesh)
+        else
         {
-            Init_PointMesh();
+            Init_Particles();
         }
-        if (renderType == RenderType.MarchingCubes)
-        {
-            Init_MarchingCubes();
-        }
+        // if (renderType == RenderType.PointMesh)
+        // {
+        Init_PointMesh();
+        //}
+        // if (renderType == RenderType.MarchingCubes)
+        // {
+        Init_MarchingCubes();
+        // }
 
 
 
@@ -349,12 +355,6 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void Init_PointMesh()
     {
-        NParticles = (int)(n_grid * n_grid * n_grid * cube_size * cube_size * cube_size * particle_per_grid);
-        x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
-        v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
-        C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-        dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-
         _Mesh = new Mesh();
         int[] indices = new int[NParticles];
         for (int i = 0; i < NParticles; ++i)
@@ -372,42 +372,15 @@ public class Mpm3DMarching : MonoBehaviour
         _MeshFilter.mesh = _Mesh;
         _MeshRenderer.material = pointMaterial;
         bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
-        if (initShape == InitShape.Cube)
-            if (_Compute_Graph_g_init != null)
-            {
-                _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
-            {
-                { "x", x },
-                { "v", v }
-            });
-            }
-            else
-            {
-                //kernel initialize
-                _Kernel_init_particles.LaunchAsync(x, v, dg, cube_size);
-            }
-        else if (initShape == InitShape.Sphere)
-            _Kernel_init_sphere.LaunchAsync(x, dg, cube_size / 2);
-    }
 
-    public void Init_MarchingCubes()
+    }
+    void Init_Particles()
     {
         NParticles = (int)(n_grid * n_grid * n_grid * cube_size * cube_size * cube_size * particle_per_grid);
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
         v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-
-
-
-        _p_vol = dx * dx * dx / particle_per_grid;
-        _p_mass = _p_vol * p_rho;
-        max_density = particle_per_grid * _p_mass;
-
-        marchingCubeVisualizers[0]._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
-        marchingCubeVisualizers[0]._gridScale = dx;
-
-        marchingCubeVisualizers[0].Init();
 
         if (_Compute_Graph_g_init != null)
         {
@@ -425,6 +398,18 @@ public class Mpm3DMarching : MonoBehaviour
             else if (initShape == InitShape.Sphere)
                 _Kernel_init_sphere.LaunchAsync(x, dg, cube_size / 2);
         }
+    }
+    public void Init_MarchingCubes()
+    {
+        _p_vol = dx * dx * dx / particle_per_grid;
+        _p_mass = _p_vol * p_rho;
+        max_density = particle_per_grid * _p_mass;
+
+        marchingCubeVisualizers[0]._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
+        marchingCubeVisualizers[0]._gridScale = dx;
+
+        marchingCubeVisualizers[0].Init();
+
     }
     public void Init_gaussian()
     {
@@ -571,6 +556,50 @@ public class Mpm3DMarching : MonoBehaviour
             return;
         }
         UpdateGravity();
+        if (lastRenderType != renderType)
+        {
+            switch (lastRenderType)
+            {
+                case RenderType.PointMesh:
+                    GetComponent<MeshRenderer>().enabled = false;
+                    break;
+                case RenderType.GaussianSplat:
+                    GetComponent<GaussianSplatRenderer>().enabled = false;
+                    break;
+                case RenderType.MarchingCubes:
+                    Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>(true);
+                    string childName = "MarchingCubeVisualizer";
+                    foreach (Transform child in allChildren)
+                    {
+                        if (child.name == childName)
+                        {
+                            child.gameObject.SetActive(false);
+                        }
+                    }
+                    break;
+            }
+            switch (renderType)
+            {
+                case RenderType.PointMesh:
+                    GetComponent<MeshRenderer>().enabled = true;
+                    break;
+                case RenderType.GaussianSplat:
+                    GetComponent<GaussianSplatRenderer>().enabled = true;
+                    break;
+                case RenderType.MarchingCubes:
+                    Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>(true);
+                    string childName = "MarchingCubeVisualizer";
+                    foreach (Transform child in allChildren)
+                    {
+                        if (child.name == childName)
+                        {
+                            child.gameObject.SetActive(true);
+                        }
+                    }
+                    break;
+            }
+            lastRenderType = renderType;
+        }
         if (_Compute_Graph_g_substep != null)
         {
             UpdateHandSDF();
