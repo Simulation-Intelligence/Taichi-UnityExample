@@ -28,6 +28,7 @@ class UIManager : MonoBehaviour
     private OVRSkeleton[] oculus_skeletons;
     public Button[] buttons;
     public GameObject mergePrompt;
+    public GameObject valueAdjustGridSize;
     private bool isMerging = false;
     public Toggle[] toggles;
     public TMP_Dropdown[] dropdowns;
@@ -140,25 +141,39 @@ class UIManager : MonoBehaviour
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
             
             // Apply materials specified from UI
-            // applyMaterial(newMpm3DObject);
+            applyMaterial(newMpm3DObject);
         }
     }
-
+    
     void applyMaterial(GameObject slectedMpm3DObject)
     {
         // Store the object parameters when creating the object
         Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
+        Debug.Log("Mpm3DObject" + slectedMpm3DObject.name + " is created and selected");
 
+        // Update the grid size in UI
+        string initial_text = valueAdjustGridSize.GetComponent<TMP_Text>().text;
+        int grid_size = mpm3DSimulation.GetGridSize();
+        string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size).ToString();
+        valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
+        
+        // Set grid size when apply materials (not necessary)
+        // string text = valueAdjustGridSize.GetComponent<TMP_Text>().text;
+        // int grid_size = int.Parse(text.Substring(text.IndexOf(":") + 1));
+        // mpm3DSimulation.SetGridSize(grid_size);
+        
         // Get the value from the UI to create the object
         foreach (Toggle toggle in toggles)
         {
             if (toggle.name == "Toggle_FixObject")
             {
-                mpm3DSimulation.is_fixed = toggle.isOn;
+                mpm3DSimulation.SetFixed(toggle.isOn);
+                Debug.Log("Object is fixed: " + (toggle.isOn ? "On" : "Off"));
             }
             if (toggle.name == "Toggle_Gravity")
             {
                 mpm3DSimulation.SetGravity(toggle.isOn ? -9.8f : 0.0f);
+                Debug.Log("Gravity is " + (toggle.isOn ? "On" : "Off"));
             }
         }
         
@@ -212,18 +227,8 @@ class UIManager : MonoBehaviour
             {
                 mpm3DSimulation.damping = parameter.GetComponentInChildren<Slider>().value;
             }
-            // else if (parameter.name == "Parameter_Gravity")
-            // {
-            //     mpm3DSimulation.SetGravity(parameter.GetComponentInChildren<Slider>().value);
-            // }
-            // else if (parameter.name == "Parameter_n_grid")
-            // {
-            //     mpm3DSimulation.SetGridSize((int)parameter.GetComponentInChildren<Slider>().value);
-            // }
         }
         
-        Debug.Log("Mpm3DObject" + slectedMpm3DObject.name + " is created and selected");
-        Debug.Log("Object is fixed: " + mpm3DSimulation.is_fixed);
         Debug.Log("materialType: " + mpm3DSimulation.materialType);
         Debug.Log("plasticityType: " + mpm3DSimulation.plasticityType);
         Debug.Log("stressType: " + mpm3DSimulation.stressType);
@@ -308,11 +313,11 @@ class UIManager : MonoBehaviour
                 Quaternion originalRotation = selectedObject.transform.rotation;
                 string prefabName = selectedObject.GetComponent<Mpm3DMarching>().initShape.ToString();
                 Color originalColor = selectedObject.transform.Find("MarchingCubeVisualizer").gameObject.GetComponent<MeshRenderer>().material.color;
-
+                
                 // Destroy the object
                 createdObjectLists.Remove(selectedObject);
                 Destroy(selectedObject);
-
+                
                 // Create a new object
                 GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/Mpm3DMarching" + prefabName);
                 if (Mpm3DObject != null)
@@ -343,16 +348,30 @@ class UIManager : MonoBehaviour
         {
             if (selectedObject != null)
             {
+                int increaseValue = 8;
                 Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-                mpm3DSimulation.IncreaseGridSize();
+                mpm3DSimulation.IncreaseGridSize(increaseValue);
+
+                // Update the grid size in UI
+                string initial_text = valueAdjustGridSize.GetComponent<TMP_Text>().text;
+                int grid_size = int.Parse(initial_text.Substring(initial_text.IndexOf(":") + 1));
+                string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size + increaseValue).ToString();
+                valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
             }
         }
         if (button.name == "Button_DecreaseGridSize")
         {
             if (selectedObject != null)
             {
+                int decreaseValue = 8;
                 Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-                mpm3DSimulation.DecreaseGridSize();
+                mpm3DSimulation.DecreaseGridSize(decreaseValue);
+                
+                // Update the grid size in UI
+                string initial_text = valueAdjustGridSize.GetComponent<TMP_Text>().text;
+                int grid_size = int.Parse(initial_text.Substring(initial_text.IndexOf(":") + 1));
+                string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size - decreaseValue).ToString();
+                valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
             }
         }
     }
@@ -367,15 +386,15 @@ class UIManager : MonoBehaviour
             Text toggle_label = toggle.GetComponentInChildren<Text>();
             toggle_label.text = isOn ? "Exit Modeling Mode" : "Enter Modeling Mode";
         }
-
+        
         // Enable/Disable fix object in place
         if (toggle.name == "Toggle_FixObject")
         {
             if (selectedObject != null)
             {
                 Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-                mpm3DSimulation.SetFixed(!mpm3DSimulation.is_fixed);
-                Debug.Log("Object " + selectedObject.name + " is " + (mpm3DSimulation.is_fixed ? "Fixed" : "Unfixed"));
+                mpm3DSimulation.SetFixed(toggle.isOn);
+                Debug.Log("Object " + selectedObject.name + " is " + (toggle.isOn ? "Fixed" : "Unfixed"));
             }
         }
         
@@ -466,7 +485,7 @@ class UIManager : MonoBehaviour
     void CreateMpm3DObjectFromPrefab(string prefabName)
     {
         GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/Mpm3DMarching" + prefabName);
-
+        
         if (Mpm3DObject != null)
         {
             // Position and name
@@ -539,15 +558,21 @@ class UIManager : MonoBehaviour
                 Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                 if (mpm3DSimulation != null)
                 {
+                    // Update the grid size in UI
+                    string initial_text = valueAdjustGridSize.GetComponent<TMP_Text>().text;
+                    int grid_size = mpm3DSimulation.GetGridSize();
+                    string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size).ToString();
+                    valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
+                    
                     // Set the toggle, dropdown, and slider values accordingly
-                    foreach (Toggle toggle in toggles)
-                    {
-                        if (toggle.name == "Toggle_FixObject")
-                        {
-                            toggle.isOn = mpm3DSimulation.is_fixed;
-                        }
-                    }
-
+                    // foreach (Toggle toggle in toggles)
+                    // {
+                    //     if (toggle.name == "Toggle_FixObject")
+                    //     {
+                    //         toggle.isOn = mpm3DSimulation.is_fixed;
+                    //     }
+                    // }
+                    
                     foreach (TMP_Dropdown dropdown in dropdowns)
                     {
                         if (dropdown.name == "Dropdown_MaterialType")
@@ -600,7 +625,6 @@ class UIManager : MonoBehaviour
 
             // Set position and rotation of the UI canvas
             Vector3 handThumbTipPosition = Vector3.zero;
-
             foreach (var b in oculus_skeletons[1].Bones)
             {
                 if (b.Id == OVRSkeleton.BoneId.Hand_ThumbTip)

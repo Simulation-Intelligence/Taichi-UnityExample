@@ -114,7 +114,7 @@ public class Mpm3DMarching : MonoBehaviour
     private Grabbable _grabbable;
     [SerializeField]
     public GaussianSplatRenderManager splatManager;
-
+    
     [SerializeField]
     MarchingCubeVisualizer[] marchingCubeVisualizers;
 
@@ -144,8 +144,8 @@ public class Mpm3DMarching : MonoBehaviour
 
     private Vector3 boundary_min, boundary_max;
 
-    public bool is_fixed = false;
-
+    private bool is_fixed = false;
+    
     private Vector3 fix_center = new Vector3(0.5f, 0.5f, 0.5f);
 
     private float fix_radius = 0.2f;
@@ -423,7 +423,7 @@ public class Mpm3DMarching : MonoBehaviour
         else if (initShape == InitShape.Torus)
             _Kernel_init_torus.LaunchAsync(x, dg, (float)0.3, (float)0.05);
     }
-
+    
     public void Init_MarchingCubes()
     {
         _p_vol = dx * dx * dx / particle_per_grid;
@@ -956,24 +956,27 @@ public class Mpm3DMarching : MonoBehaviour
         // Init_materials();
         // Update_materials();
     }
-
-    public void IncreaseGridSize()
+    public int GetGridSize()
+    {
+        return n_grid;
+    }
+    public void IncreaseGridSize(int num)
     {
         if (n_grid == 150)
         {
             UnityEngine.Debug.LogWarning("Cannot increase grid size anymore.");
             return;
         }
-        SetGridSize(n_grid + 20);
+        SetGridSize(n_grid + num);
     }
-    public void DecreaseGridSize()
+    public void DecreaseGridSize(int num)
     {
         if (n_grid == 50)
         {
             UnityEngine.Debug.LogWarning("Cannot decrease grid size anymore.");
             return;
         }
-        SetGridSize(n_grid - 20);
+        SetGridSize(n_grid - num);
     }
     public void AdjustTextureColor(Color rgba)
     {
