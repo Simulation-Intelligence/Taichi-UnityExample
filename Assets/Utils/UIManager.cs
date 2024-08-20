@@ -68,7 +68,7 @@ class UIManager : MonoBehaviour
             TMP_Text parameter_text = parameter.transform.Find("Name").GetComponent<TMP_Text>();
             Slider parameter_slider = parameter.GetComponentInChildren<Slider>();
 
-            // Adjust by granularity
+            // Adjust slider value by granularity
             float granularityDivisor = 20f;
             float minValue = parameter_slider.minValue;
             float maxValue = parameter_slider.maxValue;

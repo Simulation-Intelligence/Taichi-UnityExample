@@ -101,7 +101,7 @@ public class Mpm3DMarching : MonoBehaviour
     private NdArray<int> segments_count_per_cell, hash_table, material, point_color;
 
     private float[] hand_skeleton_segments, hand_skeleton_segments_prev, hand_skeleton_velocities, _skeleton_capsule_radius, sphere_positions, _sphere_velocities, sphere_radii;
-
+    
     private Bounds bounds;
 
     private ComputeGraph _Compute_Graph_g_init;
@@ -700,12 +700,14 @@ public class Mpm3DMarching : MonoBehaviour
                     {
                         if (transform.lossyScale.x > 1.0f)
                         {
+                            // The object is scaled up
                             _Kernel_substep_calculate_hand_hash.LaunchAsync(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell);
                             _Kernel_substep_calculate_hand_sdf_hash.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell,
                             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                         }
                         else
                         {
+                            // The object is scaled down
                             _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx,
                             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                         }
@@ -739,7 +741,6 @@ public class Mpm3DMarching : MonoBehaviour
             {
                 _Kernel_substep_adjust_particle.LaunchAsync(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             }
-
         }
         
         if (renderType == RenderType.PointMesh)
@@ -1106,7 +1107,9 @@ public class Mpm3DMarching : MonoBehaviour
                 //UnityEngine.Debug.Log("Num of Bones while tracking: " + numBones);
                 if (numBones > 0)
                 {
+                    // Use the wrist position as the hand position
                     Center += oculus_skeletons[i].Bones[0].Transform.position;
+                    
                     int init = i * skeleton_num_capsules * 6;
                     for (int j = 0; j < numBones; j++)
                     {
@@ -1117,20 +1120,28 @@ public class Mpm3DMarching : MonoBehaviour
                         {
                             handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
                         }
+
+                        // World to local coordinate conversion and calculate the velocity of the segment
                         UpdateHandSkeletonSegment(init + j * 6, start, end, frame_time);
+                        
+                        // Get the radius of each capsule
                         _skeleton_capsule_radius[i * skeleton_num_capsules + j] = preset_capsule_radius[j] / transform.lossyScale.x;
                     }
+
+                    // Copy the hand skeleton segments and velocities to the compute buffer
                     skeleton_segments.CopyFromArray(hand_skeleton_segments);
                     skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
                     skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
                 }
             }
         }
+        
+        // Update a box around the two hands based on the position of them
         Center /= oculus_skeletons.Length;
         boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.lossyScale.x;
         boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.lossyScale.x;
     }
-
+    
     void SaveHandMotionData()
     {
         using StreamWriter writer = new(filePath);
@@ -1220,10 +1231,12 @@ public class Mpm3DMarching : MonoBehaviour
         }
     }
 
-    private void UpdateHandSkeletonSegment(int init, Vector3 start, Vector3 end, float frameTime)
+    private void UpdateHandSkeletonSegment(int init, Vector3 segment_start, Vector3 segment_end, float frameTime)
     {
-        Vector3 TransformedStart = transform.InverseTransformPoint(start);
-        Vector3 TransformedEnd = transform.InverseTransformPoint(end);
+        // Convert the segment start and segment end points to local coordinates relative to this transform
+        Vector3 TransformedStart = transform.InverseTransformPoint(segment_start);
+        Vector3 TransformedEnd = transform.InverseTransformPoint(segment_end);
+        
         hand_skeleton_segments[init] = TransformedStart.x;
         hand_skeleton_segments[init + 1] = TransformedStart.y;
         hand_skeleton_segments[init + 2] = TransformedStart.z;
@@ -1231,6 +1244,7 @@ public class Mpm3DMarching : MonoBehaviour
         hand_skeleton_segments[init + 4] = TransformedEnd.y;
         hand_skeleton_segments[init + 5] = TransformedEnd.z;
 
+        // Calculate the velocity of the segment
         hand_skeleton_velocities[init] = (TransformedStart.x - hand_skeleton_segments_prev[init]) / frameTime;
         hand_skeleton_velocities[init + 1] = (TransformedStart.y - hand_skeleton_segments_prev[init + 1]) / frameTime;
         hand_skeleton_velocities[init + 2] = (TransformedStart.z - hand_skeleton_segments_prev[init + 2]) / frameTime;
@@ -1238,6 +1252,7 @@ public class Mpm3DMarching : MonoBehaviour
         hand_skeleton_velocities[init + 4] = (TransformedEnd.y - hand_skeleton_segments_prev[init + 4]) / frameTime;
         hand_skeleton_velocities[init + 5] = (TransformedEnd.z - hand_skeleton_segments_prev[init + 5]) / frameTime;
 
+        // Update the previous frame positions
         hand_skeleton_segments_prev[init] = TransformedStart.x;
         hand_skeleton_segments_prev[init + 1] = TransformedStart.y;
         hand_skeleton_segments_prev[init + 2] = TransformedStart.z;
