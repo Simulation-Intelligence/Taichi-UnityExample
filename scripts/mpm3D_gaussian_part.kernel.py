@@ -443,10 +443,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def init_cylinder(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cylinder_height: ti.f32, cylinder_radius: ti.f32):
         for i in range(x.shape[0]):
             while True:
-                rand_x = (ti.random() * 2 - 1) * cylinder_radius
                 rand_y = (ti.random() * 2 - 1) * cylinder_radius
-                if rand_x ** 2 + rand_y ** 2 <= cylinder_radius ** 2:
-                    x[i] = ti.Vector([rand_x + 0.5, rand_y + 0.5, ti.random() * cylinder_height])
+                rand_z = (ti.random() * 2 - 1) * cylinder_radius
+                if rand_y ** 2 + rand_z ** 2 <= cylinder_radius ** 2:
+                    x[i] = ti.Vector([ti.random() * cylinder_height, rand_y + 0.5, rand_z + 0.5])
                     dg[i] = ti.Matrix.identity(float, dim)
                     break
     
