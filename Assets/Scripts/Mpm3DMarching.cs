@@ -33,7 +33,7 @@ public class Mpm3DMarching : MonoBehaviour
     _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_update_grid_v, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
-     _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere,
+     _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere, _Kernel_init_cylinder, _Kernel_init_torus,
      _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi;
 
     public enum RenderType
@@ -54,6 +54,8 @@ public class Mpm3DMarching : MonoBehaviour
     {
         Cube,
         Sphere,
+        Cylinder,
+        Torus
     }
     public enum PlasticityType
     {
@@ -228,6 +230,8 @@ public class Mpm3DMarching : MonoBehaviour
 
             _Kernel_normalize_m = kernels["normalize_m"];
             _Kernel_init_sphere = kernels["init_sphere"];
+            _Kernel_init_cylinder = kernels["init_cylinder"];
+            _Kernel_init_torus = kernels["init_torus"];
             _Kernel_transform_and_merge = kernels["transform_and_merge"];
             _Kernel_substep_fix_object = kernels["substep_fix_object"];
 
@@ -255,7 +259,7 @@ public class Mpm3DMarching : MonoBehaviour
         _sphere_velocities = new float[3 * sphere.Length];
         sphere_radii = new float[sphere.Length];
 
-        // new added
+        // Oculus hands
         if (oculus_hands == null || oculus_hands.Length == 0)
         {
             oculus_hands = new OVRHand[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>(),
@@ -376,29 +380,28 @@ public class Mpm3DMarching : MonoBehaviour
     }
     void Init_Particles()
     {
-        NParticles = (int)(n_grid * n_grid * n_grid * cube_size * cube_size * cube_size * particle_per_grid);
-        x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
-        v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
-        C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-        dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-
-        if (_Compute_Graph_g_init != null)
-        {
-            _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
+        if (initShape == InitShape.Cube)
+            if (_Compute_Graph_g_init != null)
+            {
+                _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
             {
                 { "x", x },
                 { "v", v }
             });
-        }
-        else
-        {
-            //kernel initialize
-            if (initShape == InitShape.Cube)
+            }
+            else
+            {
+                //kernel initialize
                 _Kernel_init_particles.LaunchAsync(x, v, dg, cube_size);
-            else if (initShape == InitShape.Sphere)
-                _Kernel_init_sphere.LaunchAsync(x, dg, cube_size / 2);
-        }
+            }
+        else if (initShape == InitShape.Sphere)
+            _Kernel_init_sphere.LaunchAsync(x, dg, cube_size / 2);
+        else if (initShape == InitShape.Cylinder)
+            _Kernel_init_cylinder.LaunchAsync(x, dg, 1, 0.05);
+        else if (initShape == InitShape.Torus)
+            _Kernel_init_torus.LaunchAsync(x, dg, 0.3, 0.05);
     }
+
     public void Init_MarchingCubes()
     {
         _p_vol = dx * dx * dx / particle_per_grid;

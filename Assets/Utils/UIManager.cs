@@ -36,6 +36,8 @@ class UIManager : MonoBehaviour
     public GameObject[] parameterObjects;
     public TouchScreenKeyboard overlayKeyboard;
 
+    private int lastValue = -1;
+
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
@@ -137,7 +139,7 @@ class UIManager : MonoBehaviour
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-
+            
             // Apply materials specified from UI
             // applyMaterial(newMpm3DObject);
         }
@@ -282,6 +284,17 @@ class UIManager : MonoBehaviour
                 }
             }
         }
+        // Copy the object
+        if (button.name == "Button_Copy")
+        {
+            if (selectedObject != null)
+            {
+                GameObject copiedObject = Instantiate(selectedObject);
+                createdObjectLists.Add(copiedObject);
+                copiedObject.name = "Mpm3DObject_" + createdObjectLists.Count;
+                selectedObject = copiedObject;
+            }
+        }
         // Reset the object with original parameters
         if (button.name == "Button_ResetObject")
         {
@@ -323,8 +336,25 @@ class UIManager : MonoBehaviour
                 selectedObject = null;
             }
         }
+        // Increase or decrease grid size for marching cubes
+        if (button.name == "Button_IncreaseGridSize")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.IncreaseGridSize();
+            }
+        }
+        if (button.name == "Button_DecreaseGridSize")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.DecreaseGridSize();
+            }
+        }
     }
-
+    
     void OnToggleValueChanged(Toggle toggle, bool isOn)
     {
         Debug.Log("Toggle " + toggle.name + " is " + (isOn ? "On" : "Off"));
@@ -347,7 +377,7 @@ class UIManager : MonoBehaviour
             }
         }
     }
-
+    
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
         Debug.Log(dropdown.name + " selected: " + dropdown.options[value].text);
@@ -355,24 +385,20 @@ class UIManager : MonoBehaviour
         if (dropdown.name == "Dropdown_PrimitiveShape")
         {
             // Select a primitive shape
-            if (dropdown.options[value].text == "Sphere")
+            string prefabName = dropdown.options[value].text;
+            dropdown.value = 0;
+            dropdown.Hide();
+            CreateMpm3DObjectFromPrefab(prefabName);
+        }
+        
+        if (dropdown.name == "Dropdown_RenderingType")
+        {
+            // Select a rendering type
+            if (selectedObject != null)
             {
-                CreateMpm3DObjectFromPrefab("Sphere");
-            }
-            else if (dropdown.options[value].text == "Cube")
-            {
-                CreateMpm3DObjectFromPrefab("Cube");
-            }
-            else if (dropdown.options[value].text == "Cylinder")
-            {
-                CreateMpm3DObjectFromPrefab("Cylinder");
-            }
-            else if (dropdown.options[value].text == "Torus")
-            {
-                CreateMpm3DObjectFromPrefab("Torus");
             }
         }
-
+        
         if (dropdown.name == "Dropdown_Color")
         {
             // Adjust the color of the primitive shape
@@ -416,8 +442,13 @@ class UIManager : MonoBehaviour
                 }
             }
         }
+        
+        if (dropdown.name == "Dropdown_SelectTool")
+        {
+            // Select a tool for modeling    
+        }
     }
-
+    
     void CreateMpm3DObjectFromPrefab(string prefabName)
     {
         GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/Mpm3DMarching" + prefabName);
@@ -565,7 +596,7 @@ class UIManager : MonoBehaviour
                 }
             }
             UI_canvas.SetActive(true);
-            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.2f;
+            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.3f;
             UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
             UI_canvas.transform.position = UI_anchor.position + canvas_anchor_offset;
             UI_canvas.transform.rotation = UI_anchor.rotation;
