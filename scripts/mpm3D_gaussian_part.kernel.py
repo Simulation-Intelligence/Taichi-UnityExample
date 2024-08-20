@@ -303,6 +303,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 # Enforce boundary conditions by setting velocity to zero if it points outside the grid at the boundaries
                 cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
                 grid_v[I] = ti.select(cond, 0, grid_v[I])
+                # Sticky boundary condition by setting tangential velocity to zero if it points outside the grid at the boundaries
+                # if (I[0] < bound or I[0] > n_grid - bound or
+                #     I[1] < bound or I[1] > n_grid - bound or
+                #     I[2] < bound or I[2] > n_grid - bound):
+                #         grid_v[I] = ti.Vector([0.0, 0.0, 0.0])
                 # Limit the velocity w.r.t. CFL condition
                 grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
                 # Reset the SDF and obstacle normals for the next time step
