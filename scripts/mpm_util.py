@@ -326,9 +326,6 @@ def get_hash(pos, n_grid):
     z_index = int(ti.floor(pos[2] * n_grid))
     return ti.Vector([x_index, y_index, z_index])
     
-
-
-
 @ti.func
 def min_bounding_box(seg_start, seg_end):
     return ti.Vector([min(seg_start[0], seg_end[0]),
@@ -340,10 +337,6 @@ def max_bounding_box(seg_start, seg_end):
     return ti.Vector([max(seg_start[0], seg_end[0]),
                       max(seg_start[1], seg_end[1]),
                       max(seg_start[2], seg_end[2])])
-    
-
-    
-
 # endregion
 
 @ti.dataclass
@@ -357,13 +350,13 @@ def calculate_point_segment_distance(point: ti.types.vector(3, ti.f32), start: t
     w = point - start
     c1 = w.dot(v)
     c2 = v.dot(v)
-    b=0.0
+    b = 0.0
     distance = ti.Vector([0.0, 0.0, 0.0])
     if c1 <= 0:
         distance = (point - start)
     elif c1 >= c2:
         distance = (point - end)
-        b=1
+        b = 1
     else:
         b = c1 / c2
         Pb = start + b * v

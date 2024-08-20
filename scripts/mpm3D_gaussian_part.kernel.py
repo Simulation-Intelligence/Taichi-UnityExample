@@ -271,38 +271,44 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
                 sdf[I] = min_dist
                 obstacle_normals[I] = norm
-
+    
     @ti.kernel
-    def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
+    def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), 
+                              grid_m: ti.types.ndarray(ndim=3),
                               sdf: ti.types.ndarray(ndim=3),
-                              obstacle_normals:ti.types.ndarray(ndim=3),
-                              obstacle_velocities:ti.types.ndarray(ndim=3),
-                              gx:float,gy:float,gz:float,k:float,damping:float,friction_k:float,
-                              v_allowed:ti.f32,dt:ti.f32,n_grid:ti.i32,dx:ti.f32,bound:ti.i32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+                              obstacle_normals: ti.types.ndarray(ndim=3),
+                              obstacle_velocities: ti.types.ndarray(ndim=3),
+                              gx: float, gy: float, gz: float, k: float, damping: float, friction_k: float,
+                              v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
         for I in ti.grouped(grid_m):
-            pos=I*dx+dx*0.5
-            if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
+            pos = I * dx + dx * 0.5
+            # Check if the current position is within the specified bounding box
+            if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
+                # Normalize the velocity if the grid cell has mass
                 if grid_m[I] > 0:
                     grid_v[I] /= grid_m[I]
-                gravity = ti.Vector([gx,gy,gz])
+                # Apply gravitational force
+                gravity = ti.Vector([gx, gy, gz]) 
                 grid_v[I] += dt * gravity
-                #damping
+                # Apply damping to reduce the velocity over time
                 grid_v[I] *= ti.exp(-damping * dt)
                 if sdf[I] < 0:
-                    d=-sdf[I]
-                    rel_v=grid_v[I]-obstacle_velocities[I]
-                    normal_v = rel_v.dot(obstacle_normals[I]) * obstacle_normals[I]
-                    delta_v =obstacle_normals[I] *d / dt * k-normal_v
-                    tangent_direction = (rel_v - normal_v).normalized()
-                    friction_force = friction_k * delta_v
-                    grid_v[I] += delta_v-friction_force*tangent_direction
-
+                    d = -sdf[I] # Calculate penetration depth
+                    rel_v = grid_v[I] - obstacle_velocities[I] # Calculate relative velocity with respect to the obstacle
+                    normal_v = rel_v.dot(obstacle_normals[I]) * obstacle_normals[I] # Calculate the normal component of the relative velocity
+                    delta_v = obstacle_normals[I] * d / dt * k - normal_v # Calculate the velocity correction due to collision
+                    tangent_direction = (rel_v - normal_v).normalized() # Determine the tangential direction of the relative velocity
+                    friction_force = friction_k * delta_v # Calculate the frictional force
+                    grid_v[I] += delta_v - friction_force * tangent_direction # Apply both the collision correction and the frictional force to the velocity
+                # Enforce boundary conditions by setting velocity to zero if it points outside the grid at the boundaries
                 cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
                 grid_v[I] = ti.select(cond, 0, grid_v[I])
+                # Limit the velocity w.r.t. CFL condition
                 grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
+                # Reset the SDF and obstacle normals for the next time step
                 sdf[I] = float('inf')
-                obstacle_normals[I] = [0,0,0]
-
+                obstacle_normals[I] = [0, 0, 0]
+    
     @ti.kernel
     def substep_g2p(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),grid_v: ti.types.ndarray(ndim=3),
                     dx:ti.f32,dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
@@ -426,21 +432,22 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     @ti.kernel
     def init_sphere(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cube_size: ti.f32):
+        # Init a sphere
         for i in range(x.shape[0]):
-            # init a sphere
             dg[i] = ti.Matrix.identity(float, dim)
             while True:
-                # 随机生成点的每一维度的坐标
+                # Generate a random position within the unit cube for each dimension
                 rand_pos = ti.Vector([ti.random() * 2 - 1 for _ in range(dim)])
-                # 判断点是否在单位球内
+                # Check if the random position is inside the unit sphere
                 if rand_pos.norm() <= 1.0:
-                    # 将点归一化后，缩放并平移到目标位置
+                    # Normalize the position, scale it by cube_size and translate
                     x[i] = rand_pos * cube_size + 0.5
                     dg[i] = ti.Matrix.identity(float, dim)
                     break
                     
     @ti.kernel
     def init_cylinder(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cylinder_height: ti.f32, cylinder_radius: ti.f32):
+        # Init a cylinder
         for i in range(x.shape[0]):
             while True:
                 rand_y = (ti.random() * 2 - 1) * cylinder_radius
@@ -452,6 +459,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     @ti.kernel
     def init_torus(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), torus_radius: ti.f32, torus_tube_radius: ti.f32):
+        # Init a torus
         for i in range(x.shape[0]):
             rand_theta = ti.random() * 2 * pi
             rand_phi = ti.random() * 2 * pi
@@ -496,21 +504,22 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                                    dx:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for I in ti.grouped(hand_sdf):
             pos = I * dx + dx * 0.5
-            obstacle_velocities[I]=ti.Vector([0.0, 0.0, 0.0])
+            obstacle_velocities[I] = ti.Vector([0.0, 0.0, 0.0])
+            # Check if the current position is within the specified bounding box
             if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
                 min_dist = float('inf')
                 norm= ti.Vector([0.0, 0.0, 0.0])
-
                 for i in range(skeleton_segments.shape[0]):
                     start= skeleton_segments[i, 0]
                     end = skeleton_segments[i, 1]
                     result = calculate_point_segment_distance(pos, start, end)
-                    dist = result.distance
-                    r = result.b
-                    distance = dist.norm() - skeleton_capsule_radius[i]
+                    dist = result.distance # Vector from the segment to the grid point
+                    r = result.b           # Parameter indicating the relative position along the segment
+                    distance = dist.norm() - skeleton_capsule_radius[i] # Calculate the signed distance considering the capsule radius
                     if distance < min_dist:
                         min_dist = distance
-                        norm = dist.normalized()
+                        norm = dist.normalized() # Normalize the distance vector to get the normal
+                        # Linearly interpolate the velocity based on the relative position r
                         obstacle_velocities[I] = skeleton_velocities[i,0] * (1-r) + skeleton_velocities[i,1] * r
                 hand_sdf[I] = min_dist
                 obstacle_normals[I] = norm
@@ -521,22 +530,28 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                                     n_grid: ti.i32,
                                     hash_table: ti.types.ndarray(ndim=4),
                                     segments_count_per_cell: ti.types.ndarray(ndim=3)):
+        # Reset the segments count and hash table
         for I in ti.grouped(segments_count_per_cell):
             segments_count_per_cell[I] = 0
             for l in range(hash_table.shape[3]):
                 hash_table[I, l] = -1    
-
+        # Calculate the hash table
         for i in range(skeleton_segments.shape[0]):
             seg_start = skeleton_segments[i, 0]
             seg_end = skeleton_segments[i, 1]
-            min_bb = ti.min(seg_start, seg_end)-skeleton_capsule_radius[i]
-            max_bb = ti.max(seg_start, seg_end)+skeleton_capsule_radius[i]
+            # Compute the bounding box for the segment considering the capsule radius
+            min_bb = ti.min(seg_start, seg_end) - skeleton_capsule_radius[i]
+            max_bb = ti.max(seg_start, seg_end) + skeleton_capsule_radius[i]
+            # Convert the bounding box coordinates to grid cell indices
             min_cell = get_hash(min_bb, n_grid)
             max_cell = get_hash(max_bb, n_grid)
-
-            for I in ti.grouped(ti.ndrange((min_cell[0], max_cell[0] + 1), (min_cell[1], max_cell[1] + 1), (min_cell[2], max_cell[2] + 1)) ):
+            for I in ti.grouped(ti.ndrange((min_cell[0], max_cell[0] + 1), 
+                                           (min_cell[1], max_cell[1] + 1), 
+                                           (min_cell[2], max_cell[2] + 1))):
+                # Check if the current cell is within the valid grid range
                 if (0 <= I < n_grid).all():
                     idx = ti.atomic_add(segments_count_per_cell[I], 1)
+                    # Store the segment index in the hash table
                     hash_table[I, idx] = i
     
     @ti.kernel
@@ -550,36 +565,39 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                                         hash_table: ti.types.ndarray(ndim=4),
                                         segments_count_per_cell: ti.types.ndarray(ndim=3),
                                         min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
-        # calculate hand sdf
+        # calculate hand sdf for each grid cell
         for I in ti.grouped(hand_sdf):
             pos = I * dx + dx * 0.5
-            obstacle_velocities[I]=ti.Vector([0.0, 0.0, 0.0])
-            if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
+            obstacle_velocities[I] = ti.Vector([0.0, 0.0, 0.0])
+            # Check if the current position is within the specified bounding box
+            if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
                 min_dist = float('inf')
-                norm= ti.Vector([0.0, 0.0, 0.0])
+                norm = ti.Vector([0.0, 0.0, 0.0])
                 for i in range(segments_count_per_cell[I]):
+                    # Get the index of the segment from the hash table
                     segment_idx = hash_table[I, i]
                     if segment_idx != -1:
                         seg_start = skeleton_segments[segment_idx, 0]
                         seg_end = skeleton_segments[segment_idx, 1]
                         result = calculate_point_segment_distance(pos, seg_start, seg_end)
-                        dist = result.distance
-                        r = result.b
-                        distance = dist.norm() - skeleton_capsule_radius[segment_idx]
+                        dist = result.distance # Vector from the segment to the grid point
+                        r = result.b           # Parameter indicating the relative position along the segment
+                        distance = dist.norm() - skeleton_capsule_radius[segment_idx] # Calculate the signed distance considering the capsule radius
                         if distance < min_dist:
                             min_dist = distance
-                            norm = dist.normalized()
-                            obstacle_velocities[I] = skeleton_velocities[segment_idx,0] * (1-r) + skeleton_velocities[segment_idx,1] * r
+                            norm = dist.normalized() # Normalize the distance vector to get the normal
+                             # Linearly interpolate the velocity based on the relative position r
+                            obstacle_velocities[I] = skeleton_velocities[segment_idx, 0] * (1-r) + skeleton_velocities[segment_idx, 1] * r
                 hand_sdf[I] = min_dist
                 obstacle_normals[I] = norm
 
+    
     # region - Gaussian Kernel Functions
     @ti.kernel
     def init_gaussian_data(init_rotation:ti.types.ndarray(ndim=1),init_scale:ti.types.ndarray(ndim=1),other_data:ti.types.ndarray(ndim=1)):
         for i in other_data:
             init_rotation[i] = DecodeRotation(DecodePacked_10_10_10_2(ti.bit_cast(other_data[i][0],ti.u32)))
             init_scale[i] = ti.Vector([other_data[i][1], other_data[i][2], other_data[i][3]])
-
 
     @ti.kernel
     def substep_update_gaussian_data(init_rotation:ti.types.ndarray(ndim=1),init_scale:ti.types.ndarray(ndim=1),dg:ti.types.ndarray(ndim=1),
@@ -669,7 +687,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         for i in range(n3):
             # 将 x3 的顶点转换到世界坐标系并写入 x1
             x1[i + n2] = multiply_point(mat3, x3[i])
-    
+    # endregion
+
+
     # hand sdf
     hand_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
     obstacle_normals = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
@@ -739,7 +759,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_calculate_hand_hash(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell)
         substep_calculate_hand_sdf_hash(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_update_grid_v(grid_v, grid_m,hand_sdf,obstacle_normals ,obstacle_velocities,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid,dx,bound,min_x,max_x,min_y,max_y,min_z,max_z)
+        substep_update_grid_v(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid,dx,bound,min_x,max_x,min_y,max_y,min_z,max_z)
         substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=1)
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
