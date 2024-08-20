@@ -135,10 +135,11 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private float bounding_eps = 0.1f;
     [SerializeField]
-    public float max_dt = 1e-4f, frame_time = 0.005f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
+    public float max_dt = 1e-4f, frame_time = 0.005f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
+    public float cube_size = 0.2f, cylinder_height = 1.0f, cylinder_radius = 0.05f, torus_radius = 0.3f, torus_tube_radius = 0.05f;
     [SerializeField]
     bool use_correct_cfl = false;
-
+    
     [SerializeField]
     private float hand_simulation_radius = 0.5f;
 
@@ -419,9 +420,9 @@ public class Mpm3DMarching : MonoBehaviour
         else if (initShape == InitShape.Sphere)
             _Kernel_init_sphere.LaunchAsync(x, dg, cube_size / 2);
         else if (initShape == InitShape.Cylinder)
-            _Kernel_init_cylinder.LaunchAsync(x, dg, (float)1, (float)0.05);
+            _Kernel_init_cylinder.LaunchAsync(x, dg, cylinder_height, cylinder_radius);
         else if (initShape == InitShape.Torus)
-            _Kernel_init_torus.LaunchAsync(x, dg, (float)0.3, (float)0.05);
+            _Kernel_init_torus.LaunchAsync(x, dg, torus_radius, torus_tube_radius);
     }
     
     public void Init_MarchingCubes()
@@ -740,6 +741,7 @@ public class Mpm3DMarching : MonoBehaviour
             }
 
         }
+        
         if (renderType == RenderType.PointMesh)
         {
             x.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
@@ -907,6 +909,10 @@ public class Mpm3DMarching : MonoBehaviour
     public void SetFixed(bool fixed_)
     {
         is_fixed = fixed_;
+    }
+    public bool GetIsFixed()
+    {
+        return is_fixed;
     }
     public void InitGrid()
     {
