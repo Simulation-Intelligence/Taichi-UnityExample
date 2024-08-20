@@ -127,11 +127,11 @@ public class Mpm3DMarching : MonoBehaviour
 
     [SerializeField]
     private Vector3 g = new(0, -9.8f, 0);
-
+    
     private float gy;
     [SerializeField]
     private int n_grid = 32, bound = 3;
-
+    
     [SerializeField]
     private float bounding_eps = 0.1f;
     [SerializeField]
@@ -1058,7 +1058,7 @@ public class Mpm3DMarching : MonoBehaviour
             Update_materials();
         }
     }
-
+    
     public void SetGravity(float y)
     {
         gy = y;

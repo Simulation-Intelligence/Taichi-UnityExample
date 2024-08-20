@@ -115,7 +115,6 @@ class UIManager : MonoBehaviour
                     else
                     {
                         selectedObject = createdObject;
-                        Debug.Log("Object " + selectedObject.name + " is selected");
                     }
                     break;
                 }
@@ -157,8 +156,12 @@ class UIManager : MonoBehaviour
             {
                 mpm3DSimulation.is_fixed = toggle.isOn;
             }
+            if (toggle.name == "Toggle_Gravity")
+            {
+                mpm3DSimulation.SetGravity(toggle.isOn ? -9.8f : 0.0f);
+            }
         }
-
+        
         foreach (TMP_Dropdown dropdown in dropdowns)
         {
             if (dropdown.name == "Dropdown_MaterialType")
@@ -181,45 +184,44 @@ class UIManager : MonoBehaviour
             {
                 mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
             }
-            else if (parameter.name == "Parameter_SigY")
+            if (parameter.name == "Parameter_SigY")
             {
                 mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
             }
-            else if (parameter.name == "Parameter_Nu")
+            if (parameter.name == "Parameter_Nu")
             {
                 mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
             }
-            else if (parameter.name == "Parameter_ColideFactor")
+            if (parameter.name == "Parameter_ColideFactor")
             {
                 mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
             }
-            else if (parameter.name == "Parameter_FrictionK")
+            if (parameter.name == "Parameter_FrictionK")
             {
                 mpm3DSimulation.friction_k = parameter.GetComponentInChildren<Slider>().value;
             }
-            else if (parameter.name == "Parameter_P_Rho")
+            if (parameter.name == "Parameter_P_Rho")
             {
                 mpm3DSimulation.p_rho = parameter.GetComponentInChildren<Slider>().value;
             }
-            else if (parameter.name == "Parameter_FrictionAngle")
+            if (parameter.name == "Parameter_FrictionAngle")
             {
                 mpm3DSimulation.friction_angle = parameter.GetComponentInChildren<Slider>().value;
             }
-            else if (parameter.name == "Parameter_Damping")
+            if (parameter.name == "Parameter_Damping")
             {
                 mpm3DSimulation.damping = parameter.GetComponentInChildren<Slider>().value;
             }
-            else if (parameter.name == "Parameter_Gravity")
-            {
-                mpm3DSimulation.SetGravity(parameter.GetComponentInChildren<Slider>().value);
-            }
-            else if (parameter.name == "Parameter_n_grid")
-            {
-                mpm3DSimulation.SetGridSize((int)parameter.GetComponentInChildren<Slider>().value);
-            }
-
+            // else if (parameter.name == "Parameter_Gravity")
+            // {
+            //     mpm3DSimulation.SetGravity(parameter.GetComponentInChildren<Slider>().value);
+            // }
+            // else if (parameter.name == "Parameter_n_grid")
+            // {
+            //     mpm3DSimulation.SetGridSize((int)parameter.GetComponentInChildren<Slider>().value);
+            // }
         }
-
+        
         Debug.Log("Mpm3DObject" + slectedMpm3DObject.name + " is created and selected");
         Debug.Log("Object is fixed: " + mpm3DSimulation.is_fixed);
         Debug.Log("materialType: " + mpm3DSimulation.materialType);
@@ -233,7 +235,7 @@ class UIManager : MonoBehaviour
         Debug.Log("p_rho: " + mpm3DSimulation.p_rho);
         Debug.Log("friction_angle: " + mpm3DSimulation.friction_angle);
         Debug.Log("damping: " + mpm3DSimulation.damping);
-
+        
         // Adjust materials
         mpm3DSimulation.Init_materials();
         mpm3DSimulation.Update_materials();
@@ -376,6 +378,16 @@ class UIManager : MonoBehaviour
                 Debug.Log("Object " + selectedObject.name + " is " + (mpm3DSimulation.is_fixed ? "Fixed" : "Unfixed"));
             }
         }
+        
+        // Enable/Disable the gravity
+        if (toggle.name == "Toggle_Gravity")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.SetGravity(isOn ? -9.8f : 0.0f);
+            }
+        }
     }
     
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
@@ -440,6 +452,8 @@ class UIManager : MonoBehaviour
                         mpm3DSimulation.AdjustTextureColor(new Color(0.6f, 0.3f, 0.0f));
                     }
                 }
+                dropdown.value = 0;
+                dropdown.Hide();
             }
         }
         
