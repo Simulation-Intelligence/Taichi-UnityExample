@@ -77,7 +77,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     @ti.kernel
     def substep_neohookean_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
                                dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
-                               mu: ti.f32, la: ti.f32, p_vol: ti.f32, p_mass: ti.f32, dx:ti.f32, dt:ti.f32,
+                               mu: ti.f32, la: ti.f32, p_vol: ti.f32, p_mass: ti.f32, dx: ti.f32, dt: ti.f32,
                                min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for p in x:
             # Check if the particle is within the specified simulation boundaries
@@ -321,10 +321,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
                 grid_v[I] = ti.select(cond, 0, grid_v[I])
                 # Sticky boundary condition by setting tangential velocity to zero if it points outside the grid at the boundaries
-                # if (I[0] < bound or I[0] > n_grid - bound or
-                #     I[1] < bound or I[1] > n_grid - bound or
-                #     I[2] < bound or I[2] > n_grid - bound):
-                #         grid_v[I] = ti.Vector([0.0, 0.0, 0.0])
                 # Limit the velocity w.r.t. CFL condition
                 grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
                 # Reset the SDF and obstacle normals for the next time step
@@ -860,7 +856,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             # substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    # run_aot()
+    run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph

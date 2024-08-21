@@ -596,13 +596,13 @@ class UIManager : MonoBehaviour
                     valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
                     
                     // Set the toggle, dropdown, and slider values accordingly
-                    foreach (Toggle toggle in toggles)
-                    {
-                        if (toggle.name == "Toggle_FixObject")
-                        {
-                            toggle.isOn = mpm3DSimulation.GetIsFixed();
-                        }
-                    }
+                    // foreach (Toggle toggle in toggles)
+                    // {
+                    //     if (toggle.name == "Toggle_FixObject")
+                    //     {
+                    //         toggle.isOn = mpm3DSimulation.GetIsFixed();
+                    //     }
+                    // }
                     
                     foreach (TMP_Dropdown dropdown in dropdowns)
                     {
