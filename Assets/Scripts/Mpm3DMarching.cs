@@ -101,7 +101,7 @@ public class Mpm3DMarching : MonoBehaviour
     private NdArray<int> segments_count_per_cell, hash_table, material, point_color;
 
     private float[] hand_skeleton_segments, hand_skeleton_segments_prev, hand_skeleton_velocities, _skeleton_capsule_radius, sphere_positions, _sphere_velocities, sphere_radii;
-
+    
     private Bounds bounds;
 
     private ComputeGraph _Compute_Graph_g_init;
@@ -114,7 +114,7 @@ public class Mpm3DMarching : MonoBehaviour
     private Grabbable _grabbable;
     [SerializeField]
     public GaussianSplatRenderManager splatManager;
-
+    
     [SerializeField]
     MarchingCubeVisualizer[] marchingCubeVisualizers;
 
@@ -127,25 +127,27 @@ public class Mpm3DMarching : MonoBehaviour
 
     [SerializeField]
     private Vector3 g = new(0, -9.8f, 0);
-
+    
     private float gy;
     [SerializeField]
     private int n_grid = 32, bound = 3;
-
+    
     [SerializeField]
     private float bounding_eps = 0.1f;
     [SerializeField]
-    public float max_dt = 1e-4f, frame_time = 0.005f, cube_size = 0.2f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
+    public float max_dt = 1e-4f, frame_time = 0.005f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
+    public float cube_size = 0.2f, cylinder_height = 1.0f, cylinder_radius = 0.05f, torus_radius = 0.3f, torus_tube_radius = 0.05f;
     [SerializeField]
     bool use_correct_cfl = false;
-
+    
     [SerializeField]
     private float hand_simulation_radius = 0.5f;
 
     private Vector3 boundary_min, boundary_max;
 
-    public bool is_fixed = false;
-
+    // Fix the object in place
+    private bool is_fixed = false;
+    
     private Vector3 fix_center = new Vector3(0.5f, 0.5f, 0.5f);
 
     private float fix_radius = 0.2f;
@@ -175,7 +177,7 @@ public class Mpm3DMarching : MonoBehaviour
 
     private float[] E_host, SigY_host, nu_host, min_clamp_host, max_clamp_host, alpha_host, p_vol_host, p_mass_host;
 
-    private int[] material_host, point_color_host;//upper 16bits: 3: # Drucker_Prager  1:  # Von_Mises 2:  # Clamp 0:  # Elastic  lower 16bits: 0:  # neohookean 1:  # kirchhoff
+    private int[] material_host, point_color_host; //upper 16bits: 3: # Drucker_Prager  1:  # Von_Mises 2:  # Clamp 0:  # Elastic  lower 16bits: 0:  # neohookean 1:  # kirchhoff
 
     private float mu, lambda, sin_phi, _alpha, max_density;
 
@@ -193,7 +195,7 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private string filePath = "HandMotionData.txt";
 
-    private bool RendererInitialized = false;
+    private bool RendererInitialized = false; // Used for recorded hand
     private List<CapsuleVisualization> _capsuleVisualizations = new();
 
     // Start is called before the first frame update
@@ -214,7 +216,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_init_particles = kernels["init_particles"];
             _Kernel_init_dg = kernels["init_dg"];
 
-            // new added
+            // Contact with hand
             _Kernel_substep_calculate_hand_sdf = kernels["substep_calculate_hand_sdf"];
             _Kernel_substep_get_max_speed = kernels["substep_get_max_speed"];
             _Kernel_substep_calculate_hand_hash = kernels["substep_calculate_hand_hash"];
@@ -223,7 +225,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_substep_p2g = kernels["substep_p2g"];
             _Kernel_substep_apply_plasticity = kernels["substep_apply_plasticity"];
 
-            //gaussian
+            // Gaussian
             _Kernel_init_gaussian_data = kernels["init_gaussian_data"];
             _Kernel_substep_update_gaussian_data = kernels["substep_update_gaussian_data"];
             _Kernel_scale_to_unit_cube = kernels["scale_to_unit_cube"];
@@ -254,7 +256,7 @@ public class Mpm3DMarching : MonoBehaviour
         sphere_velocities = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
         sphere_radius = new NdArrayBuilder<float>().Shape(sphere.Length).HostWrite(true).Build();
         max_v = new NdArrayBuilder<float>().Shape(1).HostRead(true).Build();
-
+        
         sphere_positions = new float[3 * sphere.Length];
         _sphere_velocities = new float[3 * sphere.Length];
         sphere_radii = new float[sphere.Length];
@@ -381,6 +383,7 @@ public class Mpm3DMarching : MonoBehaviour
     void Init_Particles()
     {
         float volume = 0;
+        // Determine the volume of the initial shape
         switch (initShape)
         {
             case InitShape.Cube:
@@ -390,40 +393,41 @@ public class Mpm3DMarching : MonoBehaviour
                 volume = 4.0f / 3.0f * Mathf.PI * Mathf.Pow(cube_size / 2, 3);
                 break;
             case InitShape.Cylinder:
-                volume = Mathf.PI * Mathf.Pow(cube_size / 2, 2) * cube_size;
+                volume = Mathf.PI * Mathf.Pow(cylinder_radius, 2) * cylinder_height;
                 break;
             case InitShape.Torus:
-                volume = 2 * Mathf.PI * Mathf.PI * Mathf.Pow(cube_size / 2, 2) * 0.1f;
+                volume = 2 * Mathf.PI * Mathf.PI * Mathf.Pow(torus_tube_radius, 2) * torus_radius;
                 break;
         }
+        // Determine the number of particles based on the grid size, particle density, and volume
         NParticles = (int)(n_grid * n_grid * n_grid * particle_per_grid * volume);
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-
+        
+        // kernel initialization of different primitive shapes
         if (initShape == InitShape.Cube)
             if (_Compute_Graph_g_init != null)
             {
                 _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
-            {
-                { "x", x },
-                { "v", v }
-            });
+                {
+                    { "x", x },
+                    { "v", v }
+                });
             }
             else
             {
-                //kernel initialize
                 _Kernel_init_particles.LaunchAsync(x, v, dg, cube_size);
             }
         else if (initShape == InitShape.Sphere)
             _Kernel_init_sphere.LaunchAsync(x, dg, cube_size / 2);
         else if (initShape == InitShape.Cylinder)
-            _Kernel_init_cylinder.LaunchAsync(x, dg, (float)1, (float)0.05);
+            _Kernel_init_cylinder.LaunchAsync(x, dg, cylinder_height, cylinder_radius);
         else if (initShape == InitShape.Torus)
-            _Kernel_init_torus.LaunchAsync(x, dg, (float)0.3, (float)0.05);
+            _Kernel_init_torus.LaunchAsync(x, dg, torus_radius, torus_tube_radius);
     }
-
+    
     public void Init_MarchingCubes()
     {
         _p_vol = dx * dx * dx / particle_per_grid;
@@ -434,8 +438,8 @@ public class Mpm3DMarching : MonoBehaviour
         marchingCubeVisualizers[0]._gridScale = dx;
 
         marchingCubeVisualizers[0].Init();
-
     }
+    
     public void Init_gaussian()
     {
         NParticles = splatManager.splatsNum;
@@ -699,12 +703,14 @@ public class Mpm3DMarching : MonoBehaviour
                     {
                         if (transform.lossyScale.x > 1.0f)
                         {
+                            // The object is scaled up
                             _Kernel_substep_calculate_hand_hash.LaunchAsync(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell);
                             _Kernel_substep_calculate_hand_sdf_hash.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell,
                             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                         }
                         else
                         {
+                            // The object is scaled down
                             _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx,
                             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                         }
@@ -714,19 +720,22 @@ public class Mpm3DMarching : MonoBehaviour
             while (time_left > 0)
             {
                 time_left -= dt;
+                
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m, marching_m, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 //_Kernel_substep_p2g.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, point_color, marching_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound,
-                boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                
                 if (is_fixed)
                     _Kernel_substep_fix_object.LaunchAsync(grid_v, fix_center.x, fix_center.y, fix_center.z, fix_radius);
+                
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_apply_plasticity.LaunchAsync(dg, x, E, nu, material, SigY, alpha, min_clamp, max_clamp, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                
                 if (use_correct_cfl)
                 {
                     v_allowed = float.MaxValue;
-                    //Taichi Allocate memory,hostwrite are not considered
+                    // Taichi Allocate memory, hostwrite are not considered
                     _Kernel_substep_get_max_speed.LaunchAsync(v, x, max_v, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                     float[] max_speed = new float[1];
                     max_v.CopyToArray(max_speed);
@@ -738,8 +747,8 @@ public class Mpm3DMarching : MonoBehaviour
             {
                 _Kernel_substep_adjust_particle.LaunchAsync(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             }
-
         }
+        
         if (renderType == RenderType.PointMesh)
         {
             x.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
@@ -751,7 +760,7 @@ public class Mpm3DMarching : MonoBehaviour
         else if (renderType == RenderType.GaussianSplat)
         {
             _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh, x,
-        boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                                                             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
             sh.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuSHData.GetNativeBufferPtr());
             x.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
@@ -908,6 +917,10 @@ public class Mpm3DMarching : MonoBehaviour
     {
         is_fixed = fixed_;
     }
+    public bool GetIsFixed()
+    {
+        return is_fixed;
+    }
     public void InitGrid()
     {
         grid_v = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
@@ -956,24 +969,27 @@ public class Mpm3DMarching : MonoBehaviour
         // Init_materials();
         // Update_materials();
     }
-
-    public void IncreaseGridSize()
+    public int GetGridSize()
+    {
+        return n_grid;
+    }
+    public void IncreaseGridSize(int num)
     {
         if (n_grid == 150)
         {
             UnityEngine.Debug.LogWarning("Cannot increase grid size anymore.");
             return;
         }
-        SetGridSize(n_grid + 20);
+        SetGridSize(n_grid + num);
     }
-    public void DecreaseGridSize()
+    public void DecreaseGridSize(int num)
     {
         if (n_grid == 50)
         {
             UnityEngine.Debug.LogWarning("Cannot decrease grid size anymore.");
             return;
         }
-        SetGridSize(n_grid - 20);
+        SetGridSize(n_grid - num);
     }
     public void AdjustTextureColor(Color rgba)
     {
@@ -1053,12 +1069,13 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else
         {
+            Init_Particles();
             Init_MarchingCubes();
             Init_materials();
             Update_materials();
         }
     }
-
+    
     public void SetGravity(float y)
     {
         gy = y;
@@ -1096,7 +1113,9 @@ public class Mpm3DMarching : MonoBehaviour
                 //UnityEngine.Debug.Log("Num of Bones while tracking: " + numBones);
                 if (numBones > 0)
                 {
+                    // Use the wrist position as the hand position
                     Center += oculus_skeletons[i].Bones[0].Transform.position;
+                    
                     int init = i * skeleton_num_capsules * 6;
                     for (int j = 0; j < numBones; j++)
                     {
@@ -1107,20 +1126,28 @@ public class Mpm3DMarching : MonoBehaviour
                         {
                             handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
                         }
+
+                        // World to local coordinate conversion and calculate the velocity of the segment
                         UpdateHandSkeletonSegment(init + j * 6, start, end, frame_time);
+                        
+                        // Get the radius of each capsule
                         _skeleton_capsule_radius[i * skeleton_num_capsules + j] = preset_capsule_radius[j] / transform.lossyScale.x;
                     }
+
+                    // Copy the hand skeleton segments and velocities to the compute buffer
                     skeleton_segments.CopyFromArray(hand_skeleton_segments);
                     skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
                     skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
                 }
             }
         }
+        
+        // Update a box around the two hands based on the position of them
         Center /= oculus_skeletons.Length;
         boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.lossyScale.x;
         boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.lossyScale.x;
     }
-
+    
     void SaveHandMotionData()
     {
         using StreamWriter writer = new(filePath);
@@ -1210,10 +1237,12 @@ public class Mpm3DMarching : MonoBehaviour
         }
     }
 
-    private void UpdateHandSkeletonSegment(int init, Vector3 start, Vector3 end, float frameTime)
+    private void UpdateHandSkeletonSegment(int init, Vector3 segment_start, Vector3 segment_end, float frameTime)
     {
-        Vector3 TransformedStart = transform.InverseTransformPoint(start);
-        Vector3 TransformedEnd = transform.InverseTransformPoint(end);
+        // Convert the segment start and segment end points to local coordinates relative to this transform
+        Vector3 TransformedStart = transform.InverseTransformPoint(segment_start);
+        Vector3 TransformedEnd = transform.InverseTransformPoint(segment_end);
+        
         hand_skeleton_segments[init] = TransformedStart.x;
         hand_skeleton_segments[init + 1] = TransformedStart.y;
         hand_skeleton_segments[init + 2] = TransformedStart.z;
@@ -1221,6 +1250,7 @@ public class Mpm3DMarching : MonoBehaviour
         hand_skeleton_segments[init + 4] = TransformedEnd.y;
         hand_skeleton_segments[init + 5] = TransformedEnd.z;
 
+        // Calculate the velocity of the segment
         hand_skeleton_velocities[init] = (TransformedStart.x - hand_skeleton_segments_prev[init]) / frameTime;
         hand_skeleton_velocities[init + 1] = (TransformedStart.y - hand_skeleton_segments_prev[init + 1]) / frameTime;
         hand_skeleton_velocities[init + 2] = (TransformedStart.z - hand_skeleton_segments_prev[init + 2]) / frameTime;
@@ -1228,6 +1258,7 @@ public class Mpm3DMarching : MonoBehaviour
         hand_skeleton_velocities[init + 4] = (TransformedEnd.y - hand_skeleton_segments_prev[init + 4]) / frameTime;
         hand_skeleton_velocities[init + 5] = (TransformedEnd.z - hand_skeleton_segments_prev[init + 5]) / frameTime;
 
+        // Update the previous frame positions
         hand_skeleton_segments_prev[init] = TransformedStart.x;
         hand_skeleton_segments_prev[init + 1] = TransformedStart.y;
         hand_skeleton_segments_prev[init + 2] = TransformedStart.z;
