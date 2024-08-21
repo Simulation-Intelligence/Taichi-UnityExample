@@ -383,6 +383,7 @@ public class Mpm3DMarching : MonoBehaviour
     void Init_Particles()
     {
         float volume = 0;
+        // Determine the volume of the initial shape
         switch (initShape)
         {
             case InitShape.Cube:
@@ -392,30 +393,31 @@ public class Mpm3DMarching : MonoBehaviour
                 volume = 4.0f / 3.0f * Mathf.PI * Mathf.Pow(cube_size / 2, 3);
                 break;
             case InitShape.Cylinder:
-                volume = Mathf.PI * Mathf.Pow(cube_size / 2, 2) * cube_size;
+                volume = Mathf.PI * Mathf.Pow(cylinder_radius, 2) * cylinder_height;
                 break;
             case InitShape.Torus:
-                volume = 2 * Mathf.PI * Mathf.PI * Mathf.Pow(cube_size / 2, 2) * 0.1f;
+                volume = 2 * Mathf.PI * Mathf.PI * Mathf.Pow(torus_tube_radius, 2) * torus_radius;
                 break;
         }
+        // Determine the number of particles based on the grid size, particle density, and volume
         NParticles = (int)(n_grid * n_grid * n_grid * particle_per_grid * volume);
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-
+        
+        // kernel initialization of different primitive shapes
         if (initShape == InitShape.Cube)
             if (_Compute_Graph_g_init != null)
             {
                 _Compute_Graph_g_init.LaunchAsync(new Dictionary<string, object>
-            {
-                { "x", x },
-                { "v", v }
-            });
+                {
+                    { "x", x },
+                    { "v", v }
+                });
             }
             else
             {
-                //kernel initialize
                 _Kernel_init_particles.LaunchAsync(x, v, dg, cube_size);
             }
         else if (initShape == InitShape.Sphere)
