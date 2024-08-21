@@ -76,7 +76,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             sdf[I] = (pos - obstacle_pos[0]).norm() - obstacle_radius
             grid_obstacle_vel[I] = obstacle_velocity[0]
             
-
     @ti.kernel
     def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),sdf: ti.types.ndarray(ndim=3),grid_obstacle_vel:ti.types.ndarray(ndim=3),gx:float,gy:float,gz:float):
         for I in ti.grouped(grid_m):
@@ -90,9 +89,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             grid_v[I] = ti.select(cond, 0, grid_v[I])
             sdf[I]=1
             grid_obstacle_vel[I]=[0,0,0]
-
-
-
 
     @ti.kernel
     def substep_g2p(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),
@@ -142,7 +138,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def substep():
         substep_reset_grid(grid_v, grid_m)
         substep_p2g(x, v, C, J, grid_v, grid_m)
-        substep_calculate_signed_distance_field(obstacle_pos, obstacle_velocity ,sdf,grid_obstacle_vel,obstacle_radius)
+        # substep_calculate_signed_distance_field(obstacle_pos, obstacle_velocity ,sdf,grid_obstacle_vel,obstacle_radius)
         substep_update_grid_v(grid_v, grid_m,sdf,grid_obstacle_vel,gx,gy,gz)
         substep_g2p(x, v, C, J, grid_v)
 
@@ -165,7 +161,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 substep()
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    run_aot()
+    # run_aot()
 
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph

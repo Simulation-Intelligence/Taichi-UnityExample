@@ -27,7 +27,7 @@ def get_save_dir(name, arch):
     return os.path.join(curr_dir, f"{name}_{arch}")
 
 def compile_mpm3D(arch, save_compute_graph, run=False):
-    ti.init(arch, vk_api_version="1.0",debug=False)  
+    ti.init(arch, vk_api_version="1.0", debug=False)  
 
     if ti.lang.impl.current_cfg().arch != arch:
         return
@@ -49,7 +49,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     damping = 1
     bound = 3
     E = 10000  # Young's modulus for snow
-    _SigY =1000
+    _SigY = 1000
     nu = 0.45  # Poisson's ratio
     mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # Lame parameters
     v = 0.1
@@ -77,20 +77,27 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     @ti.kernel
     def substep_neohookean_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
                                dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
-                               mu:ti.f32,la:ti.f32,p_vol:ti.f32,p_mass:ti.f32,dx:ti.f32,dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+                               mu: ti.f32, la: ti.f32, p_vol: ti.f32, p_mass: ti.f32, dx:ti.f32, dt:ti.f32,
+                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for p in x:
-            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
+            # Check if the particle is within the specified simulation boundaries
+            if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
                 Xp = x[p] / dx
                 base = int(Xp - 0.5)
                 fx = Xp - base
+                # Quadratic B-spline weights for particle-grid interpolation
                 w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
-
+                # Update the deformation gradient with the velocity gradient
                 dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
-                J=dg[p].determinant()
-                cauchy=mu*(dg[p]@dg[p].transpose())+ti.Matrix.identity(float, dim)*(la*ti.log(J)-mu)
-                stress=-(dt * p_vol * 4 /dx**2) * cauchy
+                # Calculate the determinant of the deformation gradient (volume change)
+                J = dg[p].determinant()
+                # Cauchy stress tensor using the Neo-Hookean model
+                cauchy = mu * (dg[p] @ dg[p].transpose()) + ti.Matrix.identity(float, dim) * (la * ti.log(J) - mu)
+                # Stress contribution to the grid, scaled by the particle volume and grid resolution
+                stress = -(dt * p_vol * 4 / dx**2) * cauchy
+                # Compute the affine velocity update matrix, combining stress and velocity gradient
                 affine = stress + p_mass * C[p]
-
+                # Neighboring grid cells
                 for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
                     dpos = (offset - fx) * dx
                     weight = 1.0
@@ -98,13 +105,14 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         weight *= w[offset[i]][i]
                     grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
                     grid_m[base + offset] += weight * p_mass
-        
+    
     @ti.kernel
     def substep_kirchhoff_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),
                                dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
-                               mu:ti.f32,la:ti.f32,p_vol:ti.f32,p_mass:ti.f32,dx:ti.f32,dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+                               mu: ti.f32,la:ti.f32,p_vol: ti.f32, p_mass: ti.f32, dx: ti.f32, dt: ti.f32,
+                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for p in x:
-            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
+            if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
                 Xp = x[p] / dx
                 base = int(Xp - 0.5)
                 fx = Xp - base
@@ -130,8 +138,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def substep_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
                     dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
                     E: ti.types.ndarray(ndim=1), nu: ti.types.ndarray(ndim=1), material: ti.types.ndarray(ndim=1),
-                    p_vol:ti.types.ndarray(ndim=1), p_mass:ti.types.ndarray(ndim=1), dx:ti.f32, dt:ti.f32, min_x:ti.f32, max_x:ti.f32, 
-                    min_y:ti.f32, max_y:ti.f32, min_z:ti.f32, max_z:ti.f32):
+                    p_vol: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), dx: ti.f32, dt:ti.f32, 
+                    min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for p in x:
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
                 Xp = x[p] / dx
@@ -168,10 +176,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     @ti.kernel
     def substep_p2g_multi(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
-                    dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),point_color:ti.types.ndarray(ndim=1),marching_m:ti.types.ndarray(ndim=4),
+                    dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
+                    point_color: ti.types.ndarray(ndim=1), marching_m: ti.types.ndarray(ndim=4),
                     E: ti.types.ndarray(ndim=1), nu: ti.types.ndarray(ndim=1), material: ti.types.ndarray(ndim=1),
-                    p_vol:ti.types.ndarray(ndim=1), p_mass:ti.types.ndarray(ndim=1), dx:ti.f32, dt:ti.f32, min_x:ti.f32, max_x:ti.f32, 
-                    min_y:ti.f32, max_y:ti.f32, min_z:ti.f32, max_z:ti.f32):
+                    p_vol: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), dx: ti.f32, dt: ti.f32, 
+                    min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for p in x:
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
                 Xp = x[p] / dx
@@ -211,14 +220,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     @ti.kernel
     def substep_apply_plasticity(dg: ti.types.ndarray(ndim=1), x: ti.types.ndarray(ndim=1), 
                                  E: ti.types.ndarray(ndim=1), nu: ti.types.ndarray(ndim=1), 
-                                 material: ti.types.ndarray(ndim=1), SigY: ti.types.ndarray(ndim=1), alpha: ti.types.ndarray(ndim=1), min_clamp: ti.types.ndarray(ndim=1), max_clamp: ti.types.ndarray(ndim=1),
-                                 min_x:ti.f32, max_x:ti.f32, min_y:ti.f32, max_y:ti.f32, 
-                                 min_z:ti.f32, max_z:ti.f32):
+                                 material: ti.types.ndarray(ndim=1), SigY: ti.types.ndarray(ndim=1), 
+                                 alpha: ti.types.ndarray(ndim=1), min_clamp: ti.types.ndarray(ndim=1), max_clamp: ti.types.ndarray(ndim=1),
+                                 min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for p in dg:
+            # Check if the particle is within the specified simulation boundaries
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
                 U, sig, V = ti.svd(dg[p])
                 sig_vec = ti.Vector([sig[i, i] for i in range(dim)])
-
+                
                 # Common computations
                 epsilon = ti.log(ti.abs(sig_vec))
                 trace_epsilon = epsilon.sum()
@@ -231,15 +241,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
                 # Apply plasticity based on material type
                 plasticity_type = (material[p] >> 16) & 0xFFFF
-                if plasticity_type == 2:  # Clamp
+                if plasticity_type == 2:  # Clamp plasticity type
                     for i in ti.static(range(dim)):
                         sig[i, i] = min(max(sig[i, i], 1 - min_clamp[p]), 1 + max_clamp[p])
                     dg[p] = U @ sig @ V.transpose()
                 else:
-                    if plasticity_type == 1:  # Von_Mises
+                    if plasticity_type == 1:  # Von_Mises plasticity type
                         delta_gamma = epsilon_hat_norm - SigY[p] / (2 * mu)
 
-                    elif plasticity_type == 3:  # Drucker_Prager
+                    elif plasticity_type == 3:  # Drucker_Prager plasticity type
                         if trace_epsilon <= 0:
                             delta_gamma = epsilon_hat_norm + (3 * la + 2 * mu) / (2 * mu) * trace_epsilon * alpha[p]
                         else:
@@ -254,9 +264,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         H = epsilon - (delta_gamma / epsilon_hat_norm) * epsilon_hat
                         Em = ti.exp(H)
                         Z = ti.Matrix([[Em[0], 0, 0], [0, Em[1], 0], [0, 0, Em[2]]])
-
+                    # Reconstruct the deformation gradient with the corrected singular values
                     dg[p] = U @ Z @ V.transpose()
-
+    
     @ti.kernel
     def substep_calculate_signed_distance_field(obstacle_pos: ti.types.ndarray(ndim=1),
                                                 sdf: ti.types.ndarray(ndim=3), obstacle_normals: ti.types.ndarray(ndim=3),
@@ -279,13 +289,14 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 obstacle_normals[I] = norm
     
     @ti.kernel
-    def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3), 
+    def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3),
                               grid_m: ti.types.ndarray(ndim=3),
                               sdf: ti.types.ndarray(ndim=3),
                               obstacle_normals: ti.types.ndarray(ndim=3),
                               obstacle_velocities: ti.types.ndarray(ndim=3),
                               gx: float, gy: float, gz: float, k: float, damping: float, friction_k: float,
-                              v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
+                              v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, 
+                              min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
         for I in ti.grouped(grid_m):
             pos = I * dx + dx * 0.5
             # Check if the current position is within the specified bounding box
@@ -715,7 +726,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     # endregion
 
 
-    # hand sdf
+    # Hand sdf
     hand_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
     obstacle_normals = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     skeleton_segments = ti.Vector.ndarray(3, ti.f32, shape=(24, 2))
@@ -744,7 +755,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     init_sh = ti.Matrix.ndarray(16,3,ti.f32, shape=(n_particles))
     sh = ti.Matrix.ndarray(16,3,ti.f32, shape=(n_particles))
 
-    #material
+    # Material
     E = ti.ndarray(ti.f32, shape=(n_particles))
     nu = ti.ndarray(ti.f32, shape=(n_particles))
     material = ti.ndarray(ti.i32, shape=(n_particles))
@@ -762,7 +773,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     point_color = ti.Vector.ndarray(1, ti.i32, shape=(n_particles))
     marching_m = ti.ndarray(ti.f32, shape=(3,n_grid, n_grid, n_grid))
 
-    #boundary
+    # Boundary
     min_x = 0.1
     max_x = 0.9
     min_y = 0.1
@@ -770,7 +781,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     min_z = 0.1
     max_z = 0.9
 
-    #transform
+    # Transform
     mat2 = ti.ndarray(ti.f32, shape=(4, 4))
     mat3 = ti.ndarray(ti.f32, shape=(4, 4))
     
@@ -836,12 +847,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         
     if run:
         gui = ti.GUI('MPM3D', res=(800, 800))
-        # init_particles(x, v, dg, cube_size)
+        init_particles(x, v, dg, cube_size)
         # init_sphere(x, dg, cube_size)
         # init_cylinder(x, dg, 1, 0.05)
-        init_torus(x, dg, 0.3, 0.05)
+        # init_torus(x, dg, 0.3, 0.05)
         # scale_to_unit_cube(x,  other_data, 0.1)
-        # init_dg(dg)
+        init_dg(dg)
         # init_gaussian_data(init_rotation, init_scale, other_data)
         while gui.running and not gui.get_event(gui.ESCAPE):
             for i in range(50):
@@ -849,7 +860,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             # substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    run_aot()
+    # run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph

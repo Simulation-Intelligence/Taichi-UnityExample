@@ -115,7 +115,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             if grid_m[I] > 0:
                 grid_v[I] /= grid_m[I]
             gravity = ti.Vector([gx,gy,gz])
-            #grid_v[I] += dt * gravity
+            # grid_v[I] += dt * gravity
             if sdf[I] <= 0:
                 grid_v[I] = grid_obstacle_vel[I]
             if I[0]<min_i+2 and grid_m[I]>0:
