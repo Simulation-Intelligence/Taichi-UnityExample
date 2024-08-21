@@ -31,31 +31,30 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
     if ti.lang.impl.current_cfg().arch != arch:
         return
-
-    dim, n_grid, steps, dt,cube_size ,particle_per_grid= 3, 64, 25, 1e-4,0.2,16
-    n_particles  = int((((n_grid*cube_size)**dim) *particle_per_grid))
-    print("Number of particles: ", n_particles)
-    dx = 1/n_grid
     
+    dim, n_grid, steps, dt, cube_size, particle_per_grid = 3, 64, 25, 1e-4, 0.2, 16
+    n_particles  = int((((n_grid*cube_size)**dim) * particle_per_grid))
+    print("Number of particles: ", n_particles)
+    dx = 1 / n_grid
     p_rho = 1000
     _p_vol = dx** 3  
-    _p_mass = _p_vol * p_rho/ particle_per_grid
+    _p_mass = _p_vol * p_rho / particle_per_grid
     allowed_cfl = 0.5
     v_allowed = dx * allowed_cfl / dt
-    gx=0
-    gy=-9.8
-    gz=0
-    k=0.5
-    friction_k=0.4
-    damping=1
+    gx = 0
+    gy = -9.8
+    gz = 0
+    k = 0.5
+    friction_k =0.4
+    damping = 1
     bound = 3
     E = 10000  # Young's modulus for snow
-    _SigY=1000
+    _SigY =1000
     nu = 0.45  # Poisson's ratio
     mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # Lame parameters
-    v=0.1
-    _max_clamp=-0.1
-    _min_clamp=-0.1
+    v = 0.1
+    _max_clamp = -0.1
+    _min_clamp = -0.1
     friction_angle = 30.0
     sin_phi = ti.sin(friction_angle / 180 * 3.141592653)
     _alpha = ti.sqrt(2 / 3) * 2 * sin_phi / (3 - sin_phi)
@@ -63,15 +62,18 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     neighbour = (3,) * dim
     
     @ti.kernel
-    def substep_reset_grid(grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),marching_m:ti.types.ndarray(ndim=4),min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+    def substep_reset_grid(grid_v: ti.types.ndarray(ndim=3), 
+                           grid_m: ti.types.ndarray(ndim=3),
+                           marching_m: ti.types.ndarray(ndim=4),
+                           min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for I in ti.grouped(grid_m):
-            # pos=I*dx+dx*0.5
-            # if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
-                grid_v[I] = [0, 0, 0]
-                grid_m[I] = 0
+            # pos = I * dx + dx * 0.5
+            # if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
+                grid_v[I] = [0, 0, 0] # Reset velocity
+                grid_m[I] = 0         # Reset mass
         for I in ti.grouped(marching_m):
             marching_m[I] = 0
-            
+    
     @ti.kernel
     def substep_neohookean_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
                                dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
@@ -123,6 +125,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         weight *= w[offset[i]][i]
                     grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
                     grid_m[base + offset] += weight * p_mass
+    
     @ti.kernel
     def substep_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
                     dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
@@ -137,7 +140,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
 
                 dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
-
+                
                 mu = E[p] / (2 * (1 + nu[p]))
                 la = E[p] * nu[p] / ((1 + nu[p]) * (1 - 2 * nu[p]))
                 stress = ti.Matrix([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
@@ -162,6 +165,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         weight *= w[offset[i]][i]
                     grid_v[base + offset] += weight * (p_mass[p] * v[p] + affine @ dpos)
                     grid_m[base + offset] += weight * p_mass[p]
+    
     @ti.kernel
     def substep_p2g_multi(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
                     dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),point_color:ti.types.ndarray(ndim=1),marching_m:ti.types.ndarray(ndim=4),
@@ -253,22 +257,24 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
                     dg[p] = U @ Z @ V.transpose()
 
-    
     @ti.kernel
     def substep_calculate_signed_distance_field(obstacle_pos: ti.types.ndarray(ndim=1),
                                                 sdf: ti.types.ndarray(ndim=3), obstacle_normals: ti.types.ndarray(ndim=3),
-                                                obstacle_radius:ti.types.ndarray(ndim=1),dx:ti.f32,dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+                                                obstacle_radius: ti.types.ndarray(ndim=1), 
+                                                dx: ti.f32, dt: ti.f32, min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for I in ti.grouped(sdf):
             pos = I * dx + dx * 0.5
-            if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
+            # Check if the current position is within the specified bounding box
+            if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
                 min_dist = float('inf')
-                norm= ti.Vector([0.0, 0.0, 0.0])
+                norm = ti.Vector([0.0, 0.0, 0.0])
                 for j in obstacle_pos:
+                    # Calculate the distance from the current grid cell to the sphere obstacle
                     dist = (pos - obstacle_pos[j]).norm() - obstacle_radius[j]
                     if dist < min_dist:
                         min_dist = dist
-                        norm= (pos-obstacle_pos[j]).normalized()
-
+                        norm = (pos-obstacle_pos[j]).normalized()
+                # Update the signed distance field and the obstacle normals
                 sdf[I] = min_dist
                 obstacle_normals[I] = norm
     
@@ -336,29 +342,43 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 v[p] = new_v
                 x[p] += dt * v[p]
                 C[p] = new_C
-
+    
     @ti.kernel
-    def substep_adjust_particle(x: ti.types.ndarray(ndim=1),v: ti.types.ndarray(ndim=1),hash_table: ti.types.ndarray(ndim=4),segments_count_per_cell: ti.types.ndarray(ndim=3),skeleton_capsule_radius: ti.types.ndarray(ndim=1),skeleton_velocities:ti.types.ndarray(ndim=2),skeleton_segments:ti.types.ndarray(ndim=2),min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
-        dx= 1 / segments_count_per_cell.shape[0]
+    def substep_adjust_particle(x: ti.types.ndarray(ndim=1), 
+                                v: ti.types.ndarray(ndim=1),
+                                hash_table: ti.types.ndarray(ndim=4),
+                                segments_count_per_cell: ti.types.ndarray(ndim=3),
+                                skeleton_capsule_radius: ti.types.ndarray(ndim=1),
+                                skeleton_velocities: ti.types.ndarray(ndim=2),
+                                skeleton_segments: ti.types.ndarray(ndim=2),
+                                min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
+        # Calculate the grid cell size
+        dx = 1 / segments_count_per_cell.shape[0]
+        # Iterate over all particles
         for p in x:
-            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
-                Xp = x[p] / dx
-                base = int(Xp - 0.5)
-                min_d=float('inf')
+            # Check if the current position is within the specified bounding box
+            if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
+                Xp = x[p] / dx # Convert the particle's position to grid coordinates
+                base = int(Xp - 0.5) # Calculate the base grid cell index
+                min_d = float('inf')
+                # Iterate over all skeleton segments in the base grid cell
                 for i in range(segments_count_per_cell[base]):
                     seg_idx = hash_table[base, i]
                     if seg_idx != -1:
                         start = skeleton_segments[seg_idx, 0]
                         end = skeleton_segments[seg_idx, 1]
+                        # Calculate the distance from the particle to the skeleton segment
                         result = calculate_point_segment_distance(x[p], start, end)
                         dist = result.distance
                         r = result.b
+                        # Check if the particle is within the capsule radius of the segment and closer than previous segments
                         if dist.norm() < skeleton_capsule_radius[seg_idx] and dist.norm() < min_d:
+                            # Adjust the particle's position to be outside the capsule radius
                             x[p] = x[p] + dist.normalized() * (skeleton_capsule_radius[seg_idx] - dist.norm())
-                            v[p] = skeleton_velocities[seg_idx,0] * (1-r) + skeleton_velocities[seg_idx,1] * r
-                            min_d = dist.norm()
-                    
-
+                            # Update the particle's velocity to match the segment's velocity (with interpolation)
+                            v[p] = skeleton_velocities[seg_idx, 0] * (1-r) + skeleton_velocities[seg_idx, 1] * r
+                            min_d = dist.norm() # Update the minimum distance
+    
     @ti.kernel
     def substep_apply_Drucker_Prager_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),lambda_0:ti.f32,mu_0:ti.f32,alpha:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for p in dg:
