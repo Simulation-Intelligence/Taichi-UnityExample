@@ -136,22 +136,23 @@ public class Mpm3DMarching : MonoBehaviour
     private float bounding_eps = 0.1f;
     [SerializeField]
     public float max_dt = 1e-4f, frame_time = 0.005f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
-    public float cube_size = 0.2f, cylinder_height = 1.0f, cylinder_radius = 0.05f, torus_radius = 0.3f, torus_tube_radius = 0.05f;
+    public float cube_size = 0.2f, cylinder_height = 0.9f, cylinder_radius = 0.05f, torus_radius = 0.3f, torus_tube_radius = 0.05f;
     [SerializeField]
     bool use_correct_cfl = false;
     
+    [Header("Interaction Settings")]
     [SerializeField]
     private float hand_simulation_radius = 0.5f;
-
     private Vector3 boundary_min, boundary_max;
-
-    // Fix the object in place
-    private bool is_fixed = false;
     
+    // Fix the object in place
+    [SerializeField]
+    private bool is_fixed = false;
     private Vector3 fix_center = new Vector3(0.5f, 0.5f, 0.5f);
-
     private float fix_radius = 0.2f;
-
+    // Use sticky boundary condition
+    [SerializeField]
+    private int use_sticky_boundary = 1;
 
     [Header("Obstacle")]
     [SerializeField]
@@ -168,7 +169,7 @@ public class Mpm3DMarching : MonoBehaviour
     private int skeleton_num_capsules = 24; // use default 24
     private int NParticles;
     private float dx, _p_vol, _p_mass, v_allowed;
-
+    
     [Header("Scalars")]
     [SerializeField]
     public float _E = 1e4f;
@@ -194,7 +195,7 @@ public class Mpm3DMarching : MonoBehaviour
     private bool UseRecordDate = false;
     [SerializeField]
     private string filePath = "HandMotionData.txt";
-
+    
     private bool RendererInitialized = false; // Used for recorded hand
     private List<CapsuleVisualization> _capsuleVisualizations = new();
 
@@ -247,6 +248,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Compute_Graph_g_substep = cgraphs["substep"];
         }
 
+        // Sphere as a obstacle
         if (sphere == null || sphere.Length == 0)
         {
             sphere = new Sphere[] { GameObject.Find("SphereLeft").GetComponent<Sphere>(),
@@ -279,8 +281,7 @@ public class Mpm3DMarching : MonoBehaviour
 
         InitGrid();
 
-
-        //skeleton_num_capsules = oculus_skeletons[0].Bones.Count();
+        // Initialize hand skeleton segments
         hand_skeleton_segments = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         hand_skeleton_segments_prev = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         hand_skeleton_velocities = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
@@ -289,7 +290,7 @@ public class Mpm3DMarching : MonoBehaviour
         _MeshRenderer = GetComponent<MeshRenderer>();
         _MeshFilter = GetComponent<MeshFilter>();
         _grabbable = GetComponent<Grabbable>();
-
+        
         dx = 1.0f / n_grid;
         mu = _E / (2 * (1 + _nu));
         lambda = _E * _nu / ((1 + _nu) * (1 - 2 * _nu));
@@ -350,7 +351,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
 
-
+        // Use the recorded hand data for simulation tests in Unity
         if (UseRecordDate)
         {
             LoadHandMotionData();
@@ -401,6 +402,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         // Determine the number of particles based on the grid size, particle density, and volume
         NParticles = (int)(n_grid * n_grid * n_grid * particle_per_grid * volume);
+        UnityEngine.Debug.Log("Number of particles: " + NParticles);
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
@@ -678,7 +680,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else
         {
-            //kernel update
+            // Simulation
             float dt = max_dt, time_left = frame_time;
             switch (obstacleType)
             {
@@ -724,8 +726,9 @@ public class Mpm3DMarching : MonoBehaviour
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m, marching_m, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 //_Kernel_substep_p2g.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, point_color, marching_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 
+                // If fix the object in place during the modeling process
                 if (is_fixed)
                     _Kernel_substep_fix_object.LaunchAsync(grid_v, fix_center.x, fix_center.y, fix_center.z, fix_radius);
                 
@@ -784,6 +787,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         Runtime.Submit();
     }
+
     public void MergeAndUpdate(Mpm3DMarching other)
     {
         if (other.renderType != renderType)
@@ -920,6 +924,10 @@ public class Mpm3DMarching : MonoBehaviour
     public bool GetIsFixed()
     {
         return is_fixed;
+    }
+    public void SetStickyBoundary(bool sticky)
+    {
+        use_sticky_boundary = (sticky? 1 : 0);
     }
     public void InitGrid()
     {
@@ -1126,7 +1134,7 @@ public class Mpm3DMarching : MonoBehaviour
                         {
                             handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
                         }
-
+                        
                         // World to local coordinate conversion and calculate the velocity of the segment
                         UpdateHandSkeletonSegment(init + j * 6, start, end, frame_time);
                         
@@ -1142,7 +1150,7 @@ public class Mpm3DMarching : MonoBehaviour
             }
         }
         
-        // Update a box around the two hands based on the position of them
+        // Update the simulation box domain around the two hands based on the position of them
         Center /= oculus_skeletons.Length;
         boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.lossyScale.x;
         boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.lossyScale.x;

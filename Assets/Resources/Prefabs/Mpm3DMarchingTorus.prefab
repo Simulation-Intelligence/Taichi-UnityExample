@@ -136,8 +136,8 @@ Transform:
   m_GameObject: {fileID: 3824064020728037618}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.621, y: 0.92, z: 0.077}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0.802, y: 0.92, z: 0.077}
+  m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 6841246367700788312}
@@ -211,7 +211,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   volumeTextureUpdater: {fileID: 7009955012817010533}
   Mpm3DModule: {fileID: -8196383504532815311, guid: 49d9fe7f16ccc4848a0a43e84fcedf3b, type: 3}
-  renderType: 3
+  renderType: 0
   handMaterial: {fileID: 2100000, guid: 125e946d849c64f4bb53e64b034f85c8, type: 2}
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
@@ -230,10 +230,14 @@ MonoBehaviour:
   bounding_eps: 0.1
   max_dt: 0.0001
   frame_time: 0.001
-  cube_size: 0.5
   particle_per_grid: 8
   allowed_cfl: 0.5
   damping: 100
+  cube_size: 0.5
+  cylinder_height: 1
+  cylinder_radius: 0.05
+  torus_radius: 0.3
+  torus_tube_radius: 0.05
   use_correct_cfl: 0
   hand_simulation_radius: 0.3
   obstacleType: 1
@@ -241,10 +245,10 @@ MonoBehaviour:
   oculus_hands: []
   oculus_skeletons: []
   preset_capsule_radius: []
-  _E: 8000000
-  _SigY: 800000
+  _E: 10000000
+  _SigY: 1000000
   _nu: 0.3
-  colide_factor: 0.5
+  colide_factor: 0.1
   friction_k: 0.4
   p_rho: 1000
   _min_clamp: 0.1

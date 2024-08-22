@@ -33,7 +33,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         return
     
     dim, n_grid, steps, dt, cube_size, particle_per_grid = 3, 64, 25, 1e-4, 0.2, 16
-    n_particles  = int((((n_grid*cube_size)**dim) * particle_per_grid))
+    n_particles  = int((((n_grid * cube_size) ** dim) * particle_per_grid))
     print("Number of particles: ", n_particles)
     dx = 1 / n_grid
     p_rho = 1000
@@ -45,7 +45,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     gy = -9.8
     gz = 0
     k = 0.5
-    friction_k =0.4
+    friction_k = 0.4
     damping = 1
     bound = 3
     E = 10000  # Young's modulus for snow
@@ -60,7 +60,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     _alpha = ti.sqrt(2 / 3) * 2 * sin_phi / (3 - sin_phi)
 
     neighbour = (3,) * dim
-    
+
+    use_sticky_cond = 1
+
     @ti.kernel
     def substep_reset_grid(grid_v: ti.types.ndarray(ndim=3), 
                            grid_m: ti.types.ndarray(ndim=3),
@@ -295,7 +297,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                               obstacle_normals: ti.types.ndarray(ndim=3),
                               obstacle_velocities: ti.types.ndarray(ndim=3),
                               gx: float, gy: float, gz: float, k: float, damping: float, friction_k: float,
-                              v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, 
+                              v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, use_sticky_cond: ti.i32,
                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
         for I in ti.grouped(grid_m):
             pos = I * dx + dx * 0.5
@@ -319,14 +321,18 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     grid_v[I] += delta_v - friction_force * tangent_direction # Apply both the collision correction and the frictional force to the velocity
                 # Enforce boundary conditions by setting velocity to zero if it points outside the grid at the boundaries
                 cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
-                grid_v[I] = ti.select(cond, 0, grid_v[I])
+                if (use_sticky_cond):
+                    if cond[0] or cond[1] or cond[2]:
+                        grid_v[I] = ti.Vector([0, 0, 0]) # Sticky boundary condition
+                else:
+                    grid_v[I] = ti.select(cond, 0, grid_v[I]) # Set normal velocity to 0
                 # Sticky boundary condition by setting tangential velocity to zero if it points outside the grid at the boundaries
                 # Limit the velocity w.r.t. CFL condition
                 grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
                 # Reset the SDF and obstacle normals for the next time step
                 sdf[I] = float('inf')
                 obstacle_normals[I] = [0, 0, 0]
-    
+                
     @ti.kernel
     def substep_g2p(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),grid_v: ti.types.ndarray(ndim=3),
                     dx:ti.f32,dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
@@ -519,7 +525,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def substep_fix_object(grid_v: ti.types.ndarray(ndim=3),
                            fix_center_x: ti.f32, fix_center_y: ti.f32, fix_center_z: ti.f32, 
                            fix_range: ti.f32):
-        dx=1/grid_v.shape[0]
+        dx = 1 / grid_v.shape[0]
         for I in ti.grouped(grid_v):
             pos = I * dx + dx * 0.5
             dist_to_center = (pos - ti.Vector([fix_center_x, fix_center_y, fix_center_z])).norm()
@@ -785,13 +791,13 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_reset_grid(grid_v, grid_m,marching_m, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_p2g(x, v, C,  dg, grid_v, grid_m,E,nu,material,p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_p2g(x, v, C,  dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_p2g_multi(x, v, C,  dg, grid_v, grid_m,point_color, marching_m,E, nu, material, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt,min_x,max_x,min_y,max_y,min_z,max_z)
         substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_calculate_hand_hash(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell)
         substep_calculate_hand_sdf_hash(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_update_grid_v(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities,gx,gy,gz,k,damping,friction_k,v_allowed,dt,n_grid,dx,bound,min_x,max_x,min_y,max_y,min_z,max_z)
+        substep_update_grid_v(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=1)
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -856,7 +862,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             # substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    run_aot()
+    # run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph
