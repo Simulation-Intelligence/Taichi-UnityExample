@@ -670,43 +670,42 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 sh[i]=RotateSH(R,init_sh[i])
 
     @ti.kernel
-    def scale_to_unit_cube(x: ti.types.ndarray(ndim=1),other_data: ti.types.ndarray(ndim=1),eps:ti.f32):
-        #计算 bounding box
+    def scale_to_unit_cube(x: ti.types.ndarray(ndim=1), other_data: ti.types.ndarray(ndim=1), eps:ti.f32):
+        # Calculate the bounding box of all particls
         min_val = ti.Vector([float('inf'), float('inf'), float('inf')])
         max_val = ti.Vector([float('-inf'), float('-inf'), float('-inf')])
         for j in range(1):  
             for i in x:
+                # Update min_val for the bounding box
                 if x[i][0] < min_val[0]:
                     min_val[0] = x[i][0]
                 if x[i][1] < min_val[1]:
                     min_val[1] = x[i][1]
                 if x[i][2] < min_val[2]:
                     min_val[2] = x[i][2]
-
+                # Update max_val for the bounding box
                 if x[i][0] > max_val[0]:
                     max_val[0] = x[i][0]
                 if x[i][1] > max_val[1]:
                     max_val[1] = x[i][1]
                 if x[i][2] > max_val[2]:
                     max_val[2] = x[i][2]
-
-    
+        
         center = (min_val + max_val) / 2.0
         size = max_val - min_val
 
-        # 基于最大尺寸计算缩放因子
+        # Calculate the scaling factor based on the largest dimension
         scaleFactor = (1.0 - 2 * eps) / ti.max(size[0], size[1], size[2])
-
+        # Define the center of the unit cube
         new_center = ti.Vector([0.5, 0.5, 0.5])
-
+        
         for i in x:
-            # 缩放位置并将其平移到新的中心
+            # # Scale and translate
             x[i] = (x[i] - center) * scaleFactor + new_center
-
-           # 缩放 m_other 中的比例因子
-            other_data[i][1] = scaleFactor*other_data[i][1]
-            other_data[i][2] = scaleFactor*other_data[i][2]
-            other_data[i][3] = scaleFactor*other_data[i][3]
+            # Scale the corresponding values in other_data
+            other_data[i][1] = scaleFactor * other_data[i][1]
+            other_data[i][2] = scaleFactor * other_data[i][2]
+            other_data[i][3] = scaleFactor * other_data[i][3]
 
     @ti.kernel
     def transform_and_merge(x1: ti.types.ndarray(ndim=1), 

@@ -130,7 +130,7 @@ public class Mpm3DMarching : MonoBehaviour
     
     private float gy;
     [SerializeField]
-    private int n_grid = 32, bound = 3;
+    public int n_grid = 32, bound = 3;
     
     [SerializeField]
     private float bounding_eps = 0.1f;
@@ -138,7 +138,7 @@ public class Mpm3DMarching : MonoBehaviour
     public float max_dt = 1e-4f, frame_time = 0.005f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
     public float cube_size = 0.2f, cylinder_height = 0.9f, cylinder_radius = 0.05f, torus_radius = 0.3f, torus_tube_radius = 0.05f;
     [SerializeField]
-    bool use_correct_cfl = false;
+    public bool use_correct_cfl = false;
     
     [Header("Interaction Settings")]
     [SerializeField]
@@ -150,9 +150,9 @@ public class Mpm3DMarching : MonoBehaviour
     private bool is_fixed = false;
     private Vector3 fix_center = new Vector3(0.5f, 0.5f, 0.5f);
     private float fix_radius = 0.2f;
-    // Use sticky boundary condition
+    // Use sticky boundary condition, 1 for sticky boundary, 0 for non-sticky boundary
     [SerializeField]
-    private int use_sticky_boundary = 1;
+    private int use_sticky_boundary = 1; 
 
     [Header("Obstacle")]
     [SerializeField]
@@ -856,7 +856,7 @@ public class Mpm3DMarching : MonoBehaviour
         marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, n_grid, n_grid, n_grid).Build();
         marching_m_computeBuffer = new ComputeBuffer(n_grid * n_grid * n_grid * marchingCubeVisualizers.Length, sizeof(float));
     }
-
+    
     private void MergeParticles(Mpm3DMarching other)
     {
         int totalParticles = NParticles + other.NParticles;
@@ -928,6 +928,18 @@ public class Mpm3DMarching : MonoBehaviour
     public void SetStickyBoundary(bool sticky)
     {
         use_sticky_boundary = (sticky? 1 : 0);
+    }
+    public bool GetIsStickyBoundary()
+    {
+        return use_sticky_boundary == 1;
+    }
+    public void SetHandsimulationRadius(float radius)
+    {
+        hand_simulation_radius = radius;
+    }
+    public float GetHandsimulationRadius()
+    {
+        return hand_simulation_radius;
     }
     public void InitGrid()
     {
@@ -1092,6 +1104,11 @@ public class Mpm3DMarching : MonoBehaviour
     {
         g = transform.InverseTransformDirection(new Vector3(0, gy, 0));
     }
+    public float GetGravity()
+    {
+        return gy;
+    }
+    
     void UpdateSphereSDF()
     {
         for (int i = 0; i < sphere.Length; i++)

@@ -211,7 +211,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   volumeTextureUpdater: {fileID: 7009955012817010533}
   Mpm3DModule: {fileID: -8196383504532815311, guid: 49d9fe7f16ccc4848a0a43e84fcedf3b, type: 3}
-  renderType: 0
+  renderType: 3
   handMaterial: {fileID: 2100000, guid: 125e946d849c64f4bb53e64b034f85c8, type: 2}
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   raymarchingMaterial: {fileID: 2100000, guid: 213d25fa94bbba04da4a15e4de0b0a8e, type: 2}
@@ -232,7 +232,7 @@ MonoBehaviour:
   frame_time: 0.001
   particle_per_grid: 8
   allowed_cfl: 0.5
-  damping: 100
+  damping: 25
   cube_size: 0.5
   cylinder_height: 1
   cylinder_radius: 0.05
@@ -240,6 +240,8 @@ MonoBehaviour:
   torus_tube_radius: 0.05
   use_correct_cfl: 0
   hand_simulation_radius: 0.3
+  is_fixed: 0
+  use_sticky_boundary: 1
   obstacleType: 1
   sphere: []
   oculus_hands: []

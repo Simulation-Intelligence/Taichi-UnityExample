@@ -78,14 +78,22 @@ class UIManager : MonoBehaviour
             if (parameter_text != null && parameter_slider != null)
             {
                 string initial_text = parameter_text.text;
-                float initial_value = Mathf.Round(parameter_slider.value / granularity) * granularity;
-                parameter_text.text = initial_text + ": " + initial_value.ToString("F2");
+                // float initial_value = Mathf.Round(parameter_slider.value / granularity) * granularity;
+                float initial_value = parameter_slider.value;
+                if (initial_text == "MaxDt" || initial_text == "FrameTime")
+                {
+                    parameter_text.text = initial_text + ": " + initial_value.ToString();
+                }
+                else
+                {
+                    parameter_text.text = initial_text + ": " + initial_value.ToString("F2");
+                }
                 parameter_slider.value = initial_value;
                 parameter_slider.onValueChanged.AddListener((float value) =>
                 {
-                    float adjusted_vale = Mathf.Round(value / granularity) * granularity;
-                    parameter_text.text = initial_text + ": " + adjusted_vale.ToString("F2");
-                    parameter_slider.value = adjusted_vale;
+                    float adjusted_value = Mathf.Round(value / granularity) * granularity;
+                    parameter_text.text = initial_text + ": " + adjusted_value.ToString("F2");
+                    parameter_slider.value = adjusted_value;
                 });
             }
         }
@@ -224,7 +232,7 @@ class UIManager : MonoBehaviour
             {
                 mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
             }
-            if (parameter.name == "Parameter_ColideFactor")
+            if (parameter.name == "Parameter_CollideFactor")
             {
                 mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
             }
@@ -243,6 +251,30 @@ class UIManager : MonoBehaviour
             if (parameter.name == "Parameter_Damping")
             {
                 mpm3DSimulation.damping = parameter.GetComponentInChildren<Slider>().value;
+            }
+            if (parameter.name == "Parameter_nGrid")
+            {
+                mpm3DSimulation.n_grid = (int)parameter.GetComponentInChildren<Slider>().value;
+            }
+            if (parameter.name == "Parameter_ParticlePerGrid")
+            {
+                mpm3DSimulation.particle_per_grid = parameter.GetComponentInChildren<Slider>().value;
+            }
+            if (parameter.name == "Parameter_MaxDt")
+            {
+                mpm3DSimulation.max_dt = parameter.GetComponentInChildren<Slider>().value;
+            }
+            if (parameter.name == "Parameter_FrameTime")
+            {
+                mpm3DSimulation.frame_time = parameter.GetComponentInChildren<Slider>().value;
+            }
+            if (parameter.name == "Parameter_AllowedCFL")
+            {
+                mpm3DSimulation.allowed_cfl = parameter.GetComponentInChildren<Slider>().value;
+            }
+            if (parameter.name == "Parameter_HandSimulationRadius")
+            {
+                mpm3DSimulation.SetHandsimulationRadius(parameter.GetComponentInChildren<Slider>().value);
             }
         }
         
@@ -395,6 +427,20 @@ class UIManager : MonoBehaviour
                 valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
             }
         }
+        if (button.name == "Button_HandSimulationRadius")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                foreach (GameObject parameter in parameterObjects)
+                {
+                    if (parameter.name == "Parameter_HandSimulationRadius")
+                    {
+                        mpm3DSimulation.SetHandsimulationRadius(parameter.GetComponentInChildren<Slider>().value);
+                    }
+                }
+            }
+        }
     }
     
     void OnToggleValueChanged(Toggle toggle, bool isOn)
@@ -433,6 +479,15 @@ class UIManager : MonoBehaviour
             {
                 Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                 mpm3DSimulation.SetGravity(isOn ? -9.8f : 0.0f);
+            }
+        }
+        // Use correct CFL condition
+        if (toggle.name == "Toggle_UseCorrectCFL")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.use_correct_cfl = toggle.isOn;
             }
         }
     }
@@ -590,7 +645,7 @@ class UIManager : MonoBehaviour
             UI_canvas.transform.rotation = UI_anchor.rotation;
         }
     }
-
+    
     public void ShowSelectedObjectCanvas()
     {
         if (UI_canvas != null && oculus_hands[1].IsTracked && sceneCamera != null)
@@ -613,6 +668,18 @@ class UIManager : MonoBehaviour
                         if (toggle.name == "Toggle_FixObject")
                         {
                             toggle.isOn = mpm3DSimulation.GetIsFixed();
+                        }
+                        if (toggle.name == "Toggle_StickyGround")
+                        {
+                            toggle.isOn = mpm3DSimulation.GetIsStickyBoundary();
+                        }
+                        if (toggle.name == "Toggle_Gravity")
+                        {
+                            toggle.isOn = mpm3DSimulation.GetGravity() != 0.0f;
+                        }
+                        if (toggle.name == "Toggle_UseCorrectCFL")
+                        {
+                            toggle.isOn = mpm3DSimulation.use_correct_cfl;
                         }
                     }
                     
@@ -661,6 +728,34 @@ class UIManager : MonoBehaviour
                         if (parameter.name == "Parameter_FrictionAngle")
                         {
                             parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.friction_angle;
+                        }
+                        if (parameter.name == "Parameter_Damping")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.damping;
+                        }
+                        if (parameter.name == "Parameter_nGrid")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = (float)mpm3DSimulation.n_grid;
+                        }
+                        if (parameter.name == "Parameter_ParticlePerGrid")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.particle_per_grid;
+                        }
+                        if (parameter.name == "Parameter_MaxDt")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.max_dt;
+                        }
+                        if (parameter.name == "Parameter_FrameTime")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.frame_time;
+                        }
+                        if (parameter.name == "Parameter_AllowedCFL")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.allowed_cfl;
+                        }
+                        if (parameter.name == "Parameter_HandSimulationRadius")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.GetHandsimulationRadius();
                         }
                     }
                 }
