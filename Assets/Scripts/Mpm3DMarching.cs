@@ -582,7 +582,8 @@ public class Mpm3DMarching : MonoBehaviour
         p_vol.CopyFromArray(p_vol_host);
         p_mass.CopyFromArray(p_mass_host);
         material.CopyFromArray(material_host);
-        point_color.CopyFromArray(point_color_host);
+        if (point_color_host != null)
+            point_color.CopyFromArray(point_color_host);
     }
 
     public void CopyMaterials(Mpm3DMarching other)
