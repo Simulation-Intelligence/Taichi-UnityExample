@@ -708,6 +708,23 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             other_data[i][3] = scaleFactor * other_data[i][3]
 
     @ti.kernel
+    def copy_array_1dim1(src: ti.types.ndarray(ndim=1), dst:ti.types.ndarray(ndim=1)):
+        for I in ti.grouped(src):
+            dst[I] = src[I]
+    
+    @ti.kernel
+    def copy_array_1dim3(src: ti.types.ndarray(ndim=1), dst:ti.types.ndarray(ndim=1)):
+        for I in ti.grouped(src):
+            dst[I] = src[I]
+    
+    @ti.kernel
+    def copy_array_1dim1I(src: ti.types.ndarray(ndim=1), dst:ti.types.ndarray(ndim=1)):
+        for I in ti.grouped(src):
+            dst[I] = src[I]
+    
+
+
+    @ti.kernel
     def transform_and_merge(x1: ti.types.ndarray(ndim=1), 
                             x2: ti.types.ndarray(ndim=1), 
                             x3: ti.types.ndarray(ndim=1), 
@@ -842,6 +859,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(normalize_m, template_args={'marching_m': marching_m})
         mod.add_kernel(transform_and_merge, template_args={'x1': x, 'x2': x, 'x3': x, 'mat2': mat2, 'mat3': mat3})
         mod.add_kernel(substep_fix_object, template_args={'grid_v': grid_v})
+        mod.add_kernel(copy_array_1dim1, template_args={'src': E, 'dst': E})
+        mod.add_kernel(copy_array_1dim3, template_args={'src': x, 'dst': x}) 
+        mod.add_kernel(copy_array_1dim1I,template_args={'src': material, 'dst': material})
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part.kernel.tcm")
         print("AOT done")
@@ -849,19 +869,19 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     if run:
         gui = ti.GUI('MPM3D', res=(800, 800))
         init_particles(x, v, dg, cube_size)
-        # init_sphere(x, dg, cube_size)
-        # init_cylinder(x, dg, 1, 0.05)
-        # init_torus(x, dg, 0.3, 0.05)
-        # scale_to_unit_cube(x,  other_data, 0.1)
+        init_sphere(x, dg, cube_size)
+        init_cylinder(x, dg, 1, 0.05)
+        init_torus(x, dg, 0.3, 0.05)
+        scale_to_unit_cube(x,  other_data, 0.1)
         init_dg(dg)
-        # init_gaussian_data(init_rotation, init_scale, other_data)
+        init_gaussian_data(init_rotation, init_scale, other_data)
         while gui.running and not gui.get_event(gui.ESCAPE):
             for i in range(50):
                 substep()
-            # substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
+            substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    # run_aot()
+    run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph

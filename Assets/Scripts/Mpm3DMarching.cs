@@ -20,6 +20,7 @@ using MarchingCubes;
 
 public class Mpm3DMarching : MonoBehaviour
 {
+    public bool isInitialized = false;
     private Mesh _Mesh;
     private MeshFilter _MeshFilter;
     private MeshRenderer _MeshRenderer;
@@ -34,7 +35,8 @@ public class Mpm3DMarching : MonoBehaviour
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere, _Kernel_init_cylinder, _Kernel_init_torus,
-     _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi;
+     _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi,
+        _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_1dim1I;
 
     public enum RenderType
     {
@@ -202,6 +204,15 @@ public class Mpm3DMarching : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (!isInitialized)
+        {
+            Initiate();
+            isInitialized = true;
+        }
+    }
+    public void Initiate()
+    {
+
         var kernels = Mpm3DModule.GetAllKernels().ToDictionary(x => x.Name);
         if (kernels.Count > 0)
         {
@@ -239,6 +250,10 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_substep_fix_object = kernels["substep_fix_object"];
 
             _Kernel_substep_p2g_multi = kernels["substep_p2g_multi"];
+
+            _Kernel_copy_array_1dim1 = kernels["copy_array_1dim1"];
+            _Kernel_copy_array_1dim3 = kernels["copy_array_1dim3"];
+            _Kernel_copy_array_1dim1I = kernels["copy_array_1dim1I"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -318,6 +333,7 @@ public class Mpm3DMarching : MonoBehaviour
 
         Init_materials();
         Update_materials();
+
 
 
 
@@ -567,6 +583,32 @@ public class Mpm3DMarching : MonoBehaviour
         p_mass.CopyFromArray(p_mass_host);
         material.CopyFromArray(material_host);
         point_color.CopyFromArray(point_color_host);
+    }
+
+    public void CopyMaterials(Mpm3DMarching other)
+    {
+        other.E_host = new float[NParticles];
+        other.SigY_host = new float[NParticles];
+        other.nu_host = new float[NParticles];
+        other.min_clamp_host = new float[NParticles];
+        other.max_clamp_host = new float[NParticles];
+        other.alpha_host = new float[NParticles];
+        other.p_vol_host = new float[NParticles];
+        other.p_mass_host = new float[NParticles];
+        other.material_host = new int[NParticles];
+        other.point_color_host = new int[NParticles];
+
+        E_host.CopyTo(other.E_host, 0);
+        SigY_host.CopyTo(other.SigY_host, 0);
+        nu_host.CopyTo(other.nu_host, 0);
+        min_clamp_host.CopyTo(other.min_clamp_host, 0);
+        max_clamp_host.CopyTo(other.max_clamp_host, 0);
+        alpha_host.CopyTo(other.alpha_host, 0);
+        p_vol_host.CopyTo(other.p_vol_host, 0);
+        p_mass_host.CopyTo(other.p_mass_host, 0);
+        material_host.CopyTo(other.material_host, 0);
+        point_color_host.CopyTo(other.point_color_host, 0);
+
     }
 
     // Update is called once per frame
@@ -972,22 +1014,17 @@ public class Mpm3DMarching : MonoBehaviour
         n_grid = n;
         dx = 1.0f / n_grid;
 
-
-        DiposeGrid();
         InitGrid();
 
         if (renderType == RenderType.MarchingCubes)
         {
             for (int i = 0; i < marchingCubeVisualizers.Length; i++)
             {
-                marchingCubeVisualizers[i].OnDestroy();
                 marchingCubeVisualizers[i]._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
                 marchingCubeVisualizers[i]._gridScale = dx;
                 marchingCubeVisualizers[i].Init();
             }
         }
-        // Init_materials();
-        // Update_materials();
     }
     public int GetGridSize()
     {
@@ -995,18 +1032,20 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void IncreaseGridSize(int num)
     {
-        if (n_grid == 150)
+        if (n_grid + num >= 150)
         {
             UnityEngine.Debug.LogWarning("Cannot increase grid size anymore.");
+            SetGridSize(150);
             return;
         }
         SetGridSize(n_grid + num);
     }
     public void DecreaseGridSize(int num)
     {
-        if (n_grid == 50)
+        if (n_grid - num <= 50)
         {
             UnityEngine.Debug.LogWarning("Cannot decrease grid size anymore.");
+            SetGridSize(50);
             return;
         }
         SetGridSize(n_grid - num);
@@ -1081,7 +1120,7 @@ public class Mpm3DMarching : MonoBehaviour
     {
         marchingCubeVisualizers[index].GetComponent<MeshRenderer>().material.color = new Color(r, 0, 0, 1);
     }
-    public void CopyObjectFrom(Mpm3DMarching other)
+    public void CopyObjectTo(Mpm3DMarching other)
     {
         if (renderType == RenderType.GaussianSplat)
         {
@@ -1090,18 +1129,24 @@ public class Mpm3DMarching : MonoBehaviour
         else
         {
             UnityEngine.Debug.Log("COPY Not implemented yet.");
-            x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
-            v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
-            C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).HostWrite(true).Build();
-            dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).HostWrite(true).Build();
 
-            x.CopyFromArray(other.x.ToArray());
-            v.CopyFromArray(other.v.ToArray());
-            C.CopyFromArray(other.C.ToArray());
-            dg.CopyFromArray(other.dg.ToArray());
+            other.Initiate();
 
-            // Update materials
-            // Update_materials();
+            other.NParticles = NParticles;
+
+            other.x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
+            other.v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
+            other.C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+            other.dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+
+            _Kernel_copy_array_1dim3.LaunchAsync(x, other.x);
+            _Kernel_init_dg.LaunchAsync(other.dg);
+
+            CopyMaterials(other);
+
+            other.Update_materials();
+
+            other.SetGridSize(other.n_grid);
         }
     }
     public void Reset()
