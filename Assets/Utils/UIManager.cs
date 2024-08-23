@@ -359,6 +359,10 @@ class UIManager : MonoBehaviour
                 copiedObject.transform.SetParent(selectedObject.transform.parent, false);
                 createdObjectLists.Add(copiedObject);
                 copiedObject.name = "Mpm3DObject_" + createdObjectLists.Count;
+                // Copy particles and materials
+                Mpm3DMarching mpm3DSimulation = copiedObject.GetComponent<Mpm3DMarching>();
+                Debug.Log(mpm3DSimulation);
+                mpm3DSimulation.CopyObjectFrom(selectedObject.GetComponent<Mpm3DMarching>());
                 selectedObject = copiedObject;
             }
         }

@@ -499,7 +499,7 @@ public class Mpm3DMarching : MonoBehaviour
         alpha_host = new float[NParticles];
         p_vol_host = new float[NParticles];
         p_mass_host = new float[NParticles];
-
+        
         if (marchingCubeVisualizers.Length == 1)
             point_color_host = new int[NParticles];
 
@@ -568,7 +568,7 @@ public class Mpm3DMarching : MonoBehaviour
         material.CopyFromArray(material_host);
         point_color.CopyFromArray(point_color_host);
     }
-
+    
     // Update is called once per frame
     void Update()
     {
@@ -873,7 +873,7 @@ public class Mpm3DMarching : MonoBehaviour
 
         NdArray<float> _other_data = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).Build();
         _Kernel_scale_to_unit_cube.LaunchAsync(new_x, _other_data, bounding_eps);
-
+        
         x = new_x;
         v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
@@ -893,7 +893,7 @@ public class Mpm3DMarching : MonoBehaviour
         p_mass_host = p_mass_host.Concat(other.p_mass_host).ToArray();
         material_host = material_host.Concat(other.material_host).ToArray();
         point_color_host = point_color_host.Concat(other.point_color_host).ToArray();
-
+        
         E = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
         SigY = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
         nu = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
@@ -1081,6 +1081,29 @@ public class Mpm3DMarching : MonoBehaviour
     {
         marchingCubeVisualizers[index].GetComponent<MeshRenderer>().material.color = new Color(r, 0, 0, 1);
     }
+    public void CopyObjectFrom(Mpm3DMarching other)
+    {
+        if (renderType == RenderType.GaussianSplat)
+        {
+            // CopyFromGaussianSplat(other);
+        }
+        else
+        {
+            UnityEngine.Debug.Log("COPY Not implemented yet.");
+            x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
+            v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
+            C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).HostWrite(true).Build();
+            dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).HostWrite(true).Build();
+            
+            x.CopyFromArray(other.x.ToArray());
+            v.CopyFromArray(other.v.ToArray());
+            C.CopyFromArray(other.C.ToArray());
+            dg.CopyFromArray(other.dg.ToArray());
+
+            // Update materials
+            // Update_materials();
+        }
+    }
     public void Reset()
     {
         if (renderType == RenderType.GaussianSplat)
@@ -1095,7 +1118,6 @@ public class Mpm3DMarching : MonoBehaviour
             Update_materials();
         }
     }
-    
     public void SetGravity(float y)
     {
         gy = y;
