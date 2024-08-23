@@ -787,7 +787,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         Runtime.Submit();
     }
-
+    
     public void MergeAndUpdate(Mpm3DMarching other)
     {
         if (other.renderType != renderType)

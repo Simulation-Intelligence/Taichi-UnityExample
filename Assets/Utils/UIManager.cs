@@ -83,18 +83,26 @@ class UIManager : MonoBehaviour
                 if (initial_text == "MaxDt" || initial_text == "FrameTime")
                 {
                     parameter_text.text = initial_text + ": " + initial_value.ToString();
+                    parameter_slider.value = initial_value;
+                    granularity = initial_value;
+                    parameter_slider.onValueChanged.AddListener((float value) =>
+                    {
+                        float adjusted_value = Mathf.Round(value / granularity) * granularity;
+                        parameter_text.text = initial_text + ": " + adjusted_value.ToString();
+                        parameter_slider.value = adjusted_value;
+                    });
                 }
                 else
                 {
                     parameter_text.text = initial_text + ": " + initial_value.ToString("F2");
+                    parameter_slider.value = initial_value;
+                    parameter_slider.onValueChanged.AddListener((float value) =>
+                    {
+                        float adjusted_value = Mathf.Round(value / granularity) * granularity;
+                        parameter_text.text = initial_text + ": " + adjusted_value.ToString("F2");
+                        parameter_slider.value = adjusted_value;
+                    });
                 }
-                parameter_slider.value = initial_value;
-                parameter_slider.onValueChanged.AddListener((float value) =>
-                {
-                    float adjusted_value = Mathf.Round(value / granularity) * granularity;
-                    parameter_text.text = initial_text + ": " + adjusted_value.ToString("F2");
-                    parameter_slider.value = adjusted_value;
-                });
             }
         }
     }
@@ -340,12 +348,15 @@ class UIManager : MonoBehaviour
                 }
             }
         }
-        // Copy the object with changed shape
-        if (button.name == "Button_Copy")
+        // Copy the object during the modeling process
+        if (button.name == "Button_CopyObject")
         {
             if (selectedObject != null)
             {
-                GameObject copiedObject = Instantiate(selectedObject);
+                Vector3 newPosition = selectedObject.transform.position + new Vector3(0.2f, 0.0f, 0.0f);
+                Quaternion newRotation = selectedObject.transform.rotation;
+                GameObject copiedObject = Instantiate(selectedObject, newPosition, newRotation);
+                copiedObject.transform.SetParent(selectedObject.transform.parent, false);
                 createdObjectLists.Add(copiedObject);
                 copiedObject.name = "Mpm3DObject_" + createdObjectLists.Count;
                 selectedObject = copiedObject;
