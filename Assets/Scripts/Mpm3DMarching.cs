@@ -130,6 +130,8 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private Vector3 g = new(0, -9.8f, 0);
 
+
+    [SerializeField]
     private float gy;
     [SerializeField]
     public int n_grid = 32, bound = 3;
@@ -142,6 +144,10 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     public bool use_correct_cfl = false;
 
+    [SerializeField]
+    public float rotate_speed = 0.0f;
+    private Vector3 rotationCenter = new(0.5f, 0.5f, 0.5f);
+
     [Header("Interaction Settings")]
     [SerializeField]
     private float hand_simulation_radius = 0.5f;
@@ -151,6 +157,7 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private bool is_fixed = false;
     private Vector3 fix_center = new Vector3(0.5f, 0.5f, 0.5f);
+    [SerializeField]
     private float fix_radius = 0.2f;
     // Use sticky boundary condition, 1 for sticky boundary, 0 for non-sticky boundary
     [SerializeField]
@@ -630,6 +637,7 @@ public class Mpm3DMarching : MonoBehaviour
             return;
         }
         UpdateGravity();
+        RotateAroundPoint(rotationCenter, Vector3.up, rotate_speed * Time.deltaTime);
         if (lastRenderType != renderType)
         {
             switch (lastRenderType)
@@ -1427,5 +1435,15 @@ public class Mpm3DMarching : MonoBehaviour
         array[14] = matrix.m32;
         array[15] = matrix.m33;
         return array;
+    }
+    void RotateAroundPoint(Vector3 localPoint, Vector3 localAxis, float angle)
+    {
+        Vector3 globalPoint = transform.TransformPoint(localPoint);
+
+        // 获取全局坐标系下的旋转轴
+        Vector3 globalAxis = transform.TransformDirection(localAxis);
+
+        // 旋转对象
+        transform.RotateAround(globalPoint, globalAxis, angle);
     }
 }

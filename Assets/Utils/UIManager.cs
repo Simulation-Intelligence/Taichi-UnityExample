@@ -168,8 +168,6 @@ class UIManager : MonoBehaviour
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
 
-            // Apply materials specified from UI
-            // ApplyMaterial(newMpm3DObject);
         }
     }
 
@@ -185,30 +183,6 @@ class UIManager : MonoBehaviour
         string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size).ToString();
         valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
 
-        // Set grid size when apply materials (not necessary)
-        // string text = valueAdjustGridSize.GetComponent<TMP_Text>().text;
-        // int grid_size = int.Parse(text.Substring(text.IndexOf(":") + 1));
-        // mpm3DSimulation.SetGridSize(grid_size);
-
-        // Get the value from the UI to create the object
-        // foreach (Toggle toggle in toggles)
-        // {
-        //     if (toggle.name == "Toggle_FixObject")
-        //     {
-        //         mpm3DSimulation.SetFixed(toggle.isOn);
-        //         Debug.Log("Object is fixed: " + (toggle.isOn ? "On" : "Off"));
-        //     }
-        //     if (toggle.name == "Toggle_StickyGround")
-        //     {
-        //         mpm3DSimulation.SetStickyBoundary(toggle.isOn);
-        //         Debug.Log("Sticky boundary condition is " + (toggle.isOn ? "On" : "Off"));
-        //     }
-        //     if (toggle.name == "Toggle_Gravity")
-        //     {
-        //         mpm3DSimulation.SetGravity(toggle.isOn ? -9.8f : 0.0f);
-        //         Debug.Log("Gravity is " + (toggle.isOn ? "On" : "Off"));
-        //     }
-        // }
 
         foreach (TMP_Dropdown dropdown in dropdowns)
         {
