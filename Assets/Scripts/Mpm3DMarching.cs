@@ -110,8 +110,7 @@ public class Mpm3DMarching : MonoBehaviour
     private ComputeGraph _Compute_Graph_g_substep;
 
     [Header("Scene Settings")]
-    [SerializeField]
-    bool RunSimulation = true;
+    public bool RunSimulation = true;
     private bool updated = false;
     private Grabbable _grabbable;
     [SerializeField]
@@ -298,7 +297,7 @@ public class Mpm3DMarching : MonoBehaviour
         UnityEngine.Debug.Log("Num of bones at start: " + oculus_skeletons[0].Bones.Count());
         skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
         skeleton_velocities = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats
-        skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build(); 
+        skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build();
 
         InitGrid();
 
@@ -323,7 +322,7 @@ public class Mpm3DMarching : MonoBehaviour
         mu = _E / (2 * (1 + _nu));
         lambda = _E * _nu / ((1 + _nu) * (1 - 2 * _nu));
         v_allowed = allowed_cfl * dx / max_dt;
-        
+
         if (renderType == RenderType.GaussianSplat)
         {
             splatManager.init_gaussians();
@@ -585,7 +584,7 @@ public class Mpm3DMarching : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!RunSimulation || _grabbable.SelectingPointsCount > 0)
+        if (!RunSimulation)
         {
             if (!updated)
             {
@@ -1105,10 +1104,10 @@ public class Mpm3DMarching : MonoBehaviour
             other.v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
             other.C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
             other.dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-            
+
             _Kernel_copy_array_1dim3.LaunchAsync(x, other.x);
             _Kernel_init_dg.LaunchAsync(other.dg);
-            
+
             CopyMaterials(other);
             other.Update_materials();
             other.SetGridSize(other.n_grid);
@@ -1126,7 +1125,7 @@ public class Mpm3DMarching : MonoBehaviour
         other.p_mass_host = new float[NParticles];
         other.material_host = new int[NParticles];
         other.point_color_host = new int[NParticles];
-        
+
         E_host.CopyTo(other.E_host, 0);
         SigY_host.CopyTo(other.SigY_host, 0);
         nu_host.CopyTo(other.nu_host, 0);
@@ -1419,7 +1418,7 @@ public class Mpm3DMarching : MonoBehaviour
     void RotateAroundPoint(Vector3 localPoint, Vector3 localAxis, float angle)
     {
         Vector3 globalPoint = transform.TransformPoint(localPoint);
-        
+
         // 获取全局坐标系下的旋转轴
         Vector3 globalAxis = transform.TransformDirection(localAxis);
 

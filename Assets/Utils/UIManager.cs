@@ -184,7 +184,7 @@ class UIManager : MonoBehaviour
         int grid_size = mpm3DSimulation.GetGridSize();
         string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size).ToString();
         valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
-        
+
         // Initialize or update the object parameters
         foreach (TMP_Dropdown dropdown in dropdowns)
         {
@@ -444,6 +444,17 @@ class UIManager : MonoBehaviour
                 toggle_label.text = isOn ? "Object is grabbable" : "Object is not grabbable";
                 var _grabbable = selectedObject.GetComponent<Grabbable>();
                 _grabbable.MaxGrabPoints = isOn ? -1 : 0;
+            }
+        }
+
+        // Enable/Disable object interaction
+        if (toggle.name == "Toggle_EnableInteraction")
+        {
+            if (selectedObject != null)
+            {
+                Text toggle_label = toggle.GetComponentInChildren<Text>();
+                toggle_label.text = isOn ? "Object is Interactable" : "Object is not Interactable";
+                selectedObject.GetComponent<Mpm3DMarching>().RunSimulation = isOn;
             }
         }
         // Enable/Disable fix object in place
