@@ -219,7 +219,6 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void Initiate()
     {
-
         var kernels = Mpm3DModule.GetAllKernels().ToDictionary(x => x.Name);
         if (kernels.Count > 0)
         {
@@ -299,7 +298,7 @@ public class Mpm3DMarching : MonoBehaviour
         UnityEngine.Debug.Log("Num of bones at start: " + oculus_skeletons[0].Bones.Count());
         skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
         skeleton_velocities = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats
-        skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build(); // use a consistent radius for all capsules (at now)
+        skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build(); 
 
         InitGrid();
 
@@ -308,6 +307,13 @@ public class Mpm3DMarching : MonoBehaviour
         hand_skeleton_segments_prev = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         hand_skeleton_velocities = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
         _skeleton_capsule_radius = new float[skeleton_num_capsules * oculus_skeletons.Length];
+        // 24 line segments with 24 capsules in total
+        preset_capsule_radius = SkeletonRenderer.preset_capsule_radius;
+        for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
+        {
+            _skeleton_capsule_radius[i] = preset_capsule_radius[i % 24] / transform.lossyScale.x;
+        }
+        skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
 
         _MeshRenderer = GetComponent<MeshRenderer>();
         _MeshFilter = GetComponent<MeshFilter>();
@@ -317,7 +323,7 @@ public class Mpm3DMarching : MonoBehaviour
         mu = _E / (2 * (1 + _nu));
         lambda = _E * _nu / ((1 + _nu) * (1 - 2 * _nu));
         v_allowed = allowed_cfl * dx / max_dt;
-
+        
         if (renderType == RenderType.GaussianSplat)
         {
             splatManager.init_gaussians();
@@ -336,13 +342,8 @@ public class Mpm3DMarching : MonoBehaviour
         Init_MarchingCubes();
         // }
 
-
-
         Init_materials();
         Update_materials();
-
-
-
 
         if (renderType == RenderType.Raymarching)
         {
@@ -364,15 +365,6 @@ public class Mpm3DMarching : MonoBehaviour
             volumeTextureUpdater.max_density = particle_per_grid * _p_mass;
             volumeTextureUpdater.targetMaterial = GetComponent<Renderer>().material;
         }
-
-
-        // 24 line segments with 24 capsules in total
-        preset_capsule_radius = SkeletonRenderer.preset_capsule_radius;
-        for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
-        {
-            _skeleton_capsule_radius[i] = preset_capsule_radius[i % 24] / transform.lossyScale.x;
-        }
-        skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
 
         // Use the recorded hand data for simulation tests in Unity
         if (UseRecordDate)
@@ -402,7 +394,6 @@ public class Mpm3DMarching : MonoBehaviour
         _MeshFilter.mesh = _Mesh;
         _MeshRenderer.material = pointMaterial;
         bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
-
     }
     void Init_Particles()
     {
@@ -452,7 +443,6 @@ public class Mpm3DMarching : MonoBehaviour
         else if (initShape == InitShape.Torus)
             _Kernel_init_torus.LaunchAsync(x, dg, torus_radius, torus_tube_radius);
     }
-
     public void Init_MarchingCubes()
     {
         _p_vol = dx * dx * dx / particle_per_grid;
@@ -464,7 +454,6 @@ public class Mpm3DMarching : MonoBehaviour
 
         marchingCubeVisualizers[0].Init();
     }
-
     public void Init_gaussian()
     {
         NParticles = splatManager.splatsNum;
@@ -591,32 +580,6 @@ public class Mpm3DMarching : MonoBehaviour
         material.CopyFromArray(material_host);
         if (point_color_host != null)
             point_color.CopyFromArray(point_color_host);
-    }
-
-    public void CopyMaterials(Mpm3DMarching other)
-    {
-        other.E_host = new float[NParticles];
-        other.SigY_host = new float[NParticles];
-        other.nu_host = new float[NParticles];
-        other.min_clamp_host = new float[NParticles];
-        other.max_clamp_host = new float[NParticles];
-        other.alpha_host = new float[NParticles];
-        other.p_vol_host = new float[NParticles];
-        other.p_mass_host = new float[NParticles];
-        other.material_host = new int[NParticles];
-        other.point_color_host = new int[NParticles];
-
-        E_host.CopyTo(other.E_host, 0);
-        SigY_host.CopyTo(other.SigY_host, 0);
-        nu_host.CopyTo(other.nu_host, 0);
-        min_clamp_host.CopyTo(other.min_clamp_host, 0);
-        max_clamp_host.CopyTo(other.max_clamp_host, 0);
-        alpha_host.CopyTo(other.alpha_host, 0);
-        p_vol_host.CopyTo(other.p_vol_host, 0);
-        p_mass_host.CopyTo(other.p_mass_host, 0);
-        material_host.CopyTo(other.material_host, 0);
-        point_color_host.CopyTo(other.point_color_host, 0);
-
     }
 
     // Update is called once per frame
@@ -907,7 +870,6 @@ public class Mpm3DMarching : MonoBehaviour
         marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, n_grid, n_grid, n_grid).Build();
         marching_m_computeBuffer = new ComputeBuffer(n_grid * n_grid * n_grid * marchingCubeVisualizers.Length, sizeof(float));
     }
-
     private void MergeParticles(Mpm3DMarching other)
     {
         int totalParticles = NParticles + other.NParticles;
@@ -1137,26 +1099,44 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else
         {
-            UnityEngine.Debug.Log("COPY Not implemented yet.");
-
             other.Initiate();
-
             other.NParticles = NParticles;
-
-            other.x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
+            other.x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build(); // Set host write to True
             other.v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
             other.C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
             other.dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-
+            
             _Kernel_copy_array_1dim3.LaunchAsync(x, other.x);
             _Kernel_init_dg.LaunchAsync(other.dg);
-
+            
             CopyMaterials(other);
-
             other.Update_materials();
-
             other.SetGridSize(other.n_grid);
         }
+    }
+    public void CopyMaterials(Mpm3DMarching other)
+    {
+        other.E_host = new float[NParticles];
+        other.SigY_host = new float[NParticles];
+        other.nu_host = new float[NParticles];
+        other.min_clamp_host = new float[NParticles];
+        other.max_clamp_host = new float[NParticles];
+        other.alpha_host = new float[NParticles];
+        other.p_vol_host = new float[NParticles];
+        other.p_mass_host = new float[NParticles];
+        other.material_host = new int[NParticles];
+        other.point_color_host = new int[NParticles];
+        
+        E_host.CopyTo(other.E_host, 0);
+        SigY_host.CopyTo(other.SigY_host, 0);
+        nu_host.CopyTo(other.nu_host, 0);
+        min_clamp_host.CopyTo(other.min_clamp_host, 0);
+        max_clamp_host.CopyTo(other.max_clamp_host, 0);
+        alpha_host.CopyTo(other.alpha_host, 0);
+        p_vol_host.CopyTo(other.p_vol_host, 0);
+        p_mass_host.CopyTo(other.p_mass_host, 0);
+        material_host.CopyTo(other.material_host, 0);
+        point_color_host.CopyTo(other.point_color_host, 0);
     }
     public void Reset()
     {
@@ -1439,7 +1419,7 @@ public class Mpm3DMarching : MonoBehaviour
     void RotateAroundPoint(Vector3 localPoint, Vector3 localAxis, float angle)
     {
         Vector3 globalPoint = transform.TransformPoint(localPoint);
-
+        
         // 获取全局坐标系下的旋转轴
         Vector3 globalAxis = transform.TransformDirection(localAxis);
 

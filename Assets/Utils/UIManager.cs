@@ -168,6 +168,8 @@ class UIManager : MonoBehaviour
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
 
+            // Apply materials specified from UI
+            // ApplyMaterial(newMpm3DObject);
         }
     }
 
@@ -182,8 +184,8 @@ class UIManager : MonoBehaviour
         int grid_size = mpm3DSimulation.GetGridSize();
         string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size).ToString();
         valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
-
-
+        
+        // Initialize or update the object parameters
         foreach (TMP_Dropdown dropdown in dropdowns)
         {
             if (dropdown.name == "Dropdown_MaterialType")
@@ -275,7 +277,6 @@ class UIManager : MonoBehaviour
         // Adjust materials
         mpm3DSimulation.Init_materials();
         mpm3DSimulation.Update_materials();
-
     }
 
     void OnButtonClick(Button button)
@@ -323,7 +324,7 @@ class UIManager : MonoBehaviour
                 }
             }
         }
-        // Copy the object during the modeling process
+        // Copy the workong-on-progress object during the modeling process
         if (button.name == "Button_CopyObject")
         {
             if (selectedObject != null)
@@ -334,9 +335,8 @@ class UIManager : MonoBehaviour
                 copiedObject.transform.SetParent(selectedObject.transform.parent, false);
                 createdObjectLists.Add(copiedObject);
                 copiedObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-                //Copy particles and materials
+                // Copy particles and materials
                 Mpm3DMarching mpm3DSimulation = copiedObject.GetComponent<Mpm3DMarching>();
-                Debug.Log(mpm3DSimulation);
                 selectedObject.GetComponent<Mpm3DMarching>().CopyObjectTo(mpm3DSimulation);
                 selectedObject = copiedObject;
             }
@@ -435,11 +435,16 @@ class UIManager : MonoBehaviour
     {
         Debug.Log("Toggle " + toggle.name + " is " + (isOn ? "On" : "Off"));
 
-        // Enable/Disable the edit mode (bool runSimulation)
-        if (toggle.name == "Toggle_EnterModelingMode")
+        // Enable/Disable object grab
+        if (toggle.name == "Toggle_EnableGrab")
         {
-            Text toggle_label = toggle.GetComponentInChildren<Text>();
-            toggle_label.text = isOn ? "Exit Modeling Mode" : "Enter Modeling Mode";
+            if (selectedObject != null)
+            {
+                Text toggle_label = toggle.GetComponentInChildren<Text>();
+                toggle_label.text = isOn ? "Object is grabbable" : "Object is not grabbable";
+                var _grabbable = selectedObject.GetComponent<Grabbable>();
+                _grabbable.MaxGrabPoints = isOn ? -1 : 0;
+            }
         }
         // Enable/Disable fix object in place
         if (toggle.name == "Toggle_FixObject")

@@ -354,6 +354,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cce96929554b928448a1f1eb13fd4e57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isInitialized: 0
   volumeTextureUpdater: {fileID: 6670791406010181275}
   Mpm3DModule: {fileID: -8196383504532815311, guid: 49d9fe7f16ccc4848a0a43e84fcedf3b, type: 3}
   renderType: 3
@@ -370,6 +371,7 @@ MonoBehaviour:
   copyShader: {fileID: 7200000, guid: 1d32da0d43641244b9432112ab3ce4b8, type: 3}
   initShape: 2
   g: {x: 0, y: 0, z: 0}
+  gy: 0
   n_grid: 64
   bound: 3
   bounding_eps: 0.1
@@ -384,8 +386,10 @@ MonoBehaviour:
   torus_radius: 0.3
   torus_tube_radius: 0.05
   use_correct_cfl: 0
+  rotate_speed: 0
   hand_simulation_radius: 0.3
   is_fixed: 0
+  fix_radius: 0.2
   use_sticky_boundary: 1
   obstacleType: 1
   sphere: []
