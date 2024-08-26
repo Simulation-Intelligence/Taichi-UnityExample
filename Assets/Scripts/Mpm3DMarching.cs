@@ -25,8 +25,6 @@ public class Mpm3DMarching : MonoBehaviour
     private MeshFilter _MeshFilter;
     private MeshRenderer _MeshRenderer;
 
-    public VolumeTextureUpdater volumeTextureUpdater;
-
     [Header("MpM Engine")]
     [SerializeField]
     private AotModuleAsset Mpm3DModule;
@@ -41,7 +39,6 @@ public class Mpm3DMarching : MonoBehaviour
     public enum RenderType
     {
         PointMesh,
-        Raymarching,
         GaussianSplat,
         MarchingCubes
     }
@@ -73,7 +70,6 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public enum ObstacleType
     {
-        Sphere,
         Hand
     }
     [Header("Material")]
@@ -82,11 +78,7 @@ public class Mpm3DMarching : MonoBehaviour
 
     private RenderType lastRenderType = RenderType.GaussianSplat;
     [SerializeField]
-    private Material handMaterial;
-    [SerializeField]
     private Material pointMaterial;
-    [SerializeField]
-    private Material raymarchingMaterial;
     [SerializeField]
     public MaterialType materialType = MaterialType.Customize;
     [SerializeField]
@@ -94,7 +86,7 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     public StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
-    private NdArray<float> x, v, C, dg, grid_v, grid_m, sphere_pos, obstacle_velocities, sphere_velocities, sphere_radius, hand_sdf, marching_m;
+    private NdArray<float> x, v, C, dg, grid_v, grid_m, obstacle_velocities, hand_sdf, marching_m;
 
     public NdArray<float> skeleton_segments, skeleton_velocities, obstacle_normals, skeleton_capsule_radius, max_v;
     public NdArray<float> E, SigY, nu, min_clamp, max_clamp, alpha, p_vol, p_mass;
@@ -102,7 +94,7 @@ public class Mpm3DMarching : MonoBehaviour
     public NdArray<float> init_rotation, init_scale, init_sh, other_data, sh;
     private NdArray<int> segments_count_per_cell, hash_table, material, point_color;
 
-    private float[] hand_skeleton_segments, hand_skeleton_segments_prev, hand_skeleton_velocities, _skeleton_capsule_radius, sphere_positions, _sphere_velocities, sphere_radii;
+    private float[] tool_segments, tool_segments_prev, tool_velocities, _tool_capsule_radius;
 
     private Bounds bounds;
 
@@ -163,18 +155,10 @@ public class Mpm3DMarching : MonoBehaviour
     private int use_sticky_boundary = 1;
 
     [Header("Obstacle")]
-    [SerializeField]
-    public ObstacleType obstacleType = ObstacleType.Sphere;
-    [SerializeField]
-    private Sphere[] sphere;
 
-    [SerializeField]
-    private OVRHand[] oculus_hands;
-    [SerializeField]
-    private OVRSkeleton[] oculus_skeletons;
-    [SerializeField]
-    private float[] preset_capsule_radius;
-    private int skeleton_num_capsules = 24; // use default 24
+    public MpmTool[] tools;
+
+    private int totalCapsules;
     private int NParticles;
     private float dx, _p_vol, _p_mass, v_allowed;
 
@@ -217,6 +201,39 @@ public class Mpm3DMarching : MonoBehaviour
         }
     }
     public void Initiate()
+    {
+
+        Init_Kernels();
+        max_v = new NdArrayBuilder<float>().Shape(1).HostRead(true).Build();
+
+
+        Init_Tools();
+
+        InitGrid();
+
+        _MeshRenderer = GetComponent<MeshRenderer>();
+        _MeshFilter = GetComponent<MeshFilter>();
+        _grabbable = GetComponent<Grabbable>();
+
+
+        if (renderType == RenderType.GaussianSplat)
+        {
+            splatManager.init_gaussians();
+            Init_gaussian();
+        }
+        else
+        {
+            Init_Particles();
+        }
+
+        Init_PointMesh();
+
+        Init_materials();
+        Update_materials();
+
+        Init_MarchingCubes();
+    }
+    void Init_Kernels()
     {
         var kernels = Mpm3DModule.GetAllKernels().ToDictionary(x => x.Name);
         if (kernels.Count > 0)
@@ -267,113 +284,26 @@ public class Mpm3DMarching : MonoBehaviour
             _Compute_Graph_g_init = cgraphs["init"];
             _Compute_Graph_g_substep = cgraphs["substep"];
         }
+    }
 
-        // Sphere as a obstacle
-        if (sphere == null || sphere.Length == 0)
+    void Init_Tools()
+    {
+        totalCapsules = 0;
+        foreach (var tool in tools)
         {
-            sphere = new Sphere[] { GameObject.Find("SphereLeft").GetComponent<Sphere>(),
-                                    GameObject.Find("SphereRight").GetComponent<Sphere>() };
+            totalCapsules += tool.numCapsules;
         }
-        sphere_pos = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
-        sphere_velocities = new NdArrayBuilder<float>().Shape(sphere.Length).ElemShape(3).HostWrite(true).Build();
-        sphere_radius = new NdArrayBuilder<float>().Shape(sphere.Length).HostWrite(true).Build();
-        max_v = new NdArrayBuilder<float>().Shape(1).HostRead(true).Build();
-
-        sphere_positions = new float[3 * sphere.Length];
-        _sphere_velocities = new float[3 * sphere.Length];
-        sphere_radii = new float[sphere.Length];
-
-        // Oculus hands
-        if (oculus_hands == null || oculus_hands.Length == 0)
-        {
-            oculus_hands = new OVRHand[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>(),
-                                           GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>() };
-        }
-        if (oculus_skeletons == null || oculus_skeletons.Length == 0)
-        {
-            oculus_skeletons = new OVRSkeleton[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>(),
-                                                   GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>() };
-        }
-        UnityEngine.Debug.Log("Num of bones at start: " + oculus_skeletons[0].Bones.Count());
-        skeleton_segments = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
-        skeleton_velocities = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats
-        skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(skeleton_num_capsules * oculus_skeletons.Length).HostWrite(true).Build();
-
-        InitGrid();
+        skeleton_segments = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
+        skeleton_velocities = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats
+        skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(totalCapsules).HostWrite(true).Build();
 
         // Initialize hand skeleton segments
-        hand_skeleton_segments = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
-        hand_skeleton_segments_prev = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
-        hand_skeleton_velocities = new float[skeleton_num_capsules * oculus_skeletons.Length * 6];
-        _skeleton_capsule_radius = new float[skeleton_num_capsules * oculus_skeletons.Length];
-        // 24 line segments with 24 capsules in total
-        preset_capsule_radius = SkeletonRenderer.preset_capsule_radius;
-        for (int i = 0; i < skeleton_num_capsules * oculus_skeletons.Length; i++)
-        {
-            _skeleton_capsule_radius[i] = preset_capsule_radius[i % 24] / transform.lossyScale.x;
-        }
-        skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
-
-        _MeshRenderer = GetComponent<MeshRenderer>();
-        _MeshFilter = GetComponent<MeshFilter>();
-        _grabbable = GetComponent<Grabbable>();
-
-        dx = 1.0f / n_grid;
-        mu = _E / (2 * (1 + _nu));
-        lambda = _E * _nu / ((1 + _nu) * (1 - 2 * _nu));
-        v_allowed = allowed_cfl * dx / max_dt;
-
-        if (renderType == RenderType.GaussianSplat)
-        {
-            splatManager.init_gaussians();
-            Init_gaussian();
-        }
-        else
-        {
-            Init_Particles();
-        }
-        // if (renderType == RenderType.PointMesh)
-        // {
-        Init_PointMesh();
-        //}
-        // if (renderType == RenderType.MarchingCubes)
-        // {
-        Init_MarchingCubes();
-        // }
-
-        Init_materials();
-        Update_materials();
-
-        if (renderType == RenderType.Raymarching)
-        {
-            _MeshRenderer.material = raymarchingMaterial;
-            volumeTextureUpdater.width = n_grid;
-            volumeTextureUpdater.height = n_grid;
-            volumeTextureUpdater.depth = n_grid;
-            volumeTextureUpdater.densityData = new float[n_grid * n_grid * n_grid];
-            volumeTextureUpdater.volumeTex = new RenderTexture(n_grid, n_grid, 0, RenderTextureFormat.RFloat)
-            {
-                dimension = TextureDimension.Tex3D,
-                volumeDepth = n_grid,
-                enableRandomWrite = true,
-                wrapMode = TextureWrapMode.Clamp
-            };
-            volumeTextureUpdater.volumeTex.Create();
-            volumeTextureUpdater.computeBuffer = new ComputeBuffer(n_grid * n_grid * n_grid, sizeof(float));
-
-            volumeTextureUpdater.max_density = particle_per_grid * _p_mass;
-            volumeTextureUpdater.targetMaterial = GetComponent<Renderer>().material;
-        }
-
-        // Use the recorded hand data for simulation tests in Unity
-        if (UseRecordDate)
-        {
-            LoadHandMotionData();
-        }
-        spaceAction = new InputAction(binding: "<Keyboard>/space");
-        spaceAction.performed += ctx => OnSpacePressed();
-        spaceAction.Enable();
+        tool_segments = new float[totalCapsules * 6];
+        tool_segments_prev = new float[totalCapsules * 6];
+        tool_velocities = new float[totalCapsules * 6];
+        _tool_capsule_radius = new float[totalCapsules];
     }
+
     public void Init_PointMesh()
     {
         _Mesh = new Mesh();
@@ -393,6 +323,13 @@ public class Mpm3DMarching : MonoBehaviour
         _MeshFilter.mesh = _Mesh;
         _MeshRenderer.material = pointMaterial;
         bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
+    }
+    public void Init_Particle_Data()
+    {
+        x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
+        v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
+        C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+        dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
     }
     void Init_Particles()
     {
@@ -416,11 +353,7 @@ public class Mpm3DMarching : MonoBehaviour
         // Determine the number of particles based on the grid size, particle density, and volume
         NParticles = (int)(n_grid * n_grid * n_grid * particle_per_grid * volume);
         UnityEngine.Debug.Log("Number of particles: " + NParticles);
-        x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
-        v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
-        C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-        dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-
+        Init_Particle_Data();
         // kernel initialization of different primitive shapes
         if (initShape == InitShape.Cube)
             if (_Compute_Graph_g_init != null)
@@ -456,10 +389,7 @@ public class Mpm3DMarching : MonoBehaviour
     public void Init_gaussian()
     {
         NParticles = splatManager.splatsNum;
-        x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
-        v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
-        C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-        dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+        Init_Particle_Data();
 
         //gaussian
         init_rotation = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(4).Build();
@@ -496,6 +426,10 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void Init_materials()
     {
+        dx = 1.0f / n_grid;
+        mu = _E / (2 * (1 + _nu));
+        lambda = _E * _nu / ((1 + _nu) * (1 - 2 * _nu));
+        v_allowed = allowed_cfl * dx / max_dt;
         _p_vol = dx * dx * dx / particle_per_grid;
         _p_mass = _p_vol * p_rho;
         max_density = particle_per_grid * _p_mass;
@@ -580,7 +514,17 @@ public class Mpm3DMarching : MonoBehaviour
         if (point_color_host != null)
             point_color.CopyFromArray(point_color_host);
     }
-
+    void Init_Record()
+    {
+        // Use the recorded hand data for simulation tests in Unity
+        if (UseRecordDate)
+        {
+            LoadHandMotionData();
+        }
+        spaceAction = new InputAction(binding: "<Keyboard>/space");
+        spaceAction.performed += ctx => OnSpacePressed();
+        spaceAction.Enable();
+    }
     // Update is called once per frame
     void Update()
     {
@@ -646,7 +590,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         if (_Compute_Graph_g_substep != null)
         {
-            UpdateHandSDF();
+            UpdateCapsules();
             _Compute_Graph_g_substep.LaunchAsync(new Dictionary<string, object>
             {
                 {"v", v},
@@ -695,43 +639,33 @@ public class Mpm3DMarching : MonoBehaviour
         {
             // Simulation
             float dt = max_dt, time_left = frame_time;
-            switch (obstacleType)
+
+            if (UseRecordDate)
             {
-                case ObstacleType.Sphere:
-                    UpdateSphereSDF();
-                    if (Intersectwith(sphere))
-                    {
-                        _Kernel_substep_calculate_signed_distance_field.LaunchAsync(sphere_pos, hand_sdf, obstacle_normals, sphere_radius, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                    }
-                    break;
-                case ObstacleType.Hand:
-                    if (UseRecordDate)
-                    {
-                        UpdateHandSDFFromRecordedData(handMotionIndex++);
-                        RenderRecordedHandSkeletonCapsule(handMotionIndex - 1);
-                    }
-                    else
-                    {
-                        UpdateHandSDF();
-                    }
-                    if (IntersectwithHand(oculus_hands))
-                    {
-                        if (transform.lossyScale.x > 1.0f)
-                        {
-                            // The object is scaled up
-                            _Kernel_substep_calculate_hand_hash.LaunchAsync(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell);
-                            _Kernel_substep_calculate_hand_sdf_hash.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell,
-                            boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                        }
-                        else
-                        {
-                            // The object is scaled down
-                            _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx,
-                            boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                        }
-                    }
-                    break;
+                UpdateHandSDFFromRecordedData(handMotionIndex++);
+                RenderRecordedHandSkeletonCapsule(handMotionIndex - 1);
             }
+            else
+            {
+                UpdateCapsules();
+            }
+            if (IntersectwithTools(tools))
+            {
+                if (transform.lossyScale.x > 1.0f)
+                {
+                    // The object is scaled up
+                    _Kernel_substep_calculate_hand_hash.LaunchAsync(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell);
+                    _Kernel_substep_calculate_hand_sdf_hash.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell,
+                    boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                }
+                else
+                {
+                    // The object is scaled down
+                    _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx,
+                    boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                }
+            }
+
             while (time_left > 0)
             {
                 time_left -= dt;
@@ -768,10 +702,6 @@ public class Mpm3DMarching : MonoBehaviour
         if (renderType == RenderType.PointMesh)
         {
             x.CopyToNativeBufferAsync(_Mesh.GetNativeVertexBufferPtr(0));
-        }
-        else if (renderType == RenderType.Raymarching)
-        {
-            grid_m.CopyToNativeBufferAsync(volumeTextureUpdater.computeBuffer.GetNativeBufferPtr());
         }
         else if (renderType == RenderType.GaussianSplat)
         {
@@ -961,7 +891,7 @@ public class Mpm3DMarching : MonoBehaviour
         obstacle_velocities = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         obstacle_normals = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         segments_count_per_cell = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid).Build();
-        hash_table = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid, skeleton_num_capsules * oculus_skeletons.Length).Build();
+        hash_table = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid, totalCapsules).Build();
 
         marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, n_grid, n_grid, n_grid).Build();
 
@@ -1100,10 +1030,7 @@ public class Mpm3DMarching : MonoBehaviour
         {
             other.Initiate();
             other.NParticles = NParticles;
-            other.x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build(); // Set host write to True
-            other.v = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
-            other.C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
-            other.dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+            Init_Particle_Data();
 
             _Kernel_copy_array_1dim3.LaunchAsync(x, other.x);
             _Kernel_init_dg.LaunchAsync(other.dg);
@@ -1164,66 +1091,46 @@ public class Mpm3DMarching : MonoBehaviour
         return gy;
     }
 
-    void UpdateSphereSDF()
-    {
-        for (int i = 0; i < sphere.Length; i++)
-        {
-            Vector3 curpos = sphere[i].Position;
-            Vector3 velocity = sphere[i].Velocity;
-            sphere_positions[i * 3] = curpos.x - transform.position.x;
-            sphere_positions[i * 3 + 1] = curpos.y - transform.position.y;
-            sphere_positions[i * 3 + 2] = curpos.z - transform.position.z;
-            _sphere_velocities[i * 3 + 1] = velocity.y;
-            _sphere_velocities[i * 3 + 2] = velocity.z;
-            sphere_radii[i] = sphere[i].Radius;
-        }
-        sphere_pos.CopyFromArray(sphere_positions);
-        sphere_velocities.CopyFromArray(_sphere_velocities);
-        sphere_radius.CopyFromArray(sphere_radii);
-    }
 
-    void UpdateHandSDF()
+    void UpdateCapsules()
     {
         Vector3 Center = new();
-        for (int i = 0; i < oculus_skeletons.Length; i++)
+        int capsules_start = 0;
+        for (int i = 0; i < tools.Length; i++)
         {
-            if (oculus_hands[i].IsTracked && oculus_hands[i].HandConfidence == OVRHand.TrackingConfidence.High)
+            if (tools[i].numCapsules > 0)
             {
-                int numBones = oculus_skeletons[i].Bones.Count();
-                //UnityEngine.Debug.Log("Num of Bones while tracking: " + numBones);
-                if (numBones > 0)
+                // Use the wrist position as the hand position
+                Center += tools[i].capsules[0].start;
+
+                for (int j = 0; j < tools[i].numCapsules; j++)
                 {
-                    // Use the wrist position as the hand position
-                    Center += oculus_skeletons[i].Bones[0].Transform.position;
-
-                    int init = i * skeleton_num_capsules * 6;
-                    for (int j = 0; j < numBones; j++)
+                    var capsule = tools[i].capsules[j];
+                    Vector3 start = capsule.start;
+                    Vector3 end = capsule.end;
+                    if (isRecording)
                     {
-                        var bone = oculus_skeletons[i].Bones[j];
-                        Vector3 start = bone.Transform.position;
-                        Vector3 end = bone.Transform.parent.position;
-                        if (isRecording)
-                        {
-                            handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
-                        }
-
-                        // World to local coordinate conversion and calculate the velocity of the segment
-                        UpdateHandSkeletonSegment(init + j * 6, start, end, frame_time);
-
-                        // Get the radius of each capsule
-                        _skeleton_capsule_radius[i * skeleton_num_capsules + j] = preset_capsule_radius[j] / transform.lossyScale.x;
+                        handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
                     }
 
-                    // Copy the hand skeleton segments and velocities to the compute buffer
-                    skeleton_segments.CopyFromArray(hand_skeleton_segments);
-                    skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
-                    skeleton_capsule_radius.CopyFromArray(_skeleton_capsule_radius);
+                    // World to local coordinate conversion and calculate the velocity of the segment
+                    UpdateHandSkeletonSegment(tool_segments, tool_segments_prev, tool_velocities, capsules_start * 6 + j * 6, start, end, frame_time);
+
+                    // Get the radius of each capsule
+                    _tool_capsule_radius[capsules_start + j] = capsule.radius / transform.lossyScale.x;
                 }
+
+                // Copy the hand skeleton segments and velocities to the compute buffer
+                skeleton_segments.CopyFromArray(tool_segments);
+                skeleton_velocities.CopyFromArray(tool_velocities);
+                skeleton_capsule_radius.CopyFromArray(_tool_capsule_radius);
+
+                capsules_start += tools[i].numCapsules;
             }
         }
 
         // Update the simulation box domain around the two hands based on the position of them
-        Center /= oculus_skeletons.Length;
+        Center /= tools.Length;
         boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.lossyScale.x;
         boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.lossyScale.x;
     }
@@ -1252,120 +1159,103 @@ public class Mpm3DMarching : MonoBehaviour
 
     void UpdateHandSDFFromRecordedData(int index)
     {
-        index %= handPositions.Count / (skeleton_num_capsules * oculus_skeletons.Length);
-        if (handPositions.Count == 0)
-        {
-            UnityEngine.Debug.LogWarning("No recorded hand positions available.");
-            return;
-        }
+        // index %= handPositions.Count / (skeleton_num_capsules * oculus_skeletons.Length);
+        // if (handPositions.Count == 0)
+        // {
+        //     UnityEngine.Debug.LogWarning("No recorded hand positions available.");
+        //     return;
+        // }
 
-        // Iterate through the recorded hand positions and apply them to the hand skeleton segments
-        for (int i = 0; i < oculus_skeletons.Length; i++)
-        {
-            int init = i * skeleton_num_capsules * 6;
+        // // Iterate through the recorded hand positions and apply them to the hand skeleton segments
+        // for (int i = 0; i < oculus_skeletons.Length; i++)
+        // {
+        //     int init = i * skeleton_num_capsules * 6;
 
-            for (int j = 0; j < skeleton_num_capsules; j++)
-            {
-                int idx = index * skeleton_num_capsules * oculus_skeletons.Length + i * skeleton_num_capsules + j;
-                if (idx >= handPositions.Count)
-                {
-                    return;
-                }
-                float[] position = handPositions[idx];
-                UpdateHandSkeletonSegment(init + j * 6, new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]), frame_time);
-            }
-        }
+        //     for (int j = 0; j < skeleton_num_capsules; j++)
+        //     {
+        //         int idx = index * skeleton_num_capsules * oculus_skeletons.Length + i * skeleton_num_capsules + j;
+        //         if (idx >= handPositions.Count)
+        //         {
+        //             return;
+        //         }
+        //         float[] position = handPositions[idx];
+        //         UpdateHandSkeletonSegment(tool_segments, tool_segments_prev, tool_velocities, init + j * 6, new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]), frame_time);
+        //     }
+        // }
 
-        skeleton_segments.CopyFromArray(hand_skeleton_segments);
-        skeleton_velocities.CopyFromArray(hand_skeleton_velocities);
+        // skeleton_segments.CopyFromArray(tool_segments);
+        // skeleton_velocities.CopyFromArray(tool_velocities);
     }
 
     private void RenderRecordedHandSkeletonCapsule(int index)
     {
-        // initialization
-        if (!RendererInitialized)
-        {
-            for (int i = 0; i < oculus_skeletons.Length; i++)
-            {
-                for (int j = 0; j < skeleton_num_capsules; j++)
-                {
-                    var capsuleVis = new CapsuleVisualization(preset_capsule_radius[j], handMaterial);
-                    _capsuleVisualizations.Add(capsuleVis);
-                }
-            }
-            RendererInitialized = true;
-        }
+        // // initialization
+        // if (!RendererInitialized)
+        // {
+        //     for (int i = 0; i < oculus_skeletons.Length; i++)
+        //     {
+        //         for (int j = 0; j < skeleton_num_capsules; j++)
+        //         {
+        //             var capsuleVis = new CapsuleVisualization(preset_capsule_radius[j], handMaterial);
+        //             _capsuleVisualizations.Add(capsuleVis);
+        //         }
+        //     }
+        //     RendererInitialized = true;
+        // }
 
-        if (RendererInitialized)
-        {
-            index %= handPositions.Count / (skeleton_num_capsules * oculus_skeletons.Length);
-            for (int i = 0; i < oculus_skeletons.Length; i++)
-            {
-                int init = i * skeleton_num_capsules * 6;
+        // if (RendererInitialized)
+        // {
+        //     index %= handPositions.Count / (skeleton_num_capsules * oculus_skeletons.Length);
+        //     for (int i = 0; i < oculus_skeletons.Length; i++)
+        //     {
+        //         int init = i * skeleton_num_capsules * 6;
 
-                for (int j = 0; j < skeleton_num_capsules; j++)
-                {
-                    int idx = index * skeleton_num_capsules * oculus_skeletons.Length + i * skeleton_num_capsules + j;
-                    if (idx >= handPositions.Count)
-                    {
-                        return;
-                    }
-                    float[] position = handPositions[idx];
-                    _capsuleVisualizations[i * skeleton_num_capsules + j].Update(new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]));
-                }
-            }
-        }
+        //         for (int j = 0; j < skeleton_num_capsules; j++)
+        //         {
+        //             int idx = index * skeleton_num_capsules * oculus_skeletons.Length + i * skeleton_num_capsules + j;
+        //             if (idx >= handPositions.Count)
+        //             {
+        //                 return;
+        //             }
+        //             float[] position = handPositions[idx];
+        //             _capsuleVisualizations[i * skeleton_num_capsules + j].Update(new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]));
+        //         }
+        //     }
+        // }
     }
 
-    private void UpdateHandSkeletonSegment(int init, Vector3 segment_start, Vector3 segment_end, float frameTime)
+    private void UpdateHandSkeletonSegment(float[] skeleton_segments, float[] skeleton_segments_prev, float[] skeleton_velocities, int init, Vector3 segment_start, Vector3 segment_end, float frameTime)
     {
         // Convert the segment start and segment end points to local coordinates relative to this transform
         Vector3 TransformedStart = transform.InverseTransformPoint(segment_start);
         Vector3 TransformedEnd = transform.InverseTransformPoint(segment_end);
 
-        hand_skeleton_segments[init] = TransformedStart.x;
-        hand_skeleton_segments[init + 1] = TransformedStart.y;
-        hand_skeleton_segments[init + 2] = TransformedStart.z;
-        hand_skeleton_segments[init + 3] = TransformedEnd.x;
-        hand_skeleton_segments[init + 4] = TransformedEnd.y;
-        hand_skeleton_segments[init + 5] = TransformedEnd.z;
+        skeleton_segments[init] = TransformedStart.x;
+        skeleton_segments[init + 1] = TransformedStart.y;
+        skeleton_segments[init + 2] = TransformedStart.z;
+        skeleton_segments[init + 3] = TransformedEnd.x;
+        skeleton_segments[init + 4] = TransformedEnd.y;
+        skeleton_segments[init + 5] = TransformedEnd.z;
 
         // Calculate the velocity of the segment
-        hand_skeleton_velocities[init] = (TransformedStart.x - hand_skeleton_segments_prev[init]) / frameTime;
-        hand_skeleton_velocities[init + 1] = (TransformedStart.y - hand_skeleton_segments_prev[init + 1]) / frameTime;
-        hand_skeleton_velocities[init + 2] = (TransformedStart.z - hand_skeleton_segments_prev[init + 2]) / frameTime;
-        hand_skeleton_velocities[init + 3] = (TransformedEnd.x - hand_skeleton_segments_prev[init + 3]) / frameTime;
-        hand_skeleton_velocities[init + 4] = (TransformedEnd.y - hand_skeleton_segments_prev[init + 4]) / frameTime;
-        hand_skeleton_velocities[init + 5] = (TransformedEnd.z - hand_skeleton_segments_prev[init + 5]) / frameTime;
+        skeleton_velocities[init] = (TransformedStart.x - skeleton_segments_prev[init]) / frameTime;
+        skeleton_velocities[init + 1] = (TransformedStart.y - skeleton_segments_prev[init + 1]) / frameTime;
+        skeleton_velocities[init + 2] = (TransformedStart.z - skeleton_segments_prev[init + 2]) / frameTime;
+        skeleton_velocities[init + 3] = (TransformedEnd.x - skeleton_segments_prev[init + 3]) / frameTime;
+        skeleton_velocities[init + 4] = (TransformedEnd.y - skeleton_segments_prev[init + 4]) / frameTime;
+        skeleton_velocities[init + 5] = (TransformedEnd.z - skeleton_segments_prev[init + 5]) / frameTime;
 
         // Update the previous frame positions
-        hand_skeleton_segments_prev[init] = TransformedStart.x;
-        hand_skeleton_segments_prev[init + 1] = TransformedStart.y;
-        hand_skeleton_segments_prev[init + 2] = TransformedStart.z;
-        hand_skeleton_segments_prev[init + 3] = TransformedEnd.x;
-        hand_skeleton_segments_prev[init + 4] = TransformedEnd.y;
-        hand_skeleton_segments_prev[init + 5] = TransformedEnd.z;
+        skeleton_segments_prev[init] = TransformedStart.x;
+        skeleton_segments_prev[init + 1] = TransformedStart.y;
+        skeleton_segments_prev[init + 2] = TransformedStart.z;
+        skeleton_segments_prev[init + 3] = TransformedEnd.x;
+        skeleton_segments_prev[init + 4] = TransformedEnd.y;
+        skeleton_segments_prev[init + 5] = TransformedEnd.z;
+
     }
 
-    bool Intersectwith(Sphere[] o)
-    {
-        for (int i = 0; i < o.Length; i++)
-        {
-            Bounds b = new(o[i].transform.position, o[i].transform.lossyScale);
-
-            if (b == null)
-            {
-                continue;
-            }
-            if (bounds.Intersects(b))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool IntersectwithHand(OVRHand[] hands)
+    bool IntersectwithTools(MpmTool[] tools)
     {
         return true;
     }

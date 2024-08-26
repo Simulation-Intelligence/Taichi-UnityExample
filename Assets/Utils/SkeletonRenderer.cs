@@ -91,59 +91,7 @@ public class SkeletonRenderer : MonoBehaviour
         }
 
         // 24 line segments with 24 capsules in total
-        _skeleton_capsule_radius = new float[] { 0,
-                                                0,
-                                                0,
-                                                0.015382f,
-                                                0.013382f,
-                                                0.01028295f,
-                                                0.01822828f,
-                                                0.01029526f,
-                                                0.008038102f,
-                                                0.02323196f,
-                                                0.01117394f,
-                                                0.008030958f,
-                                                0.01608828f,
-                                                0.009922137f,
-                                                0.007611672f,
-                                                0.01823196f,
-                                                0.015f,
-                                                0.008483353f,
-                                                0.006764194f,
-                                                0.009768805f,
-                                                0.007636196f,
-                                                0.007629411f,
-                                                0.007231089f,
-                                                0.006425985f };
-
-        if (false)
-        {
-            // Only use for testing radius of each bone
-            for (int i = 0; i < leftHandJoints.Count; i++)
-            {
-                var start = leftHandJoints[i];
-                var end = leftHandJoints[i].parent;
-                var capsuleVis = new CapsuleVisualization(start.position, end.position, _skeleton_capsule_radius[i], capsuleMaterial);
-            }
-            for (int j = 1; j < leftHandJoints.Count; j++)
-            {
-                var start = leftHandJoints[j];
-                var end = leftHandJoints[j].parent;
-                var segmentVis = new SegmentVisualization(start, end, skeletonMaterial);
-            }
-            //for (int i = 0; i < rightHandJoints.Count; i++)
-            //{
-            //    var start = rightHandJoints[i];
-            //    var end = rightHandJoints[i].parent;
-            //    var capsuleVis = new CapsuleVisualization(start.position, end.position, _skeleton_capsule_radius[i], capsuleMaterial);
-            //}
-            for (int j = 1; j < rightHandJoints.Count; j++)
-            {
-                var start = rightHandJoints[j];
-                var end = rightHandJoints[j].parent;
-                var segmentVis = new SegmentVisualization(start, end, skeletonMaterial);
-            }
-        }
+        _skeleton_capsule_radius = preset_capsule_radius;
     }
 
     private void Update()

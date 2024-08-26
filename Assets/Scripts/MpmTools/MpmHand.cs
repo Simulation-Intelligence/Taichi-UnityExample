@@ -1,0 +1,61 @@
+//示例手部
+public class MpmHand : MpmTool
+{
+    public OVRHand oculus_hand;
+    public OVRSkeleton oculus_skeleton;
+
+    public static readonly float[] preset_capsule_radius =  { 0,
+                                              0,
+                                              0,
+                                              0.015382f,
+                                              0.013382f,
+                                              0.01028295f,
+                                              0.01822828f,
+                                              0.01029526f,
+                                              0.008038102f,
+                                              0.02323196f,
+                                              0.01117394f,
+                                              0.008030958f,
+                                              0.01608828f,
+                                              0.009922137f,
+                                              0.007611672f,
+                                              0.01823196f,
+                                              0.015f,
+                                              0.008483353f,
+                                              0.006764194f,
+                                              0.009768805f,
+                                              0.007636196f,
+                                              0.007629411f,
+                                              0.007231089f,
+                                              0.006425985f };
+
+
+    void Awake()
+    {
+        // 在 Awake 中设置特定的 numCapsules 和 init_capsules 值
+        numCapsules = 24;
+        init_capsules = new Capsule[numCapsules];
+        for (int i = 0; i < numCapsules; i++)
+        {
+            init_capsules[i] = new Capsule() { radius = preset_capsule_radius[i] };
+        }
+    }
+    protected override void UpdateCapsules()
+    {
+        if (oculus_hand.IsTracked && oculus_hand.HandConfidence == OVRHand.TrackingConfidence.High)
+        {
+            int numBones = oculus_skeleton.Bones.Count;
+            //UnityEngine.Debug.Log("Num of Bones while tracking: " + numBones);
+            if (numBones > 0)
+            {
+                // Use the wrist position as the hand position
+                for (int j = 0; j < numBones; j++)
+                {
+                    OVRBone bone = oculus_skeleton.Bones[j];
+                    capsules[j].start = bone.Transform.position;
+                    capsules[j].end = bone.Transform.parent.position;
+                }
+            }
+        }
+    }
+}
