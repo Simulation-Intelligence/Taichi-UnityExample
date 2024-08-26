@@ -1114,7 +1114,7 @@ public class Mpm3DMarching : MonoBehaviour
                     }
 
                     // World to local coordinate conversion and calculate the velocity of the segment
-                    UpdateHandSkeletonSegment(tool_segments, tool_segments_prev, tool_velocities, capsules_start * 6 + j * 6, start, end, frame_time);
+                    UpdateSkeletonSegment(tool_segments, tool_segments_prev, tool_velocities, capsules_start * 6 + j * 6, start, end, frame_time);
 
                     // Get the radius of each capsule
                     _tool_capsule_radius[capsules_start + j] = capsule.radius / transform.lossyScale.x;
@@ -1224,7 +1224,7 @@ public class Mpm3DMarching : MonoBehaviour
         // }
     }
 
-    private void UpdateHandSkeletonSegment(float[] skeleton_segments, float[] skeleton_segments_prev, float[] skeleton_velocities, int init, Vector3 segment_start, Vector3 segment_end, float frameTime)
+    private void UpdateSkeletonSegment(float[] skeleton_segments, float[] skeleton_segments_prev, float[] skeleton_velocities, int init, Vector3 segment_start, Vector3 segment_end, float frameTime)
     {
         // Convert the segment start and segment end points to local coordinates relative to this transform
         Vector3 TransformedStart = transform.InverseTransformPoint(segment_start);
