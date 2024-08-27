@@ -155,7 +155,8 @@ public class Mpm3DMarching : MonoBehaviour
 
     [Header("Obstacle")]
     
-    public MpmTool[] tools;
+    // public MpmTool[] tools;
+    public List<MpmTool> tools = new List<MpmTool>();
 
     private int totalCapsules;
     private int NParticles;
@@ -189,7 +190,7 @@ public class Mpm3DMarching : MonoBehaviour
 
     private bool RendererInitialized = false; // Used for recorded hand
     private List<CapsuleVisualization> _capsuleVisualizations = new();
-
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -284,8 +285,8 @@ public class Mpm3DMarching : MonoBehaviour
             _Compute_Graph_g_substep = cgraphs["substep"];
         }
     }
-
-    void Init_Tools()
+    
+    public void Init_Tools()
     {
         totalCapsules = 0;
         foreach (var tool in tools)
@@ -1095,7 +1096,7 @@ public class Mpm3DMarching : MonoBehaviour
     {
         Vector3 Center = new();
         int capsules_start = 0;
-        for (int i = 0; i < tools.Length; i++)
+        for (int i = 0; i < tools.Count; i++)
         {
             if (tools[i].numCapsules > 0)
             {
@@ -1127,9 +1128,9 @@ public class Mpm3DMarching : MonoBehaviour
                 capsules_start += tools[i].numCapsules;
             }
         }
-
+        
         // Update the simulation box domain around the two hands based on the position of them
-        Center /= tools.Length;
+        Center /= tools.Count;
         boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.lossyScale.x;
         boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.lossyScale.x;
     }
@@ -1252,8 +1253,8 @@ public class Mpm3DMarching : MonoBehaviour
         skeleton_segments_prev[init + 4] = TransformedEnd.y;
         skeleton_segments_prev[init + 5] = TransformedEnd.z;
     }
-
-    bool IntersectwithTools(MpmTool[] tools)
+    
+    bool IntersectwithTools(List<MpmTool> tools)
     {
         return true;
     }

@@ -9,8 +9,10 @@ public class MpmHand : MpmTool
         RightHand
     }
     public HandType handType;
-    public OVRHand oculus_hand;
-    public OVRSkeleton oculus_skeleton;
+    [SerializeField]
+    private OVRHand oculus_hand;
+    [SerializeField]
+    private OVRSkeleton oculus_skeleton;
 
     public static readonly float[] preset_capsule_radius =  { 0,
                                               0,
@@ -49,16 +51,27 @@ public class MpmHand : MpmTool
         }
 
         // Oculus hands
-        if (handType.ToString() == "HandLeft")
+        if (handType.ToString() == "LeftHand")
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>();
         }
-        else if (handType.ToString() == "HandRight")
+        else if (handType.ToString() == "RightHand")
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
         }
+        // // Oculus hands
+        // if (oculus_hands == null || oculus_hands.Length == 0)
+        // {
+        //     oculus_hands = new OVRHand[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>(),
+        //                                    GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>() };
+        // }
+        // if (oculus_skeletons == null || oculus_skeletons.Length == 0)
+        // {
+        //     oculus_skeletons = new OVRSkeleton[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>(),
+        //                                            GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>() };
+        // }
     }
     protected override void UpdateCapsules()
     {

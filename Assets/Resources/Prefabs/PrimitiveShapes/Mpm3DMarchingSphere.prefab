@@ -402,7 +402,7 @@ MonoBehaviour:
   materialType: 0
   plasticityType: 2
   stressType: 0
-  RunSimulation: 1
+  RunSimulation: 0
   splatManager: {fileID: 4401015503980238086}
   marchingCubeVisualizers:
   - {fileID: 6652588665450643096}
@@ -429,9 +429,7 @@ MonoBehaviour:
   is_fixed: 1
   fix_radius: 0.05
   use_sticky_boundary: 1
-  tools:
-  - {fileID: 0}
-  - {fileID: 0}
+  tools: []
   _E: 1000000
   _SigY: 300000
   _nu: 0.3

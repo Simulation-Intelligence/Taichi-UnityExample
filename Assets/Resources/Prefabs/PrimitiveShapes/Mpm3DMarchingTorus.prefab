@@ -243,9 +243,7 @@ MonoBehaviour:
   is_fixed: 0
   fix_radius: 0.2
   use_sticky_boundary: 1
-  tools:
-  - {fileID: 0}
-  - {fileID: 0}
+  tools: []
   _E: 10000000
   _SigY: 3000000
   _nu: 0.3
