@@ -608,7 +608,7 @@ class UIManager : MonoBehaviour
             mpm3DSimulation.tools.Add(ToolRightHand.GetComponent<MpmTool>());
             mpm3DSimulation.Init_Tools();
             Debug.Log("Tool " + mpm3DSimulation.tools + " is selected for modeling");
-            
+
             // Apply materials specified from UI
             ApplyMaterial(newMpm3DObject);
         }
@@ -621,10 +621,10 @@ class UIManager : MonoBehaviour
         {
             Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
 
-            GameObject ToolLeftHand = Resources.Load<GameObject>("Prefabs/Tools/PrefabLeftHand");
+            GameObject ToolLeftHand = Resources.Load<GameObject>("Prefabs/Tools/PrefabLeftMpmHand");
             mpm3DSimulation.tools.Add(ToolLeftHand.GetComponent<MpmTool>());
-            
-            GameObject ToolRightHand = Resources.Load<GameObject>("Prefabs/Tools/PrefabRightHand");
+
+            GameObject ToolRightHand = Resources.Load<GameObject>("Prefabs/Tools/PrefabRightMpmHand");
             mpm3DSimulation.tools.Add(ToolRightHand.GetComponent<MpmTool>());
 
             mpm3DSimulation.Init_Tools();

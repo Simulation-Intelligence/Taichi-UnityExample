@@ -9,9 +9,7 @@ public class MpmHand : MpmTool
         RightHand
     }
     public HandType handType;
-    [SerializeField]
     private OVRHand oculus_hand;
-    [SerializeField]
     private OVRSkeleton oculus_skeleton;
 
     public static readonly float[] preset_capsule_radius =  { 0,
@@ -51,27 +49,16 @@ public class MpmHand : MpmTool
         }
 
         // Oculus hands
-        if (handType.ToString() == "LeftHand")
+        if (handType == HandType.LeftHand)
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>();
         }
-        else if (handType.ToString() == "RightHand")
+        else if (handType == HandType.RightHand)
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
         }
-        // // Oculus hands
-        // if (oculus_hands == null || oculus_hands.Length == 0)
-        // {
-        //     oculus_hands = new OVRHand[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>(),
-        //                                    GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>() };
-        // }
-        // if (oculus_skeletons == null || oculus_skeletons.Length == 0)
-        // {
-        //     oculus_skeletons = new OVRSkeleton[] { GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>(),
-        //                                            GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>() };
-        // }
     }
     protected override void UpdateCapsules()
     {
@@ -86,12 +73,6 @@ public class MpmHand : MpmTool
                     OVRBone bone = oculus_skeleton.Bones[j];
                     capsules[j].start = bone.Transform.position;
                     capsules[j].end = bone.Transform.parent.position;
-                    
-                    // Vector3 start = bone.Transform.position;
-                    // Vector3 end = bone.Transform.parent.position;
-                    // Vector3 direction = (end - start).normalized;
-                    // capsules[j].start = start + direction * preset_capsule_radius[j];
-                    // capsules[j].end = end - direction * preset_capsule_radius[j];
                 }
             }
         }
