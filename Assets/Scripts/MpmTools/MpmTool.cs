@@ -1,6 +1,5 @@
 using UnityEngine;
 
-
 public class MpmTool : MonoBehaviour
 {
     public struct Capsule
@@ -21,14 +20,14 @@ public class MpmTool : MonoBehaviour
             capsules[i] = init_capsules[i];
         }
     }
-    protected virtual void UpdateCapsules()
-    {
-        TransformFixedCapsules();
-    }
-
     void Update()
     {
         UpdateCapsules();
+    }
+    // Virutal method to be overriden by child classes
+    protected virtual void UpdateCapsules()
+    {
+        TransformFixedCapsules();
     }
     void TransformFixedCapsules()
     {
@@ -40,5 +39,3 @@ public class MpmTool : MonoBehaviour
         }
     }
 }
-
-

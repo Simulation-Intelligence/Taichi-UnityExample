@@ -446,8 +446,7 @@ class UIManager : MonoBehaviour
                 _grabbable.MaxGrabPoints = isOn ? -1 : 0;
             }
         }
-
-        // Enable/Disable object interaction
+        // Enable/Disable object interaction for simulation to avoid unintended hand contacts
         if (toggle.name == "Toggle_EnableInteraction")
         {
             if (selectedObject != null)

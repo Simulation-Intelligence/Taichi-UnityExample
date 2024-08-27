@@ -1,6 +1,8 @@
-//示例手部
+using UnityEngine;
+
 public class MpmHand : MpmTool
 {
+    // Hand as a tool
     public OVRHand oculus_hand;
     public OVRSkeleton oculus_skeleton;
 
@@ -32,7 +34,7 @@ public class MpmHand : MpmTool
 
     void Awake()
     {
-        // 在 Awake 中设置特定的 numCapsules 和 init_capsules 值
+        // Set the valus of numCapsules and init_capsules in Awake() method
         numCapsules = 24;
         init_capsules = new Capsule[numCapsules];
         for (int i = 0; i < numCapsules; i++)
@@ -48,12 +50,17 @@ public class MpmHand : MpmTool
             //UnityEngine.Debug.Log("Num of Bones while tracking: " + numBones);
             if (numBones > 0)
             {
-                // Use the wrist position as the hand position
                 for (int j = 0; j < numBones; j++)
                 {
                     OVRBone bone = oculus_skeleton.Bones[j];
                     capsules[j].start = bone.Transform.position;
                     capsules[j].end = bone.Transform.parent.position;
+                    
+                    // Vector3 start = bone.Transform.position;
+                    // Vector3 end = bone.Transform.parent.position;
+                    // Vector3 direction = (end - start).normalized;
+                    // capsules[j].start = start + direction * preset_capsule_radius[j];
+                    // capsules[j].end = end - direction * preset_capsule_radius[j];
                 }
             }
         }

@@ -14,7 +14,7 @@ public class SkeletonRenderer : MonoBehaviour
     private int handIndex = -1;
 
     public bool renderPhysicsCapsules = true;
-    private bool useCustomCapsules = true;
+    private bool useCustomCapsules = false;
     private bool renderSegment = true;
 
     [SerializeField]
@@ -106,21 +106,24 @@ public class SkeletonRenderer : MonoBehaviour
             //{
             if (oculus_hands[handIndex].IsTracked && oculus_hands[handIndex].HandConfidence == OVRHand.TrackingConfidence.High)
             {
-                // Update skeleton capsules
-                if (useCustomCapsules)
+                if (renderPhysicsCapsules)
                 {
-                    for (int j = 0; j < oculus_skeletons[handIndex].Bones.Count; j++)
+                    // Update skeleton capsules
+                    if (useCustomCapsules)
                     {
-                        var start = oculus_skeletons[handIndex].Bones[j].Transform;
-                        var end = oculus_skeletons[handIndex].Bones[j].Transform.parent;
-                        _capsuleVisualizations[j].Update(start.position, end.position);
+                        for (int j = 0; j < oculus_skeletons[handIndex].Bones.Count; j++)
+                        {
+                            var start = oculus_skeletons[handIndex].Bones[j].Transform;
+                            var end = oculus_skeletons[handIndex].Bones[j].Transform.parent;
+                            _capsuleVisualizations[j].Update(start.position, end.position);
+                        }
                     }
-                }
-                else
-                {
-                    for (int j = 0; j < _ovrCapsuleVisualizations.Count; j++)
+                    else
                     {
-                        _ovrCapsuleVisualizations[j].Update(1f);
+                        for (int j = 0; j < _ovrCapsuleVisualizations.Count; j++)
+                        {
+                            _ovrCapsuleVisualizations[j].Update(1f);
+                        }
                     }
                 }
 
@@ -183,6 +186,7 @@ public class SkeletonRenderer : MonoBehaviour
                     var segmentVis = new SegmentVisualization(start, end, skeletonMaterial);
                     _segmentVisualizations.Add(segmentVis);
                 }
+                isInitialized = true;
             }
         }
         //}
@@ -207,9 +211,9 @@ public class SkeletonRenderer : MonoBehaviour
             Renderer.sharedMaterial = RenderMaterial;
 
             capsuleScale = Vector3.one;
-            var height = Vector3.Distance(BoneBegin, BoneEnd) + radius * 1.0f;
-            capsuleScale.y = height / 2;
-            //capsuleScale.y = Vector3.Distance(BoneBegin, BoneEnd) / 2;
+            // var height = Vector3.Distance(BoneBegin, BoneEnd) + radius * 1.0f;
+            // capsuleScale.y = height / 2;
+            capsuleScale.y = Vector3.Distance(BoneBegin, BoneEnd) / 2; // Without modification
             capsuleScale.x = radius * 2;
             capsuleScale.z = radius * 2;
             CapsuleGO.transform.localScale = capsuleScale;

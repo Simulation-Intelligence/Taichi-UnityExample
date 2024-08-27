@@ -798,7 +798,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     max_y = 0.9
     min_z = 0.1
     max_z = 0.9
-
+    
     # Transform
     mat2 = ti.ndarray(ti.f32, shape=(4, 4))
     mat3 = ti.ndarray(ti.f32, shape=(4, 4))

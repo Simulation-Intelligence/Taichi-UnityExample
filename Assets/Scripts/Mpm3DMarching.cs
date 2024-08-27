@@ -121,7 +121,6 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private Vector3 g = new(0, -9.8f, 0);
 
-
     [SerializeField]
     private float gy;
     [SerializeField]
@@ -1252,7 +1251,6 @@ public class Mpm3DMarching : MonoBehaviour
         skeleton_segments_prev[init + 3] = TransformedEnd.x;
         skeleton_segments_prev[init + 4] = TransformedEnd.y;
         skeleton_segments_prev[init + 5] = TransformedEnd.z;
-
     }
 
     bool IntersectwithTools(MpmTool[] tools)
