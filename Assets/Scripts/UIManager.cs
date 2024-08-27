@@ -39,6 +39,10 @@ class UIManager : MonoBehaviour
 
     private int lastValue = -1;
 
+    // Tools
+    GameObject ToolLeftHand;
+    GameObject ToolRightHand;
+
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
@@ -105,6 +109,34 @@ class UIManager : MonoBehaviour
                 }
             }
         }
+        
+        InstantiateTools();
+    }
+
+    void InstantiateTools()
+    {
+        // Use the selected tool to interact with the object
+        // Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+        
+        ToolLeftHand = Instantiate(Resources.Load<GameObject>("Prefabs/Tools/PrefabLeftMpmHand"));
+        ToolLeftHand.transform.SetParent(GameObject.Find("MpmTools").transform);
+        // mpm3DSimulation.tools.Add(ToolLeftHand.GetComponent<MpmTool>());
+        ToolRightHand = Instantiate(Resources.Load<GameObject>("Prefabs/Tools/PrefabRightMpmHand"));
+        ToolRightHand.transform.SetParent(GameObject.Find("MpmTools").transform);
+        // mpm3DSimulation.tools.Add(ToolRightHand.GetComponent<MpmTool>());
+        
+        // mpm3DSimulation.Init_Tools();
+        // Debug.Log("Tool " + mpm3DSimulation.tools + " is selected for modeling");
+    }
+    
+    void SelectTools(GameObject slectedMpm3DObject)
+    {
+        // If using the default hands
+        Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
+        mpm3DSimulation.tools.Clear();
+        
+        mpm3DSimulation.tools.Add(ToolLeftHand.GetComponent<MpmTool>());
+        mpm3DSimulation.tools.Add(ToolRightHand.GetComponent<MpmTool>());
     }
 
     void Update()
@@ -170,9 +202,11 @@ class UIManager : MonoBehaviour
 
             // Apply materials specified from UI
             // ApplyMaterial(newMpm3DObject);
+            
+            SelectTools(selectedObject);
         }
     }
-
+    
     void ApplyMaterial(GameObject slectedMpm3DObject)
     {
         // Store the object parameters when creating the object
@@ -564,25 +598,25 @@ class UIManager : MonoBehaviour
             }
         }
 
-        if (dropdown.name == "Dropdown_SelectTool")
+        if (dropdown.name == "Dropdown_LeftHandTool")
         {
-            // Select a tool for modeling
+            // Select a tool for modeling used by the left hand
         }
-
+        if (dropdown.name == "Dropdown_RightHandTool")
+        {
+            // Select a tool for modeling used by the right hand
+        }
         if (dropdown.name == "Dropdown_MaterialType")
         {
-
         }
         if (dropdown.name == "Dropdown_PlasticityType")
         {
-
         }
         if (dropdown.name == "Dropdown_StressType")
         {
-
         }
     }
-
+    
     void CreateMpm3DObjectFromPrefab(string prefabName)
     {
         GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/PrimitiveShapes/Mpm3DMarching" + prefabName);
@@ -601,37 +635,11 @@ class UIManager : MonoBehaviour
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
 
-            Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-            GameObject ToolLeftHand = Resources.Load<GameObject>("Prefabs/Tools/PrefabLeftHand");
-            mpm3DSimulation.tools.Add(ToolLeftHand.GetComponent<MpmTool>());
-            GameObject ToolRightHand = Resources.Load<GameObject>("Prefabs/Tools/PrefabRightHand");
-            mpm3DSimulation.tools.Add(ToolRightHand.GetComponent<MpmTool>());
-            mpm3DSimulation.Init_Tools();
-            Debug.Log("Tool " + mpm3DSimulation.tools + " is selected for modeling");
-
             // Apply materials specified from UI
             ApplyMaterial(newMpm3DObject);
         }
     }
-
-    void SelectToolForModeling(string toolName)
-    {
-        // Use the selected tool to interact with the object
-        if (selectedObject != null)
-        {
-            Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-
-            GameObject ToolLeftHand = Resources.Load<GameObject>("Prefabs/Tools/PrefabLeftMpmHand");
-            mpm3DSimulation.tools.Add(ToolLeftHand.GetComponent<MpmTool>());
-
-            GameObject ToolRightHand = Resources.Load<GameObject>("Prefabs/Tools/PrefabRightMpmHand");
-            mpm3DSimulation.tools.Add(ToolRightHand.GetComponent<MpmTool>());
-
-            mpm3DSimulation.Init_Tools();
-            Debug.Log("Tool " + mpm3DSimulation.tools + " is selected for modeling");
-        }
-    }
-
+    
     void OnInputFieldSelect(InputField inputField)
     {
         Debug.Log(inputField.name + " was selected!");
@@ -697,6 +705,10 @@ class UIManager : MonoBehaviour
                         if (toggle.name == "Toggle_FixObject")
                         {
                             toggle.isOn = mpm3DSimulation.GetIsFixed();
+                        }
+                        if (toggle.name == "Toggle_EnableInteraction")
+                        {
+                            toggle.isOn = mpm3DSimulation.RunSimulation;
                         }
                         if (toggle.name == "Toggle_StickyGround")
                         {

@@ -9,7 +9,9 @@ public class MpmHand : MpmTool
         RightHand
     }
     public HandType handType;
+    [SerializeField]
     private OVRHand oculus_hand;
+    [SerializeField]
     private OVRSkeleton oculus_skeleton;
 
     public static readonly float[] preset_capsule_radius =  { 0,

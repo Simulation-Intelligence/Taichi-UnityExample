@@ -47,6 +47,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numCapsules: 0
   handType: 1
+  oculus_hand: {fileID: 0}
+  oculus_skeleton: {fileID: 0}
 --- !u!114 &8825037465210702212
 MonoBehaviour:
   m_ObjectHideFlags: 0
