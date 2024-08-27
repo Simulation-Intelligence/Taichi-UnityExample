@@ -3,6 +3,12 @@ using UnityEngine;
 public class MpmHand : MpmTool
 {
     // Hand as a tool
+    public enum HandType
+    {
+        LeftHand,
+        RightHand
+    }
+    public HandType handType;
     public OVRHand oculus_hand;
     public OVRSkeleton oculus_skeleton;
 
@@ -40,6 +46,18 @@ public class MpmHand : MpmTool
         for (int i = 0; i < numCapsules; i++)
         {
             init_capsules[i] = new Capsule() { radius = preset_capsule_radius[i] };
+        }
+
+        // Oculus hands
+        if (handType.ToString() == "HandLeft")
+        {
+            oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>();
+            oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>();
+        }
+        else if (handType.ToString() == "HandRight")
+        {
+            oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
+            oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
         }
     }
     protected override void UpdateCapsules()

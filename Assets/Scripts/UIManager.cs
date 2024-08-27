@@ -566,7 +566,7 @@ class UIManager : MonoBehaviour
 
         if (dropdown.name == "Dropdown_SelectTool")
         {
-            // Select a tool for modeling    
+            // Select a tool for modeling
         }
 
         if (dropdown.name == "Dropdown_MaterialType")
@@ -585,7 +585,7 @@ class UIManager : MonoBehaviour
 
     void CreateMpm3DObjectFromPrefab(string prefabName)
     {
-        GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/Mpm3DMarching" + prefabName);
+        GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/PrimitiveShapes/Mpm3DMarching" + prefabName);
 
         if (Mpm3DObject != null)
         {
@@ -601,8 +601,21 @@ class UIManager : MonoBehaviour
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
 
+            // SelectToolForModeling("hand");
             // Apply materials specified from UI
             ApplyMaterial(newMpm3DObject);
+        }
+    }
+
+    void SelectToolForModeling(string toolName)
+    {
+        // Use the selected tool to interact with the object
+        if (selectedObject != null)
+        {
+            GameObject ToolObject = Resources.Load<GameObject>("Prefabs/Tools/PrefabLeftHand");
+            MpmTool mpmTool = ToolObject.GetComponent<MpmTool>();
+            Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+            // mpm3DSimulation.tools.Add(mpmTool);
         }
     }
 

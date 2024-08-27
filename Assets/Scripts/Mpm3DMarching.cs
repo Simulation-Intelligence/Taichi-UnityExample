@@ -154,7 +154,7 @@ public class Mpm3DMarching : MonoBehaviour
     private int use_sticky_boundary = 1;
 
     [Header("Obstacle")]
-
+    
     public MpmTool[] tools;
 
     private int totalCapsules;
@@ -292,8 +292,8 @@ public class Mpm3DMarching : MonoBehaviour
         {
             totalCapsules += tool.numCapsules;
         }
-        skeleton_segments = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton segments, each segment has 6 floats
-        skeleton_velocities = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build(); // 24 skeleton velocities, each velocity has 6 floats
+        skeleton_segments = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build(); 
+        skeleton_velocities = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build();
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(totalCapsules).HostWrite(true).Build();
 
         // Initialize hand skeleton segments
@@ -302,7 +302,7 @@ public class Mpm3DMarching : MonoBehaviour
         tool_velocities = new float[totalCapsules * 6];
         _tool_capsule_radius = new float[totalCapsules];
     }
-
+    
     public void Init_PointMesh()
     {
         _Mesh = new Mesh();

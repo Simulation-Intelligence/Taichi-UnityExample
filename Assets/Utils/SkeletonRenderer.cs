@@ -15,7 +15,7 @@ public class SkeletonRenderer : MonoBehaviour
 
     public bool renderPhysicsCapsules = true;
     private bool useCustomCapsules = true;
-    private bool renderSegment = true;
+    public bool renderSkeleton = true;
 
     [SerializeField]
     private OVRHand[] oculus_hands;
@@ -176,7 +176,7 @@ public class SkeletonRenderer : MonoBehaviour
             }
 
             // Initialize skeleton line segments
-            if (renderSegment && oculus_skeletons[handIndex].Bones.Count > 0)
+            if (renderSkeleton && oculus_skeletons[handIndex].Bones.Count > 0)
             {
                 Debug.Log("Num of Bones in initialization: " + oculus_skeletons[handIndex].Bones.Count);
                 for (int j = 0; j < oculus_skeletons[handIndex].Bones.Count; j++)

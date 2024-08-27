@@ -700,7 +700,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         new_center = ti.Vector([0.5, 0.5, 0.5])
         
         for i in x:
-            # # Scale and translate
+            # Scale and translate
             x[i] = (x[i] - center) * scaleFactor + new_center
             # Scale the corresponding values in other_data
             other_data[i][1] = scaleFactor * other_data[i][1]
@@ -722,8 +722,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         for I in ti.grouped(src):
             dst[I] = src[I]
     
-
-
     @ti.kernel
     def transform_and_merge(x1: ti.types.ndarray(ndim=1), 
                             x2: ti.types.ndarray(ndim=1), 
