@@ -43,6 +43,8 @@ class UIManager : MonoBehaviour
     GameObject ToolLeftHand;
     GameObject ToolRightHand;
 
+    List<MpmTool> mpmTools;
+
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
@@ -109,34 +111,27 @@ class UIManager : MonoBehaviour
                 }
             }
         }
-        
+
         InstantiateTools();
     }
 
     void InstantiateTools()
     {
-        // Use the selected tool to interact with the object
-        // Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-        
         ToolLeftHand = Instantiate(Resources.Load<GameObject>("Prefabs/Tools/PrefabLeftMpmHand"));
-        ToolLeftHand.transform.SetParent(GameObject.Find("MpmTools").transform);
-        // mpm3DSimulation.tools.Add(ToolLeftHand.GetComponent<MpmTool>());
         ToolRightHand = Instantiate(Resources.Load<GameObject>("Prefabs/Tools/PrefabRightMpmHand"));
-        ToolRightHand.transform.SetParent(GameObject.Find("MpmTools").transform);
-        // mpm3DSimulation.tools.Add(ToolRightHand.GetComponent<MpmTool>());
-        
-        // mpm3DSimulation.Init_Tools();
-        // Debug.Log("Tool " + mpm3DSimulation.tools + " is selected for modeling");
+
     }
-    
+
     void SelectTools(GameObject slectedMpm3DObject)
     {
         // If using the default hands
         Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
         mpm3DSimulation.tools.Clear();
-        
+
         mpm3DSimulation.tools.Add(ToolLeftHand.GetComponent<MpmTool>());
         mpm3DSimulation.tools.Add(ToolRightHand.GetComponent<MpmTool>());
+
+        mpm3DSimulation.Init_Tools();
     }
 
     void Update()
@@ -202,11 +197,11 @@ class UIManager : MonoBehaviour
 
             // Apply materials specified from UI
             // ApplyMaterial(newMpm3DObject);
-            
+
             SelectTools(selectedObject);
         }
     }
-    
+
     void ApplyMaterial(GameObject slectedMpm3DObject)
     {
         // Store the object parameters when creating the object
@@ -616,7 +611,7 @@ class UIManager : MonoBehaviour
         {
         }
     }
-    
+
     void CreateMpm3DObjectFromPrefab(string prefabName)
     {
         GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/PrimitiveShapes/Mpm3DMarching" + prefabName);
@@ -635,11 +630,15 @@ class UIManager : MonoBehaviour
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
 
+            newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
+
             // Apply materials specified from UI
             ApplyMaterial(newMpm3DObject);
+
+            SelectTools(selectedObject);
         }
     }
-    
+
     void OnInputFieldSelect(InputField inputField)
     {
         Debug.Log(inputField.name + " was selected!");

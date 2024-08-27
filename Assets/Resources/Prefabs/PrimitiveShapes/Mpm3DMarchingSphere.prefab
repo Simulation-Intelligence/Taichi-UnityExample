@@ -400,9 +400,9 @@ MonoBehaviour:
   renderType: 2
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   materialType: 0
-  plasticityType: 2
+  plasticityType: 0
   stressType: 0
-  RunSimulation: 0
+  RunSimulation: 1
   splatManager: {fileID: 4401015503980238086}
   marchingCubeVisualizers:
   - {fileID: 6652588665450643096}
@@ -430,8 +430,8 @@ MonoBehaviour:
   fix_radius: 0.05
   use_sticky_boundary: 1
   tools: []
-  _E: 1000000
-  _SigY: 300000
+  _E: 10000000
+  _SigY: 1000000
   _nu: 0.3
   colide_factor: 0.5
   friction_k: 0

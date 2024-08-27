@@ -154,7 +154,7 @@ public class Mpm3DMarching : MonoBehaviour
     private int use_sticky_boundary = 1;
 
     [Header("Obstacle")]
-    
+
     // public MpmTool[] tools;
     public List<MpmTool> tools = new List<MpmTool>();
 
@@ -190,7 +190,7 @@ public class Mpm3DMarching : MonoBehaviour
 
     private bool RendererInitialized = false; // Used for recorded hand
     private List<CapsuleVisualization> _capsuleVisualizations = new();
-    
+
     // Start is called before the first frame update
     void Start()
     {
@@ -285,15 +285,21 @@ public class Mpm3DMarching : MonoBehaviour
             _Compute_Graph_g_substep = cgraphs["substep"];
         }
     }
-    
+
     public void Init_Tools()
     {
+
+        if (tools.Count == 0)
+        {
+            return;
+        }
         totalCapsules = 0;
         foreach (var tool in tools)
         {
             totalCapsules += tool.numCapsules;
         }
-        skeleton_segments = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build(); 
+
+        skeleton_segments = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build();
         skeleton_velocities = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build();
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(totalCapsules).HostWrite(true).Build();
 
@@ -303,7 +309,7 @@ public class Mpm3DMarching : MonoBehaviour
         tool_velocities = new float[totalCapsules * 6];
         _tool_capsule_radius = new float[totalCapsules];
     }
-    
+
     public void Init_PointMesh()
     {
         _Mesh = new Mesh();
@@ -891,7 +897,9 @@ public class Mpm3DMarching : MonoBehaviour
         obstacle_velocities = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         obstacle_normals = new NdArrayBuilder<float>().Shape(n_grid, n_grid, n_grid).ElemShape(3).Build();
         segments_count_per_cell = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid).Build();
-        hash_table = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid, totalCapsules).Build();
+
+        if (totalCapsules > 0)
+            hash_table = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid, totalCapsules).Build();
 
         marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, n_grid, n_grid, n_grid).Build();
 
@@ -1128,7 +1136,7 @@ public class Mpm3DMarching : MonoBehaviour
                 capsules_start += tools[i].numCapsules;
             }
         }
-        
+
         // Update the simulation box domain around the two hands based on the position of them
         Center /= tools.Count;
         boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.lossyScale.x;
@@ -1253,10 +1261,10 @@ public class Mpm3DMarching : MonoBehaviour
         skeleton_segments_prev[init + 4] = TransformedEnd.y;
         skeleton_segments_prev[init + 5] = TransformedEnd.z;
     }
-    
+
     bool IntersectwithTools(List<MpmTool> tools)
     {
-        return true;
+        return tools.Count > 0;
     }
 
     void OnSpacePressed()

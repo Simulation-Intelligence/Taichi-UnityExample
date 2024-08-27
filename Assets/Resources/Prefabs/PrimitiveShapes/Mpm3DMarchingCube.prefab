@@ -163,10 +163,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isInitialized: 0
-  volumeTextureUpdater: {fileID: 498954594278308216}
   Mpm3DModule: {fileID: -8196383504532815311, guid: 49d9fe7f16ccc4848a0a43e84fcedf3b, type: 3}
   renderType: 2
-  handMaterial: {fileID: 2100000, guid: 125e946d849c64f4bb53e64b034f85c8, type: 2}
   pointMaterial: {fileID: 2100000, guid: 806cdc2a830a5a04cb265112e27795bf, type: 2}
   materialType: 0
   plasticityType: 0
@@ -198,10 +196,7 @@ MonoBehaviour:
   is_fixed: 0
   fix_radius: 0.2
   use_sticky_boundary: 1
-  obstacleType: 0
-  oculus_hands: []
-  oculus_skeletons: []
-  preset_capsule_radius: []
+  tools: []
   _E: 8000000
   _SigY: 800000
   _nu: 0.3
