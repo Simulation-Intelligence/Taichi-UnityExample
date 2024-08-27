@@ -14,7 +14,7 @@ public class SkeletonRenderer : MonoBehaviour
     private int handIndex = -1;
 
     public bool renderPhysicsCapsules = true;
-    private bool useCustomCapsules = false;
+    private bool useCustomCapsules = true;
     private bool renderSegment = true;
 
     [SerializeField]
@@ -209,11 +209,11 @@ public class SkeletonRenderer : MonoBehaviour
             Renderer = CapsuleGO.GetComponent<MeshRenderer>();
             RenderMaterial = renderMat;
             Renderer.sharedMaterial = RenderMaterial;
-
+            
             capsuleScale = Vector3.one;
-            // var height = Vector3.Distance(BoneBegin, BoneEnd) + radius * 1.0f;
-            // capsuleScale.y = height / 2;
-            capsuleScale.y = Vector3.Distance(BoneBegin, BoneEnd) / 2; // Without modification
+            var height = Vector3.Distance(BoneBegin, BoneEnd) + radius * 2.0f;
+            capsuleScale.y = height / 2;
+            // capsuleScale.y = Vector3.Distance(BoneBegin, BoneEnd) / 2;
             capsuleScale.x = radius * 2;
             capsuleScale.z = radius * 2;
             CapsuleGO.transform.localScale = capsuleScale;

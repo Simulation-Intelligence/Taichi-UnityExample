@@ -26,7 +26,7 @@ public class ToolRender : MonoBehaviour
             GameObject capsule = new GameObject("Capsule_" + i);
             capsule.transform.SetParent(transform); // Set child gameObject
             
-            // Create spheres
+            // Create two spheres
             GameObject sphere1 = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere1.transform.SetParent(capsule.transform);
             sphere1.GetComponent<Renderer>().material = material; 
