@@ -431,7 +431,7 @@ MonoBehaviour:
   use_sticky_boundary: 1
   tools: []
   _E: 10000000
-  _SigY: 1000000
+  _SigY: 3000000
   _nu: 0.3
   colide_factor: 0.5
   friction_k: 0

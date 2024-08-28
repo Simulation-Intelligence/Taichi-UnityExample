@@ -154,8 +154,6 @@ public class Mpm3DMarching : MonoBehaviour
     private int use_sticky_boundary = 1;
 
     [Header("Obstacle")]
-
-    // public MpmTool[] tools;
     public List<MpmTool> tools = new List<MpmTool>();
 
     private int totalCapsules;
@@ -202,10 +200,8 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void Initiate()
     {
-
         Init_Kernels();
         max_v = new NdArrayBuilder<float>().Shape(1).HostRead(true).Build();
-
 
         Init_Tools();
 
@@ -288,11 +284,12 @@ public class Mpm3DMarching : MonoBehaviour
 
     public void Init_Tools()
     {
-
+        // If there are no tools, return
         if (tools.Count == 0)
         {
             return;
         }
+        // Given tools, initialize capsules
         totalCapsules = 0;
         foreach (var tool in tools)
         {
@@ -303,7 +300,6 @@ public class Mpm3DMarching : MonoBehaviour
         skeleton_velocities = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build();
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(totalCapsules).HostWrite(true).Build();
 
-        // Initialize hand skeleton segments
         tool_segments = new float[totalCapsules * 6];
         tool_segments_prev = new float[totalCapsules * 6];
         tool_velocities = new float[totalCapsules * 6];
@@ -1261,7 +1257,7 @@ public class Mpm3DMarching : MonoBehaviour
         skeleton_segments_prev[init + 4] = TransformedEnd.y;
         skeleton_segments_prev[init + 5] = TransformedEnd.z;
     }
-
+    
     bool IntersectwithTools(List<MpmTool> tools)
     {
         return tools.Count > 0;

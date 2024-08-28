@@ -39,11 +39,8 @@ class UIManager : MonoBehaviour
 
     private int lastValue = -1;
 
-    // Tools
-    GameObject ToolLeftHand;
-    GameObject ToolRightHand;
-
-    List<MpmTool> mpmTools;
+    // Mpm Tools
+    private Dictionary<string, MpmTool> mpmToolDict = new Dictionary<string, MpmTool>();
 
     void Start()
     {
@@ -73,7 +70,7 @@ class UIManager : MonoBehaviour
         {
             TMP_Text parameter_text = parameter.transform.Find("Name").GetComponent<TMP_Text>();
             Slider parameter_slider = parameter.GetComponentInChildren<Slider>();
-
+            
             // Adjust slider value by granularity
             float granularityDivisor = 20f;
             float minValue = parameter_slider.minValue;
@@ -117,23 +114,25 @@ class UIManager : MonoBehaviour
 
     void InstantiateTools()
     {
-        ToolLeftHand = Instantiate(Resources.Load<GameObject>("Prefabs/Tools/PrefabLeftMpmHand"));
-        ToolRightHand = Instantiate(Resources.Load<GameObject>("Prefabs/Tools/PrefabRightMpmHand"));
-
+        // Instantiate all tools at the beginning
+        GameObject ToolLeftHand = Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_LeftHand"));
+        mpmToolDict.Add("Tool_LeftHand", ToolLeftHand.GetComponent<MpmTool>());
+        GameObject ToolRightHand = Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_RightHand"));
+        mpmToolDict.Add("Tool_RightHand", ToolRightHand.GetComponent<MpmTool>());
     }
-
+    
     void SelectTools(GameObject slectedMpm3DObject)
     {
-        // If using the default hands
+        // Use hands as the default tool
         Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
         mpm3DSimulation.tools.Clear();
-
-        mpm3DSimulation.tools.Add(ToolLeftHand.GetComponent<MpmTool>());
-        mpm3DSimulation.tools.Add(ToolRightHand.GetComponent<MpmTool>());
+        
+        mpm3DSimulation.tools.Add(mpmToolDict["Tool_LeftHand"]);
+        mpm3DSimulation.tools.Add(mpmToolDict["Tool_RightHand"]);
 
         mpm3DSimulation.Init_Tools();
     }
-
+    
     void Update()
     {
         // Find the last grabbed object as the selected object for further manipulations
@@ -194,14 +193,16 @@ class UIManager : MonoBehaviour
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-
+            
+            // Initialize the object
+            newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
+            // Select tools for modeling
+            SelectTools(selectedObject);
             // Apply materials specified from UI
             // ApplyMaterial(newMpm3DObject);
-
-            SelectTools(selectedObject);
         }
     }
-
+    
     void ApplyMaterial(GameObject slectedMpm3DObject)
     {
         // Store the object parameters when creating the object
@@ -213,7 +214,7 @@ class UIManager : MonoBehaviour
         int grid_size = mpm3DSimulation.GetGridSize();
         string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size).ToString();
         valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
-
+        
         // Initialize or update the object parameters
         foreach (TMP_Dropdown dropdown in dropdowns)
         {
@@ -302,7 +303,8 @@ class UIManager : MonoBehaviour
         Debug.Log("p_rho: " + mpm3DSimulation.p_rho);
         Debug.Log("friction_angle: " + mpm3DSimulation.friction_angle);
         Debug.Log("damping: " + mpm3DSimulation.damping);
-
+        Debug.Log("n_grid: " + mpm3DSimulation.GetGridSize());
+        
         // Adjust materials
         mpm3DSimulation.Init_materials();
         mpm3DSimulation.Update_materials();
@@ -596,6 +598,7 @@ class UIManager : MonoBehaviour
         if (dropdown.name == "Dropdown_LeftHandTool")
         {
             // Select a tool for modeling used by the left hand
+            
         }
         if (dropdown.name == "Dropdown_RightHandTool")
         {
@@ -629,13 +632,13 @@ class UIManager : MonoBehaviour
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-
+            
+            // Initialize the object
             newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
-
+            // Select tools for modeling
+            SelectTools(selectedObject);
             // Apply materials specified from UI
             ApplyMaterial(newMpm3DObject);
-
-            SelectTools(selectedObject);
         }
     }
 

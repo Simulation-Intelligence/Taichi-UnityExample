@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2672096056415803790}
   - component: {fileID: 8825037465210702212}
   m_Layer: 0
-  m_Name: PrefabRightMpmHand
+  m_Name: ToolPrefab_RightHand
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
