@@ -43,7 +43,6 @@ public class ToolRender : MonoBehaviour
             capsuleObjects[i] = capsule;
         }
     }
-
     void Update()
     {
         if (mpmTool == null || capsuleObjects == null)

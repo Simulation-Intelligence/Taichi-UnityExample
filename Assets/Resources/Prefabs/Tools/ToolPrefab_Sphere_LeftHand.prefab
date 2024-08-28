@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8120297749937411099}
   - component: {fileID: 4313709255513111324}
   - component: {fileID: 530109815858533485}
-  - component: {fileID: 8341739025218645645}
+  - component: {fileID: 2128965047274261661}
   - component: {fileID: 3606684722957025269}
   m_Layer: 0
   m_Name: ToolPrefab_Sphere_LeftHand
@@ -20,7 +20,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1242340518139506247
 Transform:
   m_ObjectHideFlags: 0
@@ -93,16 +93,16 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1148631148982787965}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: abee63302fdc2bb4f80efe129df0a723, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _hand: {fileID: 0}
-  _handJointId: 20
+  _handJointId: -1
   _localPositionOffset: {x: 0, y: 0, z: 0}
   _rotationOffset: {x: 0, y: 0, z: 0, w: 1}
---- !u!114 &8341739025218645645
+--- !u!114 &2128965047274261661
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -111,12 +111,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1148631148982787965}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4bd1fdcadae2cdb4088050ea457bbc99, type: 3}
+  m_Script: {fileID: 11500000, guid: 755fa4a47b9b8f24383aa223e1dbcc12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numCapsules: 0
+  numCapsules: 1
   radius: 0.02
-  length: 0
+  handType: 0
+  _handJointId: 20
 --- !u!114 &3606684722957025269
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -129,5 +130,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 553e46f5cb80fa34085dff5d4cbf4a81, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mpmTool: {fileID: 8341739025218645645}
-  material: {fileID: 2100000, guid: 125e946d849c64f4bb53e64b034f85c8, type: 2}
+  mpmTool: {fileID: 2128965047274261661}
+  material: {fileID: 2100000, guid: 91e53221f0468fa4d872098ca34ae289, type: 2}

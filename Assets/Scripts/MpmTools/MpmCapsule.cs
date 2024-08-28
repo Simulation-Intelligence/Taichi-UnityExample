@@ -1,12 +1,9 @@
 
 using UnityEngine;
 
-
-//示例工具
 public class MpmCapsule : MpmTool
 {
     public float radius = 0.02f;
-
     public float length = 0.5f;
     void Awake()
     {
