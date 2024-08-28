@@ -29,6 +29,7 @@ public class MpmSphere : MpmTool
         init_capsules[0].end = new Vector3(0, 0, 0);
         init_capsules[0].radius = radius;
 
+        // Oculus hands
         if (handType == HandType.LeftHand)
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>();
@@ -50,8 +51,6 @@ public class MpmSphere : MpmTool
                 var jointId = _handJointId.ToString().Replace("Hand", "Hand_");
                 if (bone.Id == (OVRSkeleton.BoneId)Enum.Parse(typeof(OVRSkeleton.BoneId), jointId))
                 {
-                    Debug.Log("Bone ID: " + OVRSkeleton.BoneId.Hand_IndexTip.ToString());
-                    Debug.Log("Hand Joint ID: " + jointId);
                     for (int i = 0; i < numCapsules; i++)
                     {
                         capsules[i].start = bone.Transform.position;

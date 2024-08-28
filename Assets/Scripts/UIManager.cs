@@ -41,7 +41,8 @@ class UIManager : MonoBehaviour
 
     // Mpm Tools
     private Dictionary<string, MpmTool> mpmToolDict = new Dictionary<string, MpmTool>();
-
+    private string prevLeftHandTool;
+    private string prevRightHandTool;
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
@@ -111,26 +112,49 @@ class UIManager : MonoBehaviour
 
         InstantiateTools();
     }
-
+    
     void InstantiateTools()
     {
         // Instantiate all tools at the beginning
-        GameObject ToolLeftHand = Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_LeftHand"));
-        mpmToolDict.Add("Tool_LeftHand", ToolLeftHand.GetComponent<MpmTool>());
-        GameObject ToolRightHand = Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_RightHand"));
-        mpmToolDict.Add("Tool_RightHand", ToolRightHand.GetComponent<MpmTool>());
+        mpmToolDict.Add("Tool_LeftHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_LeftHand")).GetComponent<MpmTool>());
+        mpmToolDict.Add("Tool_RightHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_RightHand")).GetComponent<MpmTool>());
+        mpmToolDict.Add("Tool_Sphere_LeftHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_Sphere_LeftHand")).GetComponent<MpmTool>());
+        mpmToolDict.Add("Tool_Sphere_RightHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_Sphere_RightHand")).GetComponent<MpmTool>());
+        
+        // Disable all tools at the beginning
+        foreach (var mpmTool in mpmToolDict.Values)
+        {
+            mpmTool.transform.SetParent(transform);
+            mpmTool.gameObject.SetActive(false);
+        }
     }
     
-    void SelectTools(GameObject slectedMpm3DObject)
+    void SelectTools(GameObject slectedMpm3DObject, string leftHandTool, string rightHandTool)
     {
         // Use hands as the default tool
         Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
         mpm3DSimulation.tools.Clear();
         
-        mpm3DSimulation.tools.Add(mpmToolDict["Tool_LeftHand"]);
-        mpm3DSimulation.tools.Add(mpmToolDict["Tool_RightHand"]);
-
+        // Add left hand tool and set active
+        if (!string.IsNullOrEmpty(prevLeftHandTool) && prevLeftHandTool != leftHandTool)
+        {
+            mpmToolDict[prevLeftHandTool].gameObject.SetActive(false);
+        }
+        mpmToolDict[leftHandTool].gameObject.SetActive(true);
+        mpm3DSimulation.tools.Add(mpmToolDict[leftHandTool]);
+        
+        // Add right hand tool and set active
+        if (!string.IsNullOrEmpty(prevRightHandTool) && prevRightHandTool != rightHandTool)
+        {
+            mpmToolDict[prevRightHandTool].gameObject.SetActive(false);
+        }
+        mpmToolDict[rightHandTool].gameObject.SetActive(true);
+        mpm3DSimulation.tools.Add(mpmToolDict[rightHandTool]);
+        
         mpm3DSimulation.Init_Tools();
+
+        prevLeftHandTool = leftHandTool;
+        prevRightHandTool = rightHandTool;
     }
     
     void Update()
@@ -197,7 +221,7 @@ class UIManager : MonoBehaviour
             // Initialize the object
             newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
             // Select tools for modeling
-            SelectTools(selectedObject);
+            SelectTools(selectedObject, "Tool_LeftHand", "Tool_RightHand");
             // Apply materials specified from UI
             // ApplyMaterial(newMpm3DObject);
         }
@@ -525,11 +549,11 @@ class UIManager : MonoBehaviour
             }
         }
     }
-
+    
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
         Debug.Log(dropdown.name + " selected: " + dropdown.options[value].text);
-
+        
         if (dropdown.name == "Dropdown_PrimitiveShape")
         {
             // Select a primitive shape
@@ -538,7 +562,6 @@ class UIManager : MonoBehaviour
             dropdown.Hide();
             CreateMpm3DObjectFromPrefab(prefabName);
         }
-
         if (dropdown.name == "Dropdown_RenderingType")
         {
             // Select a rendering type
@@ -548,7 +571,6 @@ class UIManager : MonoBehaviour
                 // Use 3D Gaussian to render loaded gaussian assets
             }
         }
-
         if (dropdown.name == "Dropdown_Color")
         {
             // Adjust the color of the primitive shape
@@ -594,15 +616,59 @@ class UIManager : MonoBehaviour
                 dropdown.Hide();
             }
         }
-
         if (dropdown.name == "Dropdown_LeftHandTool")
         {
             // Select a tool for modeling used by the left hand
-            
+            if (selectedObject != null)
+            {
+                if (dropdown.options[value].text == "Left Hand Tool")
+                {
+                    SelectTools(selectedObject, "Tool_LeftHand", prevRightHandTool);
+                }
+                else if (dropdown.options[value].text == "Sphere")
+                {
+                    SelectTools(selectedObject, "Tool_Sphere_LeftHand", prevRightHandTool);
+                }
+                else if (dropdown.options[value].text == "Cone")
+                {
+                    SelectTools(selectedObject, "Tool_Cone_LeftHand", prevRightHandTool);
+                }
+                else if (dropdown.options[value].text == "Capsule")
+                {
+                    SelectTools(selectedObject, "Tool_Capsule_LeftHand", prevRightHandTool);
+                }
+                else if (dropdown.options[value].text == "Scissor")
+                {
+                    SelectTools(selectedObject, "Tool_Scissor_LeftHand", prevRightHandTool);
+                }
+            }
         }
         if (dropdown.name == "Dropdown_RightHandTool")
         {
             // Select a tool for modeling used by the right hand
+            if (selectedObject != null)
+            {
+                if (dropdown.options[value].text == "Right Hand Tool")
+                {
+                    SelectTools(selectedObject, prevLeftHandTool, "Tool_RightHand");
+                }
+                else if (dropdown.options[value].text == "Sphere")
+                {
+                    SelectTools(selectedObject, prevLeftHandTool, "Tool_Sphere_RightHand");
+                }
+                else if (dropdown.options[value].text == "Cone")
+                {
+                    SelectTools(selectedObject, prevLeftHandTool, "Tool_Cone_RightHand");
+                }
+                else if (dropdown.options[value].text == "Capsule")
+                {
+                    SelectTools(selectedObject, prevLeftHandTool, "Tool_Capsule_RightHand");
+                }
+                else if (dropdown.options[value].text == "Scissor")
+                {
+                    SelectTools(selectedObject, prevLeftHandTool, "Tool_Scissor_RightHand");
+                }
+            }
         }
         if (dropdown.name == "Dropdown_MaterialType")
         {
@@ -636,7 +702,7 @@ class UIManager : MonoBehaviour
             // Initialize the object
             newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
             // Select tools for modeling
-            SelectTools(selectedObject);
+            SelectTools(selectedObject, "Tool_LeftHand", "Tool_RightHand");
             // Apply materials specified from UI
             ApplyMaterial(newMpm3DObject);
         }
