@@ -23,13 +23,13 @@ public class MpmHand : MpmTool
                                               0.014f,
                                               0.01029526f,
                                               0.008038102f,
-                                              0.018f,
-                                              0.01117394f,
+                                              0.019f,
+                                              0.011f,
                                               0.008030958f,
                                               0.01608828f,
                                               0.009922137f,
                                               0.007611672f,
-                                              0.01823196f,
+                                              0.013f,
                                               0.013f,
                                               0.008483353f,
                                               0.006764194f,
@@ -81,6 +81,16 @@ public class MpmHand : MpmTool
                     OVRBone bone = oculus_skeleton.Bones[j];
                     capsules[j].start = bone.Transform.position;
                     capsules[j].end = bone.Transform.parent.position;
+                    
+                    // Adjust capsules for the finger tips
+                    if (j == 19 || j == 20 || j == 21 || j == 22 || j == 23)
+                    {
+                        Vector3 start = bone.Transform.position;
+                        Vector3 end = bone.Transform.parent.position;
+                        Vector3 direction = (end - start).normalized;
+                        capsules[j].start = start + direction * preset_capsule_radius[j];
+                        // capsules[j].end = end - direction * preset_capsule_radius[j];
+                    }
                 }
             }
         }
