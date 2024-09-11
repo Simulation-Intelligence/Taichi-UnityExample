@@ -1,5 +1,11 @@
 import taichi as ti
 import numpy as np
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--arch", type=str, default='vulkan')
+parser.add_argument("--cgraph", action='store_true', default=False)
+args = parser.parse_args()
+
 @ti.func
 def PackSmallest3Rotation(q):
     # find biggest component
