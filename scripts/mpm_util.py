@@ -2,10 +2,10 @@ import taichi as ti
 import numpy as np
 import argparse
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--arch", type=str, default='vulkan')
-parser.add_argument("--cgraph", action='store_true', default=False)
-args = parser.parse_args()
+# parser = argparse.ArgumentParser()
+# parser.add_argument("--arch", type=str, default='vulkan')
+# parser.add_argument("--cgraph", action='store_true', default=False)
+# args = parser.parse_args()
 
 @ti.func
 def PackSmallest3Rotation(q):
@@ -350,6 +350,12 @@ def max_bounding_box(seg_start, seg_end):
 class DistanceResult:
     distance: ti.types.vector(3, ti.f32)
     b: ti.f32
+
+@ti.dataclass
+class MatDistanceResult:
+    distance: ti.types.vector(3, ti.f32)
+    alpha: ti.f32
+    beta: ti.f32
     
 @ti.func
 def calculate_point_segment_distance(point: ti.types.vector(3, ti.f32), start: ti.types.vector(3, ti.f32), end: ti.types.vector(3, ti.f32)) -> DistanceResult:
@@ -369,6 +375,214 @@ def calculate_point_segment_distance(point: ti.types.vector(3, ti.f32), start: t
         Pb = start + b * v
         distance = (point - Pb)
     return DistanceResult(distance=distance, b=b)
+
+@ti.func
+def value_of_quadric_surface_2d(x, y, A, B, C, D, E, F):
+    return A * x * x + B * x * y + C * y * y + D * x + E * y + F
+
+@ti.func
+def compute_sphere_cone_distance(sphere_centers_0: ti.types.vector(3, ti.f32), sphere_radii_0: ti.f32, 
+                                sphere_centers_1: ti.types.vector(3, ti.f32), sphere_radii_1: ti.f32, 
+                                sphere_centers_2: ti.types.vector(3, ti.f32), sphere_radii_2: ti.f32, 
+                                sphere_centers_3: ti.types.vector(3, ti.f32), sphere_radii_3: ti.f32):
+    # sphere_centers and sphere_radii should contain 4 elements
+    # The first 2 elements construct the cone, the last 2 is treated as a grid node
+    sC1 = ti.Vector([0.0, 0.0, 0.0])
+    sC2 = ti.Vector([0.0, 0.0, 0.0])
+    sC3 = ti.Vector([0.0, 0.0, 0.0])
+    for i in ti.static(range(3)):
+        sC1[i] = sphere_centers_0[i] - sphere_centers_1[i]
+        sC2[i] = sphere_centers_3[i] - sphere_centers_2[i]
+        sC3[i] = sphere_centers_1[i] - sphere_centers_3[i]
+    sR1 = sphere_radii_0 - sphere_radii_1
+    sR2 = sphere_radii_2 - sphere_radii_3
+    sR3 = sphere_radii_1 + sphere_radii_3
+    
+    A = sC1.dot(sC1) - sR1 * sR1
+    B = 2.0 * (sC1.dot(sC2) - sR1 * sR2)
+    C = sC2.dot(sC2) - sR2 * sR2
+    D = 2.0 * (sC1.dot(sC3) - sR1 * sR3)
+    E = 2.0 * (sC2.dot(sC3) - sR2 * sR3)
+    F = sC3.dot(sC3) - sR3 * sR3
+    
+    delta = 4 * A * C - B * B
+    temp_alpha = 0.0
+    temp_beta = 0.0
+    
+    alpha = 0.0
+    beta = 0.0
+    dist_f = value_of_quadric_surface_2d(alpha, beta, A, B, C, D, E, F)
+    
+    # parallel cases
+    for temp_alpha, temp_beta in ti.static([(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)]):
+        temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+        if dist_f > temp_dist:
+            dist_f = temp_dist
+            alpha = temp_alpha
+            beta = temp_beta
+    
+    # temp_alpha = 0, temp_beta = -E / (2.0 * C)
+    temp_alpha = 0.0
+    temp_beta = -E / (2.0 * C)
+    if 0.0 < temp_beta < 1.0:
+        temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+        if dist_f > temp_dist:
+            dist_f = temp_dist
+            alpha = temp_alpha
+            beta = temp_beta
+
+    # temp_alpha = 1.0, temp_beta = -(B + E) / (2.0 * C)
+    temp_alpha = 1.0
+    temp_beta = -(B + E) / (2.0 * C)
+    if 0.0 < temp_beta < 1.0:
+        temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+        if dist_f > temp_dist:
+            dist_f = temp_dist
+            alpha = temp_alpha
+            beta = temp_beta
+    
+    # temp_alpha = -D / (2.0 * A), temp_beta = 0.0
+    temp_alpha = -D / (2.0 * A)
+    temp_beta = 0.0
+    if 0.0 < temp_alpha < 1.0:
+        temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+        if dist_f > temp_dist:
+            dist_f = temp_dist
+            alpha = temp_alpha
+            beta = temp_beta
+    
+    # temp_alpha = -(B + D) / (2.0 * A), temp_beta = 1.0
+    temp_alpha = -(B + D) / (2.0 * A)
+    temp_beta = 1.0
+    if 0.0 < temp_alpha < 1.0:
+        temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+        if dist_f > temp_dist:
+            dist_f = temp_dist
+            alpha = temp_alpha
+            beta = temp_beta
+    
+    # temp_alpha = (B * E - 2.0 * C * D) / delta, temp_beta = (B * D - 2.0 * A * E) / delta
+    if delta != 0.0:
+        temp_alpha = (B * E - 2.0 * C * D) / delta
+        temp_beta = (B * D - 2.0 * A * E) / delta
+        print(temp_alpha, temp_beta)
+        if 0.0 < temp_alpha < 1.0 and 0.0 < temp_beta < 1.0:
+            temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+            if dist_f > temp_dist:
+                dist_f = temp_dist
+                alpha = temp_alpha
+                beta = temp_beta
+
+    # Compute the distance
+    cp = ti.Vector([0.0, 0.0, 0.0], dt=ti.f32)
+    cq = ti.Vector([0.0, 0.0, 0.0], dt=ti.f32)
+    for i in ti.static(range(3)):
+        cp[i] = alpha * sphere_centers_0[i] + (1.0 - alpha) * sphere_centers_1[i]
+        cq[i] = beta * sphere_centers_2[i] + (1.0 - beta) * sphere_centers_3[i]
+    rp = alpha * sphere_radii_0 + (1.0 - alpha) * sphere_radii_1
+    rq = beta * sphere_radii_2 + (1.0 - beta) * sphere_radii_3
+    dir = cq - cp
+    distance = dir.norm() - (rp + rq)
+    normal = dir.normalized()
+    # print("Distance: ", distance, "Normal: ", normal)
+    return MatDistanceResult(distance=normal * distance, alpha=alpha, beta=beta)
+
+@ti.func
+def compute_sphere_slab_distance(sphere_centers_0: ti.types.vector(3, ti.f32), sphere_radii_0: ti.f32, 
+                                sphere_centers_1: ti.types.vector(3, ti.f32), sphere_radii_1: ti.f32, 
+                                sphere_centers_2: ti.types.vector(3, ti.f32), sphere_radii_2: ti.f32, 
+                                sphere_centers_3: ti.types.vector(3, ti.f32), sphere_radii_3: ti.f32):
+    # sphere_centers and sphere_radii should contain 4 elements
+    # The first three sphers compose a slab, and the last one is a sphere
+    sC1 = ti.Vector([0.0, 0.0, 0.0])
+    sC2 = ti.Vector([0.0, 0.0, 0.0])
+    sC3 = ti.Vector([0.0, 0.0, 0.0])
+    for i in ti.static(range(3)):
+        sC1[i] = sphere_centers_0[i] - sphere_centers_2[i]
+        sC2[i] = sphere_centers_1[i] - sphere_centers_2[i]
+        sC3[i] = sphere_centers_2[i] - sphere_centers_3[i]
+    sR1 = sphere_radii_0 - sphere_radii_2
+    sR2 = sphere_radii_1 - sphere_radii_2
+    sR3 = sphere_radii_2 + sphere_radii_3
+
+    A = sC1.dot(sC1) - sR1 * sR1
+    B = 2.0 * (sC1.dot(sC2) - sR1 * sR2)
+    C = sC2.dot(sC2) - sR2 * sR2
+    D = 2.0 * (sC1.dot(sC3) - sR1 * sR3)
+    E = 2.0 * (sC2.dot(sC3) - sR2 * sR3)
+    F = sC3.dot(sC3) - sR3 * sR3
+    
+    delta = 4 * A * C - B * B
+    temp_alpha = 0.0
+    temp_beta = 0.0
+    
+    alpha = 0.0
+    beta = 0.0
+    dist_f = value_of_quadric_surface_2d(alpha, beta, A, B, C, D, E, F)
+    
+    # parallel cases
+    for temp_alpha, temp_beta in ti.static([(1.0, 0.0), (0.0, 1.0)]):
+        temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+        if dist_f > temp_dist:
+            dist_f = temp_dist
+            alpha = temp_alpha
+            beta = temp_beta
+    
+    # temp_alpha = 0, temp_beta = -E / (2.0 * C)
+    temp_alpha = 0.0
+    temp_beta = -E / (2.0 * C)
+    if 0.0 < temp_beta < 1.0:
+        temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+        if dist_f > temp_dist:
+            dist_f = temp_dist
+            alpha = temp_alpha
+            beta = temp_beta
+    
+    # temp_alpha = -D / (2.0 * A), temp_beta = 0.0
+    temp_alpha = -D / (2.0 * A)
+    temp_beta = 0.0
+    if 0.0 < temp_alpha < 1.0:
+        temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+        if dist_f > temp_dist:
+            dist_f = temp_dist
+            alpha = temp_alpha
+            beta = temp_beta
+    
+    temp_alpha = 0.5 * (2.0 * C + E - B - D) / (A - B + C)
+    temp_beta = 1.0 - temp_alpha
+    if 0.0 < temp_alpha < 1.0:
+        temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+        if dist_f > temp_dist:
+            dist_f = temp_dist
+            alpha = temp_alpha
+            beta = temp_beta
+    
+    # can be ignored
+    if delta != 0.0:
+        temp_alpha = (B * E - 2.0 * C * D) / delta
+        temp_beta = (B * D - 2.0 * A * E) / delta
+        print(temp_alpha, temp_beta)
+        if 0.0 < temp_alpha < 1.0 and 0.0 < temp_beta < 1.0 and temp_alpha + temp_beta < 1.0:
+            temp_dist = value_of_quadric_surface_2d(temp_alpha, temp_beta, A, B, C, D, E, F)
+            if dist_f > temp_dist:
+                dist_f = temp_dist
+                alpha = temp_alpha
+                beta = temp_beta
+    
+    # Compute the distance
+    cp = ti.Vector([0.0, 0.0, 0.0], dt=ti.f32)
+    cq = ti.Vector([0.0, 0.0, 0.0], dt=ti.f32)
+    for i in ti.static(range(3)):
+        cp[i] = alpha * sphere_centers_0[i] + beta * sphere_centers_1[i] + (1.0 - alpha - beta) * sphere_centers_2[i]
+        cq[i] = sphere_centers_3[i]
+    
+    rp = alpha * sphere_radii_0 + beta * sphere_radii_1 + (1.0 - alpha - beta) * sphere_radii_2
+    rq = sphere_radii_3
+    dir = cq - cp
+    distance = dir.norm() - (rp + rq)
+    normal = dir.normalized()
+    # print("alpha: ", alpha, "beta: ", beta)
+    return MatDistanceResult(distance=normal * distance, alpha=alpha, beta=beta)
 
 @ti.func
 def simplex_noise(p):
