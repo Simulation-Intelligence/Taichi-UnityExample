@@ -33,7 +33,7 @@ public class Mpm3DMarching : MonoBehaviour
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash,_Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere, _Kernel_init_cylinder, _Kernel_init_torus,
-     _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi,
+     _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi,_Kernel_substep_p2marching,
         _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_1dim1I;
 
     public enum RenderType
@@ -269,6 +269,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_substep_fix_object = kernels["substep_fix_object"];
 
             _Kernel_substep_p2g_multi = kernels["substep_p2g_multi"];
+            _Kernel_substep_p2marching = kernels["substep_p2marching"];
 
             _Kernel_copy_array_1dim1 = kernels["copy_array_1dim1"];
             _Kernel_copy_array_1dim3 = kernels["copy_array_1dim3"];
@@ -675,7 +676,7 @@ public class Mpm3DMarching : MonoBehaviour
 
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m, marching_m, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 //_Kernel_substep_p2g.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, point_color, marching_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, marching_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
                 // If fix the object in place during the modeling process
@@ -719,6 +720,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else if (renderType == RenderType.MarchingCubes)
         {
+            _Kernel_substep_p2marching.LaunchAsync(x, point_color, marching_m, p_mass,boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             _Kernel_normalize_m.LaunchAsync(marching_m, max_density);
             marching_m.CopyToNativeBufferAsync(marching_m_computeBuffer.GetNativeBufferPtr());
             int kernelId = copyShader.FindKernel("CopySubBuffer");
