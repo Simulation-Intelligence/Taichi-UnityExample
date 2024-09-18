@@ -591,6 +591,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     @ti.kernel
     def substep_calculate_mat_sdf(mat_primitives: ti.types.ndarray(ndim=2),
+                                  mat_primitives_radius: ti.types.ndarray(ndim=2),
                                   mat_velocities: ti.types.ndarray(ndim=2),
                                   mat_sdf: ti.types.ndarray(ndim=3),
                                   obstacle_normals: ti.types.ndarray(ndim=3),
@@ -601,10 +602,34 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             obstacle_velocities[I] = ti.Vector([0.0, 0.0, 0.0])
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
                 min_dist = float('inf') 
-                norm = ti.Vector([0.0, 0.0, 0.0])               
+                norm = ti.Vector([0.0, 0.0, 0.0])
+                for i in range(mat_primitives.shape[0]):
+                    # Determine cone and slab by the radius of the third sphere
+                    if mat_primitives_radius[i, 2] == 0.0:
+                        # Compute distance from grid node to a Medial Cone
+                        result = compute_sphere_cone_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
+                                                     mat_primitives[i, 1], mat_primitives_radius[i, 1],
+                                                     pos, 0.0,
+                                                     pos, 0.0)
+                    else:
+                        # Compute distance from grid node to a Medial Slab
+                        result = compute_sphere_slab_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
+                                                     mat_primitives[i, 1], mat_primitives_radius[i, 1],
+                                                     mat_primitives[i, 2], mat_primitives_radius[i, 2],
+                                                     pos, 0.0)
+                    dist = result.distance
+                    distance = dist.norm()
+                    alpha, beta = result.alpha, result.beta
+                    if distance < min_dist:
+                        min_dist = distance
+                        norm = dist.normalized()
+                        # obstacle_velocities[I] = mat_velocities[i, 0] * alpha + mat_velocities[i, 1] * (1 - alpha) # cone, also fits for slab because mat_velocities[i, 2] = 0
+                        obstacle_velocities[I] = mat_velocities[i, 0] * alpha + mat_velocities[i, 1] * beta + mat_velocities[i, 2] * (1 - beta) # slab
+                mat_sdf[I] = min_dist
+                obstacle_normals[I] = norm
     
     @ti.kernel
-    def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2), 
+    def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2),
                                    skeleton_velocities: ti.types.ndarray(ndim=2),
                                    hand_sdf: ti.types.ndarray(ndim=3),
                                    obstacle_normals: ti.types.ndarray(ndim=3),
@@ -628,8 +653,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     if distance < min_dist:
                         min_dist = distance
                         norm = dist.normalized() # Normalize the distance vector to get the normal
-                        # Linearly interpolate the velocity based on the relative position r
-                        obstacle_velocities[I] = skeleton_velocities[i,0] * (1-r) + skeleton_velocities[i,1] * r
+                        # Linearly interpolate the velocity based on the relative position 'r'
+                        obstacle_velocities[I] = skeleton_velocities[i, 0] * (1 - r) + skeleton_velocities[i, 1] * r
                 hand_sdf[I] = min_dist
                 obstacle_normals[I] = norm
     
@@ -820,9 +845,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
     # Medial Axis Transform (MAT) for Shape Appreximation
     mat_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
-    mat_sphere_centers = ti.Vector.ndarray(3, ti.f32, shape=(99))
-
-    # Data
+    mat_primitives = ti.Vector.ndarray(3, ti.f32, shape=(60, 3))
+    mat_primitives_radius = ti.ndarray(ti.f32, shape=(60, 3))
+    mat_velocities = ti.Vector.ndarray(3, ti.f32, shape=(60, 3))
+    
+    # Hash table
     hand_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
     obstacle_normals = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     skeleton_segments = ti.Vector.ndarray(3, ti.f32, shape=(24, 2))
@@ -908,6 +935,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_apply_plasticity(dg, x,E,nu, material,SigY,alpha,min_clamp,max_clamp, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_get_max_speed(v,x, max_speed, min_x, max_x, min_y, max_y, min_z, max_z)
         normalize_m(marching_m,max_m)
+
+        substep_calculate_mat_sdf(mat_primitives, mat_primitives_radius, mat_velocities, mat_sdf, obstacle_normals, obstacle_velocities, dx, min_x, max_x, min_y, max_y, min_z, max_z)
     
     def run_aot():
         mod = ti.aot.Module(arch)
@@ -966,9 +995,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             for i in range(50):
                 substep()
             substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
-            gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
-            gui.show()
-    run_aot()
+            # gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
+            # gui.show()
+    # run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph
