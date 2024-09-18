@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: bicycle-edit
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 402285
-  m_BoundsMin: {x: -9.246277, y: -6.287133, z: -11.7944975}
-  m_BoundsMax: {x: 10.696142, y: 4.525808, z: 10.425964}
+  m_SplatCount: 479597
+  m_BoundsMin: {x: -11.290733, y: -6.287133, z: -21.079153}
+  m_BoundsMax: {x: 17.01907, y: 7.194397, z: 10.425964}
   m_DataHash:
     serializedVersion: 2
-    Hash: e76dcabe2c4a788cdac5a1182ff6bb4a
+    Hash: 3e2be422d6a2a638b2aa9c67394a85d0
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0

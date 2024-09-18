@@ -357,7 +357,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 C[p] = new_C
     
     @ti.kernel
-    def substep_adjust_particle(x: ti.types.ndarray(ndim=1), 
+    def substep_adjust_particle_hash(x: ti.types.ndarray(ndim=1), 
                                 v: ti.types.ndarray(ndim=1),
                                 hash_table: ti.types.ndarray(ndim=4),
                                 segments_count_per_cell: ti.types.ndarray(ndim=3),
@@ -373,7 +373,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
                 Xp = x[p] / dx # Convert the particle's position to grid coordinates
                 base = int(Xp - 0.5) # Calculate the base grid cell index
-                min_d = float('inf')
+                min_dist= ti.Vector([float('inf'), float('inf'), float('inf')])
+                min_seg_idx = -1
+                min_r=0.0
                 # Iterate over all skeleton segments in the base grid cell
                 for i in range(segments_count_per_cell[base]):
                     seg_idx = hash_table[base, i]
@@ -385,13 +387,48 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         dist = result.distance
                         r = result.b
                         # Check if the particle is within the capsule radius of the segment and closer than previous segments
-                        if dist.norm() < skeleton_capsule_radius[seg_idx] and dist.norm() < min_d:
-                            # Adjust the particle's position to be outside the capsule radius
-                            x[p] = x[p] + dist.normalized() * (skeleton_capsule_radius[seg_idx] - dist.norm())
-                            # Update the particle's velocity to match the segment's velocity (with interpolation)
-                            v[p] = skeleton_velocities[seg_idx, 0] * (1-r) + skeleton_velocities[seg_idx, 1] * r
-                            min_d = dist.norm() # Update the minimum distance
+                        if dist.norm() < skeleton_capsule_radius[seg_idx] and dist.norm() < min_dist.norm():
+                            min_seg_idx = seg_idx
+                            min_dist = dist # Update the minimum distance
+                            min_r = r
+                if min_seg_idx != -1:
+                    # Adjust the particle's position to be outside the capsule radius
+                    x[p] = x[p] + min_dist.normalized() * (skeleton_capsule_radius[min_seg_idx] - min_dist.norm())
+                    # Update the particle's velocity to match the segment's velocity (with interpolation)
+                    v[p] = skeleton_velocities[min_seg_idx, 0] * (1-min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
     
+    @ti.kernel
+    def substep_adjust_particle(x: ti.types.ndarray(ndim=1), 
+                                v: ti.types.ndarray(ndim=1),
+                                skeleton_capsule_radius: ti.types.ndarray(ndim=1),
+                                skeleton_velocities: ti.types.ndarray(ndim=2),
+                                skeleton_segments: ti.types.ndarray(ndim=2),
+                                min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
+        # Iterate over all particles
+        for p in x:
+            # Check if the current position is within the specified bounding box
+            if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
+                min_dist= ti.Vector([float('inf'), float('inf'), float('inf')])
+                min_r = 0.0
+                min_seg_idx = -1
+                # Iterate over all skeleton segments
+                for i in range(skeleton_capsule_radius.shape[0]):
+                    start = skeleton_segments[i, 0]
+                    end = skeleton_segments[i, 1]
+                    # Calculate the distance from the particle to the skeleton segment
+                    result = calculate_point_segment_distance(x[p], start, end)
+                    dist = result.distance
+                    r = result.b
+                    # Check if the particle is within the capsule radius of the segment and closer than previous segments
+                    if dist.norm() < skeleton_capsule_radius[i] and dist.norm() < min_dist.norm():
+                        min_seg_idx = i
+                        min_r = r
+                        min_dist = dist # Update the minimum distance
+                if min_seg_idx != -1:
+                    # Adjust the particle's position to be outside the capsule radius
+                    x[p] = x[p] + min_dist.normalized() * (skeleton_capsule_radius[min_seg_idx] - min_dist.norm())
+                    # Update the particle's velocity to match the segment's velocity (with interpolation)
+                    v[p] = skeleton_velocities[min_seg_idx, 0] * (1-min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
     @ti.kernel
     def substep_apply_Drucker_Prager_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),lambda_0:ti.f32,mu_0:ti.f32,alpha:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for p in dg:
@@ -759,8 +796,13 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     grid_v = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
     sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
-    obstacle_pos = ti.Vector.ndarray(3, ti.f32, shape=(1))
     obstacle_velocities = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
+
+    # block_size = 8
+    # root= ti.root.pointer(ti.ijk, (n_grid // block_size, n_grid // block_size, n_grid // block_size))
+    # root.dense(ti.ijk, (block_size, block_size, block_size)).place(grid_v, grid_m, sdf, obstacle_velocities,hand_sdf, obstacle_normals)
+
+    obstacle_pos = ti.Vector.ndarray(3, ti.f32, shape=(1))
     obstacle_pos[0] = ti.Vector([0.25, 0.25, 0.25])
     obstacle_radius = ti.ndarray(ti.f32, shape=(1))
     max_speed = ti.ndarray(ti.f32, shape=(1))
@@ -814,7 +856,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_update_grid_v(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=1)
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_adjust_particle(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_adjust_particle_hash(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_adjust_particle(x, v,skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_Von_Mises_plasticity(dg,x, mu_0, _SigY, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_clamp_plasticity(dg, x,_min_clamp,_max_clamp, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_Drucker_Prager_plasticity(dg, x,lambda_0, mu_0, _alpha, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -847,7 +890,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius})
         mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
         mod.add_kernel(substep_calculate_hand_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
-        mod.add_kernel(substep_adjust_particle, template_args={'x': x, 'v': v, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'skeleton_capsule_radius': skeleton_capsule_radius, 'skeleton_velocities': skeleton_velocities, 'skeleton_segments': skeleton_segments})
+        mod.add_kernel(substep_adjust_particle_hash, template_args={'x': x, 'v': v, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'skeleton_capsule_radius': skeleton_capsule_radius, 'skeleton_velocities': skeleton_velocities, 'skeleton_segments': skeleton_segments})
+        mod.add_kernel(substep_adjust_particle, template_args={'x': x, 'v': v, 'skeleton_capsule_radius': skeleton_capsule_radius, 'skeleton_velocities': skeleton_velocities, 'skeleton_segments': skeleton_segments})
 
         # Gaussian kernel functions
         mod.add_kernel(init_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'other_data': other_data})
@@ -861,7 +905,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(copy_array_1dim3, template_args={'src': x, 'dst': x}) 
         mod.add_kernel(copy_array_1dim1I,template_args={'src': material, 'dst': material})
         
-        mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part.kernel.tcm")
+        mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part1.kernel.tcm")
         print("AOT done")
         
     if run:

@@ -1,5 +1,6 @@
 import taichi as ti
 import numpy as np
+import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--arch", type=str, default='vulkan')
