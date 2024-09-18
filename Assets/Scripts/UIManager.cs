@@ -292,7 +292,7 @@ class UIManager : MonoBehaviour
             }
             if (parameter.name == "Parameter_nGrid")
             {
-                mpm3DSimulation.SetGridSize((int)parameter.GetComponentInChildren<Slider>().value);
+                mpm3DSimulation.SetSimulateGridSize((int)parameter.GetComponentInChildren<Slider>().value);
             }
             if (parameter.name == "Parameter_ParticlePerGrid")
             {

@@ -100,7 +100,7 @@ MonoBehaviour:
   _gridScale: 0.015625
   _triangleBudget: 1048576
   _builderCompute: {fileID: 7200000, guid: 9f19ed91e8aa34430ac0ea80fb20eead, type: 3}
-  TargetValue: 0.4
+  TargetValue: 0.1
   shouldUpdate: 0
 --- !u!1 &4961557796543792293
 GameObject:
@@ -412,6 +412,7 @@ MonoBehaviour:
   gy: 0
   n_grid: 64
   bound: 3
+  render_n_grid: 64
   bounding_eps: 0.1
   max_dt: 0.0001
   frame_time: 0.001

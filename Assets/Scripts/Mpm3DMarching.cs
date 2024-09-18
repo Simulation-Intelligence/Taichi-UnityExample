@@ -124,7 +124,7 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private float gy;
     [SerializeField]
-    public int n_grid = 32, bound = 3;
+    public int n_grid = 64, bound = 3,render_n_grid = 64;
 
     [SerializeField]
     private float bounding_eps = 0.1f;
@@ -383,10 +383,10 @@ public class Mpm3DMarching : MonoBehaviour
     {
         _p_vol = dx * dx * dx / particle_per_grid;
         _p_mass = _p_vol * p_rho;
-        max_density = particle_per_grid * _p_mass;
+        max_density = particle_per_grid * _p_mass*n_grid*n_grid*n_grid/render_n_grid/render_n_grid/render_n_grid;
 
-        marchingCubeVisualizers[0]._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
-        marchingCubeVisualizers[0]._gridScale = dx;
+        marchingCubeVisualizers[0]._dimensions = new Vector3Int(render_n_grid, render_n_grid, render_n_grid);
+        marchingCubeVisualizers[0]._gridScale = 1.0f / render_n_grid;
 
         marchingCubeVisualizers[0].Init();
     }
@@ -436,7 +436,7 @@ public class Mpm3DMarching : MonoBehaviour
         v_allowed = allowed_cfl * dx / max_dt;
         _p_vol = dx * dx * dx / particle_per_grid;
         _p_mass = _p_vol * p_rho;
-        max_density = particle_per_grid * _p_mass;
+        max_density = particle_per_grid * _p_mass*n_grid*n_grid*n_grid/render_n_grid/render_n_grid/render_n_grid;
         sin_phi = Mathf.Sin(friction_angle * Mathf.Deg2Rad);
         _alpha = Mathf.Sqrt(2.0f / 3.0f) * 2 * sin_phi / (3 - sin_phi);
 
@@ -796,16 +796,16 @@ public class Mpm3DMarching : MonoBehaviour
             {
                 if (child.TryGetComponent<MarchingCubeVisualizer>(out var m))
                 {
-                    m._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
-                    m._gridScale = dx;
+                    m._dimensions = new Vector3Int(render_n_grid, render_n_grid, render_n_grid);
+                    m._gridScale = (float)1.0/ render_n_grid;
                     m.Init();
                     marchingCubeVisualizers = marchingCubeVisualizers.Concat(new MarchingCubeVisualizer[] { m }).ToArray();
                     child.SetParent(transform, false);
                 }
             }
         }
-        marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, n_grid, n_grid, n_grid).Build();
-        marching_m_computeBuffer = new ComputeBuffer(n_grid * n_grid * n_grid * marchingCubeVisualizers.Length, sizeof(float));
+        marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, render_n_grid, render_n_grid, render_n_grid).Build();
+        marching_m_computeBuffer = new ComputeBuffer(render_n_grid * render_n_grid * render_n_grid * marchingCubeVisualizers.Length, sizeof(float));
     }
     private void MergeParticles(Mpm3DMarching other)
     {
@@ -903,9 +903,9 @@ public class Mpm3DMarching : MonoBehaviour
         if (totalCapsules > 0)
             hash_table = new NdArrayBuilder<int>().Shape(n_grid, n_grid, n_grid, totalCapsules).Build();
 
-        marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, n_grid, n_grid, n_grid).Build();
+        marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, render_n_grid, render_n_grid, render_n_grid).Build();
 
-        marching_m_computeBuffer = new ComputeBuffer(n_grid * n_grid * n_grid * marchingCubeVisualizers.Length, sizeof(float));
+        marching_m_computeBuffer = new ComputeBuffer(render_n_grid * render_n_grid * render_n_grid * marchingCubeVisualizers.Length, sizeof(float));
     }
     public void DiposeGrid()
     {
@@ -917,12 +917,19 @@ public class Mpm3DMarching : MonoBehaviour
         segments_count_per_cell.Dispose();
         hash_table.Dispose();
     }
-    public void SetGridSize(int n)
+    public void SetSimulateGridSize(int n)
     {
-        particle_per_grid = particle_per_grid * (n_grid * n_grid * n_grid) / (n * n * n);
-        max_density = particle_per_grid * _p_mass;
         n_grid = n;
         dx = 1.0f / n_grid;
+
+        InitGrid();
+
+    }
+    public void SetRenderGridSize(int n)
+    {
+        particle_per_grid = particle_per_grid * (render_n_grid * render_n_grid * render_n_grid) / (n * n * n);
+        max_density = particle_per_grid * _p_mass;
+        render_n_grid = n;
 
         InitGrid();
 
@@ -930,8 +937,8 @@ public class Mpm3DMarching : MonoBehaviour
         {
             for (int i = 0; i < marchingCubeVisualizers.Length; i++)
             {
-                marchingCubeVisualizers[i]._dimensions = new Vector3Int(n_grid, n_grid, n_grid);
-                marchingCubeVisualizers[i]._gridScale = dx;
+                marchingCubeVisualizers[i]._dimensions = new Vector3Int(render_n_grid, render_n_grid, render_n_grid);
+                marchingCubeVisualizers[i]._gridScale = (float)1.0 / render_n_grid;
                 marchingCubeVisualizers[i].Init();
             }
         }
@@ -940,25 +947,50 @@ public class Mpm3DMarching : MonoBehaviour
     {
         return n_grid;
     }
+    public int GetRenderGridSize()
+    {
+        return render_n_grid;
+    }
     public void IncreaseGridSize(int num)
     {
         if (n_grid + num >= 150)
         {
             UnityEngine.Debug.LogWarning("Cannot increase grid size anymore.");
-            SetGridSize(150);
+            SetSimulateGridSize(150);
             return;
         }
-        SetGridSize(n_grid + num);
+        SetSimulateGridSize(n_grid + num);
     }
     public void DecreaseGridSize(int num)
     {
         if (n_grid - num <= 50)
         {
             UnityEngine.Debug.LogWarning("Cannot decrease grid size anymore.");
-            SetGridSize(50);
+            SetSimulateGridSize(50);
             return;
         }
-        SetGridSize(n_grid - num);
+        SetSimulateGridSize(n_grid - num);
+    }
+
+    public void IncreaseRenderGridSize(int num)
+    {
+        if (render_n_grid + num >= 200)
+        {
+            UnityEngine.Debug.LogWarning("Cannot increase render grid size anymore.");
+            SetRenderGridSize(200);
+            return;
+        }
+        SetRenderGridSize(render_n_grid + num);
+    }
+    public void DecreaseRenderGridSize(int num)
+    {
+        if (render_n_grid - num <= 50)
+        {
+            UnityEngine.Debug.LogWarning("Cannot decrease render grid size anymore.");
+            SetRenderGridSize(50);
+            return;
+        }
+        SetRenderGridSize(render_n_grid - num);
     }
     public void AdjustTextureColor(Color rgba)
     {
@@ -1047,7 +1079,7 @@ public class Mpm3DMarching : MonoBehaviour
 
             CopyMaterials(other);
             other.Update_materials();
-            other.SetGridSize(other.n_grid);
+            other.SetSimulateGridSize(other.n_grid);
         }
     }
     public void CopyMaterials(Mpm3DMarching other)
