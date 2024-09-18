@@ -605,17 +605,19 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 min_dist = ti.Vector([float('inf'), float('inf'), float('inf')])
                 min_alpha = 0.0
                 min_beta = 0.0
+                isCone = 0
                 for i in range(mat_primitives.shape[0]):
+                    result = None
                     # Determine cone and slab by the radius of the third sphere
                     if mat_primitives_radius[i, 2] == 0.0:
                         # Compute distance from grid node to a Medial Cone
-                        result = compute_sphere_cone_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
+                        compute_sphere_cone_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
                                                      mat_primitives[i, 1], mat_primitives_radius[i, 1],
                                                      pos, 0.0,
                                                      pos, 0.0)
                     else:
                         # Compute distance from grid node to a Medial Slab
-                        result = compute_sphere_slab_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
+                        compute_sphere_slab_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
                                                      mat_primitives[i, 1], mat_primitives_radius[i, 1],
                                                      mat_primitives[i, 2], mat_primitives_radius[i, 2],
                                                      pos, 0.0)
@@ -625,10 +627,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         min_dist = dist
                         min_alpha = alpha
                         min_beta = beta
+                        isCone = mat_primitives_radius[i, 2] == 0.0
                 mat_sdf[I] = min_dist
                 obstacle_normals[I] = min_dist.normalized()
-                # obstacle_velocities[I] = mat_velocities[i, 0] * alpha + mat_velocities[i, 1] * (1 - alpha) # cone, also fits for slab because mat_velocities[i, 2] = 0
-                obstacle_velocities[I] = mat_velocities[i, 0] * alpha + mat_velocities[i, 1] * beta + mat_velocities[i, 2] * (1 - beta) # slab 
+                if (isCone):
+                    # Cone velocity
+                    obstacle_velocities[I] = mat_velocities[i, 0] * min_alpha + mat_velocities[i, 1] * (1 - min_alpha)
+                else:
+                    # Slab velocity
+                    obstacle_velocities[I] = mat_velocities[i, 0] * min_alpha + mat_velocities[i, 1] * min_beta + mat_velocities[i, 2] * (1 - min_alpha - min_beta) 
     
     @ti.kernel
     def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2),

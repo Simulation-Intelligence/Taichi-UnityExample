@@ -384,7 +384,7 @@ def value_of_quadric_surface_2d(x, y, A, B, C, D, E, F):
 def compute_sphere_cone_distance(sphere_centers_0: ti.types.vector(3, ti.f32), sphere_radii_0: ti.f32, 
                                 sphere_centers_1: ti.types.vector(3, ti.f32), sphere_radii_1: ti.f32, 
                                 sphere_centers_2: ti.types.vector(3, ti.f32), sphere_radii_2: ti.f32, 
-                                sphere_centers_3: ti.types.vector(3, ti.f32), sphere_radii_3: ti.f32):
+                                sphere_centers_3: ti.types.vector(3, ti.f32), sphere_radii_3: ti.f32) -> MatDistanceResult:
     # sphere_centers and sphere_radii should contain 4 elements
     # The first 2 elements construct the cone, the last 2 is treated as a grid node
     sC1 = ti.Vector([0.0, 0.0, 0.0])
@@ -491,7 +491,7 @@ def compute_sphere_cone_distance(sphere_centers_0: ti.types.vector(3, ti.f32), s
 def compute_sphere_slab_distance(sphere_centers_0: ti.types.vector(3, ti.f32), sphere_radii_0: ti.f32, 
                                 sphere_centers_1: ti.types.vector(3, ti.f32), sphere_radii_1: ti.f32, 
                                 sphere_centers_2: ti.types.vector(3, ti.f32), sphere_radii_2: ti.f32, 
-                                sphere_centers_3: ti.types.vector(3, ti.f32), sphere_radii_3: ti.f32):
+                                sphere_centers_3: ti.types.vector(3, ti.f32), sphere_radii_3: ti.f32) -> MatDistanceResult:
     # sphere_centers and sphere_radii should contain 4 elements
     # The first three sphers compose a slab, and the last one is a sphere
     sC1 = ti.Vector([0.0, 0.0, 0.0])
