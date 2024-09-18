@@ -5,6 +5,7 @@ import taichi as ti
 from math import pi
 
 from mpm_util import *
+from medial_distance import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--arch", type=str, default='vulkan')
@@ -605,37 +606,34 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 min_dist = ti.Vector([float('inf'), float('inf'), float('inf')])
                 min_alpha = 0.0
                 min_beta = 0.0
-                isCone = 0
                 for i in range(mat_primitives.shape[0]):
-                    result = None
+                    dist = ti.Vector([0.0, 0.0, 0.0])
+                    alpha, beta = 0.0, 0.0
                     # Determine cone and slab by the radius of the third sphere
                     if mat_primitives_radius[i, 2] == 0.0:
                         # Compute distance from grid node to a Medial Cone
-                        compute_sphere_cone_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
+                        dist, alpha, beta = compute_point_cone_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
                                                      mat_primitives[i, 1], mat_primitives_radius[i, 1],
                                                      pos, 0.0,
                                                      pos, 0.0)
                     else:
                         # Compute distance from grid node to a Medial Slab
-                        compute_sphere_slab_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
+                        dist, alpha, beta = compute_point_slab_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
                                                      mat_primitives[i, 1], mat_primitives_radius[i, 1],
                                                      mat_primitives[i, 2], mat_primitives_radius[i, 2],
                                                      pos, 0.0)
-                    dist = result.distance
-                    alpha, beta = result.alpha, result.beta
                     if dist.norm() < min_dist.norm():
                         min_dist = dist
                         min_alpha = alpha
                         min_beta = beta
-                        isCone = mat_primitives_radius[i, 2] == 0.0
-                mat_sdf[I] = min_dist
+                        if mat_primitives_radius[i, 2] == 0.0:
+                            # Cone velocity
+                            obstacle_velocities[I] = mat_velocities[i, 0] * min_alpha + mat_velocities[i, 1] * (1 - min_alpha)
+                        else:
+                            # slab velocity
+                            obstacle_velocities[I] = mat_velocities[i, 0] * min_alpha + mat_velocities[i, 1] * min_beta + mat_velocities[i, 2] * (1 - min_alpha - min_beta) 
+                mat_sdf[I] = min_dist.norm()
                 obstacle_normals[I] = min_dist.normalized()
-                if (isCone):
-                    # Cone velocity
-                    obstacle_velocities[I] = mat_velocities[i, 0] * min_alpha + mat_velocities[i, 1] * (1 - min_alpha)
-                else:
-                    # Slab velocity
-                    obstacle_velocities[I] = mat_velocities[i, 0] * min_alpha + mat_velocities[i, 1] * min_beta + mat_velocities[i, 2] * (1 - min_alpha - min_beta) 
     
     @ti.kernel
     def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2),
@@ -880,7 +878,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     # block_size = 8
     # root= ti.root.pointer(ti.ijk, (n_grid // block_size, n_grid // block_size, n_grid // block_size))
     # root.dense(ti.ijk, (block_size, block_size, block_size)).place(grid_v, grid_m, sdf, obstacle_velocities,hand_sdf, obstacle_normals)
-
+    
     obstacle_pos = ti.Vector.ndarray(3, ti.f32, shape=(1))
     obstacle_pos[0] = ti.Vector([0.25, 0.25, 0.25])
     obstacle_radius = ti.ndarray(ti.f32, shape=(1))
@@ -945,7 +943,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_get_max_speed(v,x, max_speed, min_x, max_x, min_y, max_y, min_z, max_z)
         normalize_m(marching_m,max_m)
 
-        substep_calculate_mat_sdf(mat_primitives, mat_primitives_radius, mat_velocities, mat_sdf, obstacle_normals, obstacle_velocities, dx, min_x, max_x, min_y, max_y, min_z, max_z)
+        # substep_calculate_mat_sdf(mat_primitives, mat_primitives_radius, mat_velocities, mat_sdf, obstacle_normals, obstacle_velocities, dx, min_x, max_x, min_y, max_y, min_z, max_z)
     
     def run_aot():
         mod = ti.aot.Module(arch)
@@ -990,8 +988,17 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part1.kernel.tcm")
         print("AOT done")
-        
+    
     if run:
+        # filepath = "./scripts/data/insect.ma"
+        # vcount, fcount, ecount, verts, radii, faces, edges = load_mat_file(filepath)
+        # mat_primitives_list, mat_primitives_radius_list = generate_medial_primitives(filepath, vcount, fcount, ecount, verts, radii, faces, edges)
+        # for i in range(60):
+        #     for j in range(3):
+        #         mat_primitives[i, j] = ti.Vector(mat_primitives_list[i][j])
+        #         mat_primitives_radius[i, j] = mat_primitives_radius_list[i][j]
+        # substep_calculate_mat_sdf(mat_primitives, mat_primitives_radius, mat_velocities, mat_sdf, obstacle_normals, obstacle_velocities, dx, min_x, max_x, min_y, max_y, min_z, max_z)
+        
         gui = ti.GUI('MPM3D', res=(800, 800))
         init_particles(x, v, dg, cube_size)
         init_sphere(x, dg, cube_size)
@@ -1004,8 +1011,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             for i in range(50):
                 substep()
             substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
-            # gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
-            # gui.show()
+            gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
+            gui.show()
     # run_aot()
     
 if __name__ == "__main__":

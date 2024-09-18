@@ -419,7 +419,6 @@ sphere_radii[3] = 0.5
 # Load medial mesh data (.ma file)
 filepath = "./scripts/data/insect.ma"
 vcount, fcount, ecount, verts, radii, faces, edges = load_mat_file(filepath)
-# print(vcount, fcount, ecount)
 mat_primitives, mat_primitives_radius = generate_medial_primitives(filepath, vcount, fcount, ecount, verts, radii, faces, edges)
 # print(len(mat_primitives))
 # print(len(mat_primitives_radius))
@@ -429,20 +428,20 @@ mat_primitives, mat_primitives_radius = generate_medial_primitives(filepath, vco
 # save_mat_data("./scripts/data/", "insect", mat_primitives, mat_primitives_radius)
 
 
-pos = ti.Vector([0.0, 0.0, 0.0])
-for i in range(len(mat_primitives)):
-    # Determine cone and slab by the radius of the third sphere
-    if mat_primitives_radius[i][2] == 0.0:
-        # Compute distance from grid node to cone
-        print("dist to cone: ", i)
-        compute_sphere_cone_distance(mat_primitives[i][0], mat_primitives_radius[i][0],
-                                        mat_primitives[i][1], mat_primitives_radius[i][1],
-                                        pos, 0.0,
-                                        pos, 0.0)
-    else:
-        # Compute distance from grid node to slab
-        print("dist to slab: ", i)
-        compute_sphere_slab_distance(mat_primitives[i][0], mat_primitives_radius[i][0],
-                                        mat_primitives[i][1], mat_primitives_radius[i][1],
-                                        mat_primitives[i][2], mat_primitives_radius[i][2],
-                                        pos, 0.0)
+# pos = ti.Vector([0.0, 0.0, 0.0])
+# for i in range(len(mat_primitives)):
+#     # Determine cone and slab by the radius of the third sphere
+#     if mat_primitives_radius[i][2] == 0.0:
+#         # Compute distance from grid node to cone
+#         print("dist to cone: ", i)
+#         compute_sphere_cone_distance(mat_primitives[i][0], mat_primitives_radius[i][0],
+#                                         mat_primitives[i][1], mat_primitives_radius[i][1],
+#                                         pos, 0.0,
+#                                         pos, 0.0)
+#     else:
+#         # Compute distance from grid node to slab
+#         print("dist to slab: ", i)
+#         compute_sphere_slab_distance(mat_primitives[i][0], mat_primitives_radius[i][0],
+#                                         mat_primitives[i][1], mat_primitives_radius[i][1],
+#                                         mat_primitives[i][2], mat_primitives_radius[i][2],
+#                                         pos, 0.0)
