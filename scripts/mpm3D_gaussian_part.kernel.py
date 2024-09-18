@@ -501,6 +501,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
     @ti.kernel
     def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cube_size:ti.f32):
+        # Init a cube
         for i in range(x.shape[0]):
             x[i] = [ti.random() * cube_size + (0.5-cube_size/2), ti.random() * cube_size+ (0.5-cube_size/2), ti.random() * cube_size+(0.5-cube_size/2)]
             dg[i] = ti.Matrix.identity(float, dim)
@@ -548,13 +549,14 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             dg[i] = ti.Matrix.identity(float, dim)
     
     @ti.kernel
-    def substep_get_max_speed(v: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),max_speed: ti.types.ndarray(ndim=1),min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+    def substep_get_max_speed(v: ti.types.ndarray(ndim=1), x: ti.types.ndarray(ndim=1), max_speed: ti.types.ndarray(ndim=1),
+                              min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for I in ti.grouped(v):
-            if(x[I][0]>min_x and x[I][0]<max_x and x[I][1]>min_y and x[I][1]<max_y and x[I][2]>min_z and x[I][2]<max_z):
+            if(x[I][0] > min_x and x[I][0] < max_x and x[I][1] > min_y and x[I][1] < max_y and x[I][2] > min_z and x[I][2] < max_z):
                 max_speed[0] = ti.atomic_max(max_speed[0], v[I].norm())
     
     @ti.kernel
-    def normalize_m(marching_m: ti.types.ndarray(ndim=4),max_m:ti.f32):
+    def normalize_m(marching_m: ti.types.ndarray(ndim=4), max_m: ti.f32):
         for I in ti.grouped(marching_m):
             marching_m[I] /= max_m
     
@@ -562,12 +564,27 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def substep_fix_object(grid_v: ti.types.ndarray(ndim=3),
                            fix_center_x: ti.f32, fix_center_y: ti.f32, fix_center_z: ti.f32, 
                            fix_range: ti.f32):
+        # Fix the object in place by setting the velocity to zero within the specified range
         dx = 1 / grid_v.shape[0]
         for I in ti.grouped(grid_v):
             pos = I * dx + dx * 0.5
             dist_to_center = (pos - ti.Vector([fix_center_x, fix_center_y, fix_center_z])).norm()
             if dist_to_center < fix_range:
                 grid_v[I] = ti.Vector([0.0, 0.0, 0.0])
+    
+    @ti.kernel
+    def substep_calculate_mat_sdf(mat_primitives: ti.types.ndarray(ndim=2),
+                                  mat_velocities: ti.types.ndarray(ndim=2),
+                                  mat_sdf: ti.types.ndarray(ndim=3),
+                                  obstacle_normals: ti.types.ndarray(ndim=3),
+                                  obstacle_velocities: ti.types.ndarray(ndim=3),
+                                  dx:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+        for I in ti.grouped(mat_sdf):
+            pos = I * dx + dx * 0.5
+            obstacle_velocities[I] = ti.Vector([0.0, 0.0, 0.0])
+            if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
+                min_dist = float('inf') 
+                norm = ti.Vector([0.0, 0.0, 0.0])               
     
     @ti.kernel
     def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2), 
@@ -581,11 +598,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             pos = I * dx + dx * 0.5
             obstacle_velocities[I] = ti.Vector([0.0, 0.0, 0.0])
             # Check if the current position is within the specified bounding box
-            if pos[0]>min_x and pos[0]<max_x and pos[1]>min_y and pos[1]<max_y and pos[2]>min_z and pos[2]<max_z:
+            if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
                 min_dist = float('inf')
-                norm= ti.Vector([0.0, 0.0, 0.0])
+                norm = ti.Vector([0.0, 0.0, 0.0])
                 for i in range(skeleton_segments.shape[0]):
-                    start= skeleton_segments[i, 0]
+                    start = skeleton_segments[i, 0]
                     end = skeleton_segments[i, 1]
                     result = calculate_point_segment_distance(pos, start, end)
                     dist = result.distance # Vector from the segment to the grid point
@@ -669,17 +686,21 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     # region - Gaussian Kernel Functions
     @ti.kernel
-    def init_gaussian_data(init_rotation:ti.types.ndarray(ndim=1),init_scale:ti.types.ndarray(ndim=1),other_data:ti.types.ndarray(ndim=1)):
+    def init_gaussian_data(init_rotation:ti.types.ndarray(ndim=1),
+                           init_scale:ti.types.ndarray(ndim=1),
+                           other_data:ti.types.ndarray(ndim=1)):
         for i in other_data:
-            init_rotation[i] = DecodeRotation(DecodePacked_10_10_10_2(ti.bit_cast(other_data[i][0],ti.u32)))
+            init_rotation[i] = DecodeRotation(DecodePacked_10_10_10_2(ti.bit_cast(other_data[i][0], ti.u32)))
             init_scale[i] = ti.Vector([other_data[i][1], other_data[i][2], other_data[i][3]])
-
+    
     @ti.kernel
-    def substep_update_gaussian_data(init_rotation:ti.types.ndarray(ndim=1),init_scale:ti.types.ndarray(ndim=1),dg:ti.types.ndarray(ndim=1),
-                                     other_data:ti.types.ndarray(ndim=1),init_sh:ti.types.ndarray(ndim=1),sh:ti.types.ndarray(ndim=1),x:ti.types.ndarray(ndim=1),
-                                        min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+    def substep_update_gaussian_data(init_rotation: ti.types.ndarray(ndim=1), init_scale: ti.types.ndarray(ndim=1),
+                                     dg: ti.types.ndarray(ndim=1),
+                                     other_data: ti.types.ndarray(ndim=1), init_sh:ti.types.ndarray(ndim=1), sh:ti.types.ndarray(ndim=1),
+                                     x:ti.types.ndarray(ndim=1),
+                                     min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for i in dg:
-            if(x[i][0]>min_x and x[i][0]<max_x and x[i][1]>min_y and x[i][1]<max_y and x[i][2]>min_z and x[i][2]<max_z):
+            if(x[i][0] > min_x and x[i][0] < max_x and x[i][1] > min_y and x[i][1] < max_y and x[i][2] > min_z and x[i][2] < max_z):
                 dg_matrix = dg[i]
                 # SVD 分解 dg_matrix = U * Sigma * V^T
                 U, sig, V = ti.svd(dg_matrix)
@@ -694,17 +715,19 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 rot = quaternion_multiply(rot, q_init)
     
                 # 用 S 作用在 init_scale 上
-                scale =S @ init_scale[i]
+                scale = S @ init_scale[i]
     
                 # 编码 rot 并填入 other_data
                 packed_rot = PackSmallest3Rotation(rot)
                 encoded_rot = EncodeQuatToNorm10(packed_rot)
+                # other_data containts scale and rotation
                 other_data[i][0] = ti.bit_cast(encoded_rot, ti.f32)
                 other_data[i][1]  = scale[0]
                 other_data[i][2]  = scale[1]
                 other_data[i][3]  = scale[2]
 
-                sh[i]=RotateSH(R,init_sh[i])
+                # Rotate spherical harmonics
+                sh[i] = RotateSH(R,init_sh[i])
 
     @ti.kernel
     def scale_to_unit_cube(x: ti.types.ndarray(ndim=1), other_data: ti.types.ndarray(ndim=1), eps:ti.f32):
@@ -778,8 +801,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             x1[i + n2] = multiply_point(mat3, x3[i])
     # endregion
 
+    # Medial Axis Transform (MAT) for Shape Appreximation
+    mat_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
+    mat_sphere_centers = ti.Vector.ndarray(3, ti.f32, shape=(99))
 
-    # Hand sdf
+    # Data
     hand_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
     obstacle_normals = ti.Vector.ndarray(3, ti.f32, shape=(n_grid, n_grid, n_grid))
     skeleton_segments = ti.Vector.ndarray(3, ti.f32, shape=(24, 2))

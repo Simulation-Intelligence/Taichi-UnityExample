@@ -1,3 +1,4 @@
+from distutils.command.build_scripts import first_line_re
 import taichi as ti
 import numpy as np
 
@@ -268,13 +269,126 @@ def compute_sphere_slab_distance(sphere_centers: ti.types.ndarray(ndim=1),
     normal = dir.normalized()
     print(distance, normal)
 
+def unique_everseen(iterable, key=None):
+    "List unique elements, preserving order. Remember all elements ever seen."
+    # unique_everseen('AAAABBBCCDAABBB') --> A B C D
+    # unique_everseen('ABBCcAD', str.lower) --> A B C D
+    seen = set()
+    seen_add = seen.add
+    if key is None:
+        for element in filterfalse(seen.__contains__, iterable):
+            seen_add(element)
+            yield element
+    else:
+        for element in iterable:
+            k = key(element)
+            if k not in seen:
+                seen_add(k)
+                yield element
+
+def load_mat_file(filepath):
+    file = open(filepath, 'r')
+    # read first line number of vertices/edges/faces
+    first_line = file.readline().rstrip()
+    vcount, ecount, fcount = [int(x) for x in first_line.split()]
+    # No Medial Vertices
+    assert vcount != 0, "No Medial Vertices!"
+    # line number
+    lineno = 1
+
+    # Medial Mesh Info
+    verts, radii, faces, edges = [], [], [], []
+
+    # read vertices
+    i = 0
+    while i < vcount:
+        line = file.readline()
+        # skip empty lines or comment lines
+        if line.isspace() or line[0] == '#':
+            lineno += 1
+            continue
+        v = line.split()
+        # Handle exception
+        assert v[0] == 'v', "vertex line: " + str(lineno) + " should start with \'v\'!"
+        x = float(v[1])
+        y = float(v[2])
+        z = float(v[3])
+        radii.append(float(v[4]))
+        verts.append((x, y, z))
+        lineno += 1
+        i += 1
+
+    # read edges
+    i = 0
+    while i < ecount:
+        line = file.readline()
+        if line.isspace() or line[0] == '#':
+            lineno += 1
+            continue
+        ef = line.split()
+        # Handle exception
+        assert ef[0] == 'e', "line:" + str(lineno) + " should start with \'e\'!"
+        ids = list(map(int, ef[1:3]))
+        edges.append(tuple(ids))
+        lineno += 1
+        i += 1
+
+    # read faces
+    i = 0
+    while i < fcount:
+        line = file.readline()
+        if line.isspace() or line[0] == '#':
+            lineno += 1
+            continue
+        ef = line.split()
+        # Handle exception
+        assert ef[0] == 'f', "line:" + str(lineno) + " should start with \'f\'!"
+        f = tuple(list(map(int, ef[1:4])))
+        faces.append(f)
+        edges.append(f[:2])
+        edges.append(f[1:3])
+        edges.append((f[0], f[2]))
+        lineno += 1
+        i += 1
+
+    unique_edges = list(unique_everseen(edges, key=frozenset))
+    return vcount, fcount, ecount, verts, radii, faces, unique_edges
+
+def generate_medial_primitives(vcount, fcount, ecount, verts, radii, faces, edges):
+    # Store the medial primitives into this list
+    mat_primitives = []
+    # Generating medial cones, not geometrically, only for storing the data
+    for e in edges:
+        sphere_centers_1 = np.array(verts[e[0]])
+        sphere_radii_1 = radii[e[0]]
+        sphere_centers_2 = np.array(verts[e[1]])
+        sphere_radii_2 = radii[e[1]]
+        mat_primitives.append((sphere_centers_1, sphere_radii_1, sphere_centers_2, sphere_radii_2))
+    # Generating medial slabs, not geometrically, only for storing the data
+    for f in faces:
+        sphere_centers_1 = np.array(verts[f[0]])
+        sphere_radii_1 = radii[f[0]]
+        sphere_centers_2 = np.array(verts[f[1]])
+        sphere_radii_2 = radii[f[1]]
+        sphere_centers_3 = np.array(verts[f[2]])
+        sphere_radii_3 = radii[f[2]]
+        mat_primitives.append((sphere_centers_1, sphere_radii_1, sphere_centers_2, sphere_radii_2, sphere_centers_3, sphere_radii_3))
+    return mat_primitives
 
 sphere_centers = ti.Vector.ndarray(3, ti.f32, shape=(4,))
 sphere_radii = ti.ndarray(ti.f32, shape=(4,))
 alpha = ti.ndarray(ti.f32, shape=(1,))
 beta = ti.ndarray(ti.f32, shape=(1,))
 
-# test
-initialize_medial_spheres()
-compute_sphere_cone_distance(sphere_centers, sphere_radii, alpha, beta)
-compute_sphere_slab_distance(sphere_centers, sphere_radii, alpha, beta)
+# test: distance detection between sphere to cone & slab
+# initialize_medial_spheres()
+# compute_sphere_cone_distance(sphere_centers, sphere_radii, alpha, beta)
+# compute_sphere_slab_distance(sphere_centers, sphere_radii, alpha, beta)
+
+# test: load medial mesh data (.ma file)
+filepath = "./scripts/data/bug.ma"
+vcount, fcount, ecount, verts, radii, faces, edges = load_mat_file(filepath)
+print(vcount, fcount, ecount)
+mat_primitives = generate_medial_primitives(vcount, fcount, ecount, verts, radii, faces, edges)
+print(len(mat_primitives))
+# print(mat_primitives)
