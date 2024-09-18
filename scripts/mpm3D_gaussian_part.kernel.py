@@ -217,7 +217,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     grid_v[base + offset] += weight * (p_mass[p] * v[p] + affine @ dpos)
                     grid_m[base + offset] += weight * p_mass[p]
 
-    
     @ti.kernel
     def substep_p2marching(x: ti.types.ndarray(ndim=1),
                     point_color: ti.types.ndarray(ndim=1), marching_m: ti.types.ndarray(ndim=4),
@@ -236,6 +235,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     for i in ti.static(range(dim)):
                         weight *= w_marching[offset[i]][i]
                     marching_m[color,base_marching + offset] += weight * p_mass[p]
+    
     @ti.kernel
     def substep_apply_plasticity(dg: ti.types.ndarray(ndim=1), x: ti.types.ndarray(ndim=1), 
                                  E: ti.types.ndarray(ndim=1), nu: ti.types.ndarray(ndim=1), 
@@ -390,9 +390,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
                 Xp = x[p] / dx # Convert the particle's position to grid coordinates
                 base = int(Xp - 0.5) # Calculate the base grid cell index
-                min_dist= ti.Vector([float('inf'), float('inf'), float('inf')])
+                min_dist = ti.Vector([float('inf'), float('inf'), float('inf')])
                 min_seg_idx = -1
-                min_r=0.0
+                min_r = 0.0
                 # Iterate over all skeleton segments in the base grid cell
                 for i in range(segments_count_per_cell[base]):
                     seg_idx = hash_table[base, i]
@@ -412,7 +412,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     # Adjust the particle's position to be outside the capsule radius
                     x[p] = x[p] + min_dist.normalized() * (skeleton_capsule_radius[min_seg_idx] - min_dist.norm())
                     # Update the particle's velocity to match the segment's velocity (with interpolation)
-                    v[p] = skeleton_velocities[min_seg_idx, 0] * (1-min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
+                    v[p] = skeleton_velocities[min_seg_idx, 0] * (1 - min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
     
     @ti.kernel
     def substep_adjust_particle(x: ti.types.ndarray(ndim=1), 
@@ -425,7 +425,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         for p in x:
             # Check if the current position is within the specified bounding box
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
-                min_dist= ti.Vector([float('inf'), float('inf'), float('inf')])
+                min_dist = ti.Vector([float('inf'), float('inf'), float('inf')])
                 min_r = 0.0
                 min_seg_idx = -1
                 # Iterate over all skeleton segments
@@ -445,7 +445,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     # Adjust the particle's position to be outside the capsule radius
                     x[p] = x[p] + min_dist.normalized() * (skeleton_capsule_radius[min_seg_idx] - min_dist.norm())
                     # Update the particle's velocity to match the segment's velocity (with interpolation)
-                    v[p] = skeleton_velocities[min_seg_idx, 0] * (1-min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
+                    v[p] = skeleton_velocities[min_seg_idx, 0] * (1 - min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
+    
     @ti.kernel
     def substep_apply_Drucker_Prager_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),lambda_0:ti.f32,mu_0:ti.f32,alpha:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for p in dg:
@@ -601,8 +602,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             pos = I * dx + dx * 0.5
             obstacle_velocities[I] = ti.Vector([0.0, 0.0, 0.0])
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
-                min_dist = float('inf') 
-                norm = ti.Vector([0.0, 0.0, 0.0])
+                min_dist = ti.Vector([float('inf'), float('inf'), float('inf')])
+                min_alpha = 0.0
+                min_beta = 0.0
                 for i in range(mat_primitives.shape[0]):
                     # Determine cone and slab by the radius of the third sphere
                     if mat_primitives_radius[i, 2] == 0.0:
@@ -618,15 +620,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                                                      mat_primitives[i, 2], mat_primitives_radius[i, 2],
                                                      pos, 0.0)
                     dist = result.distance
-                    distance = dist.norm()
                     alpha, beta = result.alpha, result.beta
-                    if distance < min_dist:
-                        min_dist = distance
-                        norm = dist.normalized()
-                        # obstacle_velocities[I] = mat_velocities[i, 0] * alpha + mat_velocities[i, 1] * (1 - alpha) # cone, also fits for slab because mat_velocities[i, 2] = 0
-                        obstacle_velocities[I] = mat_velocities[i, 0] * alpha + mat_velocities[i, 1] * beta + mat_velocities[i, 2] * (1 - beta) # slab
+                    if dist.norm() < min_dist.norm():
+                        min_dist = dist
+                        min_alpha = alpha
+                        min_beta = beta
                 mat_sdf[I] = min_dist
-                obstacle_normals[I] = norm
+                obstacle_normals[I] = min_dist.normalized()
+                # obstacle_velocities[I] = mat_velocities[i, 0] * alpha + mat_velocities[i, 1] * (1 - alpha) # cone, also fits for slab because mat_velocities[i, 2] = 0
+                obstacle_velocities[I] = mat_velocities[i, 0] * alpha + mat_velocities[i, 1] * beta + mat_velocities[i, 2] * (1 - beta) # slab 
     
     @ti.kernel
     def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2),
