@@ -943,7 +943,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_get_max_speed(v,x, max_speed, min_x, max_x, min_y, max_y, min_z, max_z)
         normalize_m(marching_m,max_m)
 
-        # substep_calculate_mat_sdf(mat_primitives, mat_primitives_radius, mat_velocities, mat_sdf, obstacle_normals, obstacle_velocities, dx, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_calculate_mat_sdf(mat_primitives, mat_primitives_radius, mat_velocities, mat_sdf, obstacle_normals, obstacle_velocities, dx, min_x, max_x, min_y, max_y, min_z, max_z)
     
     def run_aot():
         mod = ti.aot.Module(arch)
@@ -1013,7 +1013,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    # run_aot()
+    run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph
