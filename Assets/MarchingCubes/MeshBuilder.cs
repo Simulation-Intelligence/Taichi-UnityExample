@@ -50,10 +50,18 @@ sealed class MeshBuilder : System.IDisposable
 
     void RunCompute(ComputeBuffer voxels, float target, float scale)
     {
-        _counterBuffer.SetCounterValue(0);
+        _vertexCounterBuffer.SetCounterValue(0);
+        _triangleCounterBuffer.SetCounterValue(0);
+
+        //initialize vertex mapping buffer
+        int kernelInitVertexMapping = _compute.FindKernel("InitVertexMapping");
+        _compute.SetBuffer(kernelInitVertexMapping, "VertexMapping", _vertexMappingBuffer);
+        _compute.SetBuffer(kernelInitVertexMapping, "NeighborCount", _neighborCountBuffer);
+        _compute.DispatchThreads(kernelInitVertexMapping, _triangleBudget*3, 1, 1);
 
         // Isosurface reconstruction
         _compute.SetInts("Dims", _grids);
+        _compute.SetInt("MaxNeighbors", MaxNeighbors);
         _compute.SetInt("MaxTriangle", _triangleBudget);
         _compute.SetFloat("Scale", scale);
         _compute.SetFloat("Isovalue", target);
@@ -61,18 +69,41 @@ sealed class MeshBuilder : System.IDisposable
         _compute.SetBuffer(0, "Voxels", voxels);
         _compute.SetBuffer(0, "VertexBuffer", _vertexBuffer);
         _compute.SetBuffer(0, "IndexBuffer", _indexBuffer);
-        _compute.SetBuffer(0, "Counter", _counterBuffer);
+        _compute.SetBuffer(0, "VertexCounter", _vertexCounterBuffer);
+        _compute.SetBuffer(0, "TriangleCounter", _triangleCounterBuffer);
+        _compute.SetBuffer(0, "VertexMapping", _vertexMappingBuffer);
+        _compute.SetBuffer(0, "AdjacencyList", _adjacencyListBuffer);
+        _compute.SetBuffer(0, "NeighborCount", _neighborCountBuffer);
         _compute.DispatchThreads(0, _grids);
 
         // Clear unused area of the buffers.
         _compute.SetBuffer(1, "VertexBuffer", _vertexBuffer);
         _compute.SetBuffer(1, "IndexBuffer", _indexBuffer);
-        _compute.SetBuffer(1, "Counter", _counterBuffer);
+        _compute.SetBuffer(1, "VertexCounter", _vertexCounterBuffer);
         _compute.DispatchThreads(1, 1024, 1, 1);
+        _compute.SetBuffer(2, "IndexBuffer", _indexBuffer);
+        _compute.SetBuffer(2, "TriangleCounter", _triangleCounterBuffer);
+        _compute.DispatchThreads(2, 1024, 1, 1);
+
+        // Laplacian smoothing
+        LaplacianSmoothing(1);
 
         // Bounding box
         var ext = new Vector3(_grids.x, _grids.y, _grids.z) * scale;
         _mesh.bounds = new Bounds(Vector3.zero, ext);
+
+        _neighborCountBuffer.GetData(hostneighborCountBuffer);
+    }
+
+    void LaplacianSmoothing(int iterations)
+    {
+        int kernel = _compute.FindKernel("LaplacianSmoothing");
+        _compute.SetBuffer(kernel, "VertexBuffer", _vertexBuffer);
+        _compute.SetBuffer(kernel, "AdjacencyList", _adjacencyListBuffer);
+        _compute.SetBuffer(kernel, "NeighborCount", _neighborCountBuffer);
+        for (var i = 0; i < iterations; i++)
+            _compute.DispatchThreads(kernel, 3*_triangleBudget,1, 1);
+
     }
 
     #endregion
@@ -80,7 +111,18 @@ sealed class MeshBuilder : System.IDisposable
     #region Compute buffer objects
 
     ComputeBuffer _triangleTable;
-    ComputeBuffer _counterBuffer;
+    ComputeBuffer _vertexCounterBuffer;
+
+    ComputeBuffer _triangleCounterBuffer;
+
+    ComputeBuffer _vertexMappingBuffer;
+
+    ComputeBuffer _adjacencyListBuffer;
+
+    ComputeBuffer _neighborCountBuffer;
+
+    uint[] hostneighborCountBuffer;
+    const int MaxNeighbors=20;
 
     void AllocateBuffers()
     {
@@ -89,13 +131,30 @@ sealed class MeshBuilder : System.IDisposable
         _triangleTable.SetData(PrecalculatedData.TriangleTable);
 
         // Buffer for triangle counting
-        _counterBuffer = new ComputeBuffer(1, 4, ComputeBufferType.Counter);
+        _vertexCounterBuffer = new ComputeBuffer(1, 4, ComputeBufferType.Counter);
+        _triangleCounterBuffer = new ComputeBuffer(1, 4, ComputeBufferType.Counter);
+
+        // Buffer for vertex mapping
+        _vertexMappingBuffer = new ComputeBuffer(_grids.x*_grids.y*_grids.z*3, 4);
+
+        // Buffer for adjacency list
+        _adjacencyListBuffer = new ComputeBuffer(MaxNeighbors*_triangleBudget*3, 4);
+
+        // Buffer for neighbor count
+        _neighborCountBuffer = new ComputeBuffer(_triangleBudget*3, 4);
+
+        hostneighborCountBuffer = new uint[_triangleBudget*3];
+
     }
 
     void ReleaseBuffers()
     {
         _triangleTable.Dispose();
-        _counterBuffer.Dispose();
+        _vertexCounterBuffer.Dispose();
+        _triangleCounterBuffer.Dispose();
+        _vertexMappingBuffer.Dispose();
+        _adjacencyListBuffer.Dispose();
+        _neighborCountBuffer.Dispose();
     }
 
     #endregion
