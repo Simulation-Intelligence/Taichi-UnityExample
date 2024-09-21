@@ -986,6 +986,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_apply_plasticity, template_args={'dg': dg,'x': x,'material':material,"E":E,"nu":nu,"SigY":SigY,"alpha":alpha,"min_clamp":min_clamp,"max_clamp":max_clamp})
         
         # hand sdf functions
+        mod.add_kernel(substep_calculate_mat_sdf, template_args={'mat_primitives': mat_primitives, 'mat_primitives_radius': mat_primitives_radius, 'mat_velocities': mat_velocities, 'mat_sdf': mat_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
         mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius})
         mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
         mod.add_kernel(substep_calculate_hand_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
@@ -1005,7 +1006,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(copy_array_1dim1I,template_args={'src': material, 'dst': material})
         mod.add_kernel(init_sample_gaussian_data, template_args={'x_gaussian': x, 'x': x})
         
-        mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part1.kernel.tcm")
+        mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part_mat.kernel.tcm")
         print("AOT done")
     
     if run:
