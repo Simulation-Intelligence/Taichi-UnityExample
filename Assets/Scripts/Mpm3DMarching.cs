@@ -286,7 +286,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Compute_Graph_g_substep = cgraphs["substep"];
         }
     }
-
+    
     public void Init_Tools()
     {
         // If there are no tools, return
@@ -304,7 +304,7 @@ public class Mpm3DMarching : MonoBehaviour
         skeleton_segments = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build();
         skeleton_velocities = new NdArrayBuilder<float>().Shape(totalCapsules, 2).ElemShape(3).HostWrite(true).Build();
         skeleton_capsule_radius = new NdArrayBuilder<float>().Shape(totalCapsules).HostWrite(true).Build();
-
+        
         tool_segments = new float[totalCapsules * 6];
         tool_segments_prev = new float[totalCapsules * 6];
         tool_velocities = new float[totalCapsules * 6];

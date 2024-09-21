@@ -637,7 +637,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                             # Cone velocity
                             obstacle_velocities[I] = mat_velocities[i, 0] * min_alpha + mat_velocities[i, 1] * (1 - min_alpha)
                         else:
-                            # slab velocity
+                            # Slab velocity
                             obstacle_velocities[I] = mat_velocities[i, 0] * min_alpha + mat_velocities[i, 1] * min_beta + mat_velocities[i, 2] * (1 - min_alpha - min_beta) 
                 mat_sdf[I] = min_dist.norm()
                 obstacle_normals[I] = min_dist.normalized()
