@@ -3,6 +3,7 @@
 #pragma kernel ClearUnusedTriangles
 #pragma kernel InitVertexMapping
 #pragma kernel LaplacianSmoothing
+#pragma kernel InitNeighborCount
 
 // Workaround for the absence of sizeof operator in HLSL
 #define SIZEOF_UINT 4
@@ -61,45 +62,19 @@ uint2 EdgeVertexPair(uint index)
     // (0, 4) (1, 5) (2, 6) (3, 7)
     uint v1 = index & 7;
     uint v2 = index < 8 ? ((index + 1) & 3) | (index & 4) : v1 + 4;
+
+    if (v1==2 && v2==3) return uint2(3, 2);
+    if (v1==6 && v2==7) return uint2(7, 6);
+    if (v1==3 && v2==0) return uint2(0, 3);
+    if (v1==7 && v2==4) return uint2(4, 7);
     return uint2(v1, v2);
 }
 
-// uint EdgeId(uint3 id, uint edgeNumber)
-// {
-//     // 根据不同的 edgeNumber 和顶点坐标生成唯一边ID
-//     switch (edgeNumber) {
-//     case 0:  // Edge between (x, y, z) and (x+1, y, z)
-//         return vertexId(id); // 沿着 x 轴的边
-//     case 1:  // Edge between (x+1, y, z) and (x+1, y+1, z)
-//         return vertexId(id + uint3(1, 0, 0)) + 1; // y 轴方向偏移
-//     case 2:  // Edge between (x+1, y+1, z) and (x, y+1, z)
-//         return vertexId(id+ uint3(0, 1, 0)); // 沿着 y 轴的边
-//     case 3:  // Edge between (x, y, z) and (x, y+1, z)
-//         return vertexId(id)+1; // x 轴方向偏移
-//     case 4:  // Edge between (x, y, z+1) and (x+1, y, z+1)
-//         return vertexId(id+ uint3(0, 0, 1)); // 沿着 x 轴的边
-//     case 5:  // Edge between (x, y+1, z+1) and (x+1, y+1, z+1)
-//         return vertexId(id + uint3(1, 0, 1)) + 1;
-//     case 6:  // Edge between (x, y, z+1) and (x, y+1, z+1)
-//         return vertexId(id + uint3(0, 1, 1)); // 沿着 y 轴的边，z+1
-//     case 7:  // Edge between (x+1, y, z+1) and (x+1, y+1, z+1)
-//         return vertexId(id + uint3(0, 0, 1))+1; // 沿着 x 轴，z+1
-//     case 8:  // Edge between (x, y, z) and (x, y, z+1)
-//         return vertexId(id) + 2; // 沿着 z 轴
-//     case 9:  // Edge between (x, y+1, z) and (x, y+1, z+1)
-//         return vertexId(id + uint3(1, 0, 0)) + 2; // y 轴偏移，沿 z
-//     case 10: // Edge between (x+1, y, z) and (x+1, y, z+1)
-//         return vertexId(id + uint3(1, 1, 0)) + 2; // x 轴偏移，沿 z
-//     case 11: // Edge between (x+1, y+1, z) and (x+1, y+1, z+1)
-//         return vertexId(id + uint3(0, 1, 0)) + 2; // x 和 y 都偏移，沿 z
-//     default:
-//         return -1; // 如果 edgeNumber 不合法，返回无效 ID
-//     }
-//}
 uint EdgeId(uint3 id, uint edgeNumber)
 {
     // Step 1: Get the vertex pair for the given edgeNumber
     uint2 pair = EdgeVertexPair(edgeNumber);
+
 
     // Step 2: Get the vertex coordinates from CubeVertex for both ends of the edge
     uint3 v1 = CubeVertex(pair.x);
@@ -196,19 +171,6 @@ void WriteIndices(uint offset, uint3 indices)
     IndexBuffer.Store3(offset * SIZEOF_UINT, indices);
 }
 // 将一个邻居追加到顶点的邻接列表中
-// void AppendNeighbor(uint vertex, uint neighbor)
-// {
-//     // 获取该顶点已存储的邻居数量
-//     uint count = NeighborCount[vertex];
-
-//     // 如果还有空间，则将邻居追加到邻接列表
-//     if (count < MaxNeighbors)
-//     {
-//         AdjacencyList[vertex * MaxNeighbors + count] = neighbor;
-
-//         InterlockedAdd(NeighborCount[vertex], 1);
-//     }
-// }
 void AppendNeighbor(uint vertex, uint neighbor)
 {
     uint originalCount;
@@ -259,7 +221,8 @@ void MeshReconstruction(uint3 id : SV_DispatchThreadID)
 
     // 采样体素值
     float4 samples[8];
-    for (uint i = 0; i < 8; i++)
+    uint i=0;
+    for (i = 0; i < 8; i++)
         samples[i] = VoxelValueWithGradient(id + CubeVertex(i));
 
     // Cube 配置选择器
@@ -286,9 +249,8 @@ void MeshReconstruction(uint3 id : SV_DispatchThreadID)
         normals[i] = -normalize(lerp(sample1.xyz, sample2.xyz, param));
 
         // 获取该边的唯一ID
-        uint edgeId = EdgeId((id+0)%12,i);
-
-        // 检查 VertexMapping 是否已有该顶点的索引
+        uint edgeId = EdgeId(id,i);
+        //检查 VertexMapping 是否已有该顶点的索引
         uint originalIndex = 0xFFFFFFFF; // 假设未使用的索引为 0xFFFFFFFF
         InterlockedCompareExchange(VertexMapping[edgeId], 0xFFFFFFFF, 0xFFFFFFFF, originalIndex);
 
@@ -302,8 +264,9 @@ void MeshReconstruction(uint3 id : SV_DispatchThreadID)
             WriteVertex(newVertexIndex, vertices[i], normals[i]);
         
             // 尝试将新索引写入 VertexMapping，确保原子操作
+
             uint expected = 0xFFFFFFFF;
-            InterlockedCompareExchange(VertexMapping[edgeId], newVertexIndex, expected, originalIndex);
+            InterlockedCompareExchange(VertexMapping[edgeId],  expected, newVertexIndex,originalIndex);
         
             // 如果其他线程已经写入了索引，使用其他线程写入的索引
             vertexIndices[i] = (originalIndex == 0xFFFFFFFF) ? newVertexIndex : originalIndex;
@@ -369,15 +332,20 @@ void LaplacianSmoothing(uint id : SV_DispatchThreadID)
     avgNormal = normalize(avgNormal / (neighborCount+1)); // 平均并归一化法线
     // 将平滑后的顶点位置和法线写回
     WriteVertex(id, avgPos, avgNormal);
-   WriteVertex(id, pos, normal);
 
 
 }
 [numthreads(1024, 1, 1)]
 void InitVertexMapping(uint id : SV_DispatchThreadID)
 {
-    if (id >= MaxTriangle*3) return;
+    if (id >= Dims.x*Dims.y*Dims.z*3) return;
     VertexMapping[id] = 0xFFFFFFFF;
+}
+
+[numthreads(1024, 1, 1)]
+void InitNeighborCount(uint id : SV_DispatchThreadID)
+{
+    if (id >= MaxTriangle*3) return;
     NeighborCount[id] = 0;
 }
 //

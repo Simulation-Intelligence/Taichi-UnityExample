@@ -30,6 +30,8 @@ sealed class MeshBuilder : System.IDisposable
 
     (int x, int y, int z) _grids;
     int _triangleBudget;
+
+    public int _smoothingIterations = 5;
     ComputeShader _compute;
 
     void Initialize((int, int, int) dims, int budget, ComputeShader compute)
@@ -56,8 +58,12 @@ sealed class MeshBuilder : System.IDisposable
         //initialize vertex mapping buffer
         int kernelInitVertexMapping = _compute.FindKernel("InitVertexMapping");
         _compute.SetBuffer(kernelInitVertexMapping, "VertexMapping", _vertexMappingBuffer);
-        _compute.SetBuffer(kernelInitVertexMapping, "NeighborCount", _neighborCountBuffer);
-        _compute.DispatchThreads(kernelInitVertexMapping, _triangleBudget*3, 1, 1);
+        _compute.DispatchThreads(kernelInitVertexMapping, _grids.x*_grids.y*_grids.z*3, 1, 1);
+
+        //initialize vertex mapping buffer
+        int kernelInitNeighborCount = _compute.FindKernel("InitNeighborCount");
+        _compute.SetBuffer(kernelInitNeighborCount, "NeighborCount", _neighborCountBuffer);
+        _compute.DispatchThreads(kernelInitNeighborCount, _triangleBudget*3, 1, 1);
 
         // Isosurface reconstruction
         _compute.SetInts("Dims", _grids);
@@ -76,6 +82,10 @@ sealed class MeshBuilder : System.IDisposable
         _compute.SetBuffer(0, "NeighborCount", _neighborCountBuffer);
         _compute.DispatchThreads(0, _grids);
 
+        //copy vertex mapping buffer to host
+        uint[] hostvertexMappingBuffer = new uint[_grids.x*_grids.y*_grids.z*3];
+        _vertexMappingBuffer.GetData(hostvertexMappingBuffer);
+
         // Clear unused area of the buffers.
         _compute.SetBuffer(1, "VertexBuffer", _vertexBuffer);
         _compute.SetBuffer(1, "IndexBuffer", _indexBuffer);
@@ -86,13 +96,15 @@ sealed class MeshBuilder : System.IDisposable
         _compute.DispatchThreads(2, 1024, 1, 1);
 
         // Laplacian smoothing
-        LaplacianSmoothing(1);
+        LaplacianSmoothing(_smoothingIterations);
 
         // Bounding box
         var ext = new Vector3(_grids.x, _grids.y, _grids.z) * scale;
         _mesh.bounds = new Bounds(Vector3.zero, ext);
 
-        _neighborCountBuffer.GetData(hostneighborCountBuffer);
+        //     uint[] hostneighborCountBuffer;
+        // hostneighborCountBuffer = new uint[_triangleBudget*3];
+        // _neighborCountBuffer.GetData(hostneighborCountBuffer);
     }
 
     void LaplacianSmoothing(int iterations)
@@ -121,7 +133,7 @@ sealed class MeshBuilder : System.IDisposable
 
     ComputeBuffer _neighborCountBuffer;
 
-    uint[] hostneighborCountBuffer;
+
     const int MaxNeighbors=20;
 
     void AllocateBuffers()
@@ -143,7 +155,7 @@ sealed class MeshBuilder : System.IDisposable
         // Buffer for neighbor count
         _neighborCountBuffer = new ComputeBuffer(_triangleBudget*3, 4);
 
-        hostneighborCountBuffer = new uint[_triangleBudget*3];
+        
 
     }
 

@@ -877,7 +877,7 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void SetStickyBoundary(bool sticky)
     {
-        use_sticky_boundary = (sticky ? 1 : 0);
+        use_sticky_boundary = sticky ? 1 : 0;
     }
     public bool GetIsStickyBoundary()
     {
@@ -890,6 +890,14 @@ public class Mpm3DMarching : MonoBehaviour
     public float GetHandsimulationRadius()
     {
         return hand_simulation_radius;
+    }
+
+    public void SetSmoothingIterations(int iterations)
+    {
+        for (int i = 0; i < marchingCubeVisualizers.Length; i++)
+        {
+            marchingCubeVisualizers[i].SetSmoothingIterations(iterations);
+        }
     }
     public void InitGrid()
     {

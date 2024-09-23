@@ -58,6 +58,11 @@ namespace MarchingCubes
             shouldUpdate = false;
         }
 
+        public void SetSmoothingIterations(int iterations)
+        {
+            _builder._smoothingIterations = iterations;
+        }
+
         #endregion
     }
 
