@@ -72,11 +72,8 @@ public class MatToolRenderer: MonoBehaviour
     void UpdatePrimitiveObject(GameObject primitiveObject, Vector3 sphere1, Vector3 sphere2, Vector3 sphere3, float radii1, float radii2, float radii3)
     {
         // Update the position and size of the spheres
-        // primitiveObject.transform.GetChild(0).position = sphere1;
-        // primitiveObject.transform.GetChild(1).position = sphere2;
-        // primitiveObject.transform.GetChild(2).position = sphere3;
-        // primitiveObject.transform.GetChild(0).localScale = Vector3.one * radii1 * 2;
-        // primitiveObject.transform.GetChild(1).localScale = Vector3.one * radii2 * 2;
-        // primitiveObject.transform.GetChild(2).localScale = Vector3.one * radii3 * 2;
+        primitiveObject.transform.GetChild(0).position = sphere1;
+        primitiveObject.transform.GetChild(1).position = sphere2;
+        primitiveObject.transform.GetChild(2).position = sphere3;
     }
 }

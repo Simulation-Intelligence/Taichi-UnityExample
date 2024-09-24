@@ -26,6 +26,7 @@ public class Mpm3DMarching : MonoBehaviour
     _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_update_grid_v, _Kernel_substep_update_grid_v_lerp, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
+     _Kernel_substep_calculate_mat_sdf,
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere, _Kernel_init_cylinder, _Kernel_init_torus,
      _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi, _Kernel_substep_p2marching,
         _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_3dim1, _Kernel_copy_array_3dim3, _Kernel_copy_array_1dim1I, _Kernel_init_sample_gaussian_data, _Kernel_substep_update_dg;
@@ -84,13 +85,14 @@ public class Mpm3DMarching : MonoBehaviour
 
     private NdArray<float> hand_sdf_last, obstacle_normals_last, obstacle_velocities_last;
 
+    public NdArray<float> mat_primitives, mat_primitives_radius, mat_velocities;
     private NdArray<float> x_gaussian, v_gaussian, C_gaussian, dg_gaussian;
     public NdArray<float> skeleton_segments, skeleton_velocities, obstacle_normals, skeleton_capsule_radius, max_v;
     public NdArray<float> E, SigY, nu, min_clamp, max_clamp, alpha, p_vol, p_mass;
 
     public NdArray<float> init_rotation, init_scale, init_sh, other_data, sh;
     private NdArray<int> segments_count_per_cell, hash_table, material, point_color;
-
+    private float[] tool_primitives, tool_primitives_prev, tool_primitives_radius, tool_primitives_velocity;
     private float[] tool_segments, tool_segments_prev, tool_velocities, _tool_capsule_radius;
 
     private Bounds bounds;
@@ -160,8 +162,9 @@ public class Mpm3DMarching : MonoBehaviour
     private int use_sticky_boundary = 1;
 
     [Header("Tools")]
+    public List<MatTool> matTools = new List<MatTool>();
+    private int totalPrimitives;
     public List<MpmTool> tools = new List<MpmTool>();
-
     private int totalCapsules;
     private int NParticles, NParticles_gaussian;
     private float dx, _p_vol, _p_mass, v_allowed;
@@ -209,6 +212,7 @@ public class Mpm3DMarching : MonoBehaviour
         Init_Kernels();
         max_v = new NdArrayBuilder<float>().Shape(1).HostRead(true).Build();
 
+        Init_MatTools();
         Init_Tools();
 
         InitGrid();
@@ -255,6 +259,7 @@ public class Mpm3DMarching : MonoBehaviour
 
             // Contact with hand
             _Kernel_substep_calculate_hand_sdf = kernels["substep_calculate_hand_sdf"];
+            _Kernel_substep_calculate_mat_sdf = kernels["substep_calculate_mat_sdf"];
             _Kernel_substep_get_max_speed = kernels["substep_get_max_speed"];
             _Kernel_substep_calculate_hand_hash = kernels["substep_calculate_hand_hash"];
             _Kernel_substep_calculate_hand_sdf_hash = kernels["substep_calculate_hand_sdf_hash"];
@@ -296,14 +301,34 @@ public class Mpm3DMarching : MonoBehaviour
         }
     }
 
-    public void Init_Tools()
+    public void Init_MatTools()
     {
-        // If there are no tools, return
-        if (tools.Count == 0)
+        if (matTools.Count == 0)
         {
             return;
         }
-        // Given tools, initialize capsules
+        totalPrimitives = 0;
+        foreach (var matTool in matTools)
+        {
+            totalPrimitives += matTool.numPrimitives;
+        }
+
+        mat_primitives = new NdArrayBuilder<float>().Shape(totalPrimitives, 3).ElemShape(3).HostWrite(true).Build();
+        mat_primitives_radius = new NdArrayBuilder<float>().Shape(totalPrimitives, 3).HostWrite(true).Build();
+        mat_velocities = new NdArrayBuilder<float>().Shape(totalPrimitives, 3).ElemShape(3).HostWrite(true).Build();
+
+        tool_primitives = new float[totalPrimitives * 9];
+        tool_primitives_prev = new float[totalPrimitives * 9];
+        tool_primitives_radius = new float[totalPrimitives * 3];
+        tool_primitives_velocity = new float[totalPrimitives * 9];
+    }
+    public void Init_Tools()
+    {
+        if (tools.Count == 0)
+        {
+            // If there are no tools, return
+            return;
+        }
         totalCapsules = 0;
         foreach (var tool in tools)
         {
@@ -698,10 +723,15 @@ public class Mpm3DMarching : MonoBehaviour
             }
             else
             {
-                UpdateCapsules();
+                if (tools.Count > 0)
+                    UpdateCapsules();
+                if (matTools.Count > 0)
+                    UpdateMatPrimitives();
             }
-            if (IntersectwithTools(tools))
+
+            if (tools.Count > 0)
             {
+                // Use capsule-based tools  
                 if (transform.lossyScale.x > 1.0f)
                 {
                     // The object is scaled up
@@ -715,6 +745,12 @@ public class Mpm3DMarching : MonoBehaviour
                     _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx,
                     boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 }
+            }
+            if (matTools.Count > 0)
+            {
+                // Use Medial Primitives based tools
+                _Kernel_substep_calculate_mat_sdf.LaunchAsync(mat_primitives, mat_primitives_radius, mat_velocities, hand_sdf, obstacle_normals, obstacle_velocities, dx,
+                boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             }
 
             while (time_left > 0)
@@ -1225,6 +1261,77 @@ public class Mpm3DMarching : MonoBehaviour
         return gy;
     }
 
+    void UpdateMatPrimitives()
+    {
+        Vector3 Center = new();
+        int primitives_start = 0;
+        for (int i = 0; i < matTools.Count; i++)
+        {
+            if (matTools[i].numPrimitives > 0)
+            {
+                Center += matTools[i].primitives[0].sphere1;
+
+                for (int j = 0; j < matTools[i].numPrimitives; j++)
+                {
+                    var primitive = matTools[i].primitives[j];
+                    Vector3 sphere1 = primitive.sphere1;
+                    Vector3 sphere2 = primitive.sphere2;
+                    Vector3 sphere3 = primitive.sphere3;
+
+                    UpdatePrimitivesVelocity(tool_primitives, tool_primitives_prev, tool_primitives_velocity, primitives_start * 9 + j * 9, sphere1, sphere2, sphere3, frame_time);
+
+                    tool_primitives_radius[primitives_start * 3 + j * 3] = primitive.radii1 / transform.lossyScale.x;
+                    tool_primitives_radius[primitives_start * 3 + j * 3 + 1] = primitive.radii2 / transform.lossyScale.x;
+                    tool_primitives_radius[primitives_start * 3 + j * 3 + 2] = primitive.radii3 / transform.lossyScale.x;
+                }
+            }
+            primitives_start += matTools[i].numPrimitives;
+        }
+        mat_primitives.CopyFromArray(tool_primitives);
+        mat_primitives_radius.CopyFromArray(tool_primitives_radius);
+        mat_velocities.CopyFromArray(tool_primitives_velocity);
+
+        Center /= matTools.Count;
+        boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.lossyScale.x;
+        boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.lossyScale.x;
+    }
+
+    void UpdatePrimitivesVelocity(float[] tool_primitives, float[] tool_primitives_prev, float[] tool_primitives_velocity, int init, Vector3 sphere1, Vector3 sphere2, Vector3 sphere3, float frame_time)
+    {
+        Vector3 TransformedSphere1 = transform.InverseTransformPoint(sphere1);
+        Vector3 TransformedSphere2 = transform.InverseTransformPoint(sphere2);
+        Vector3 TransformedSphere3 = transform.InverseTransformPoint(sphere3);
+
+        tool_primitives[init] = TransformedSphere1.x;
+        tool_primitives[init + 1] = TransformedSphere1.y;
+        tool_primitives[init + 2] = TransformedSphere1.z;
+        tool_primitives[init + 3] = TransformedSphere2.x;
+        tool_primitives[init + 4] = TransformedSphere2.y;
+        tool_primitives[init + 5] = TransformedSphere2.z;
+        tool_primitives[init + 6] = TransformedSphere3.x;
+        tool_primitives[init + 7] = TransformedSphere3.y;
+        tool_primitives[init + 8] = TransformedSphere3.z;
+
+        tool_primitives_velocity[init] = (TransformedSphere1.x - tool_primitives_prev[init]) / frame_time;
+        tool_primitives_velocity[init + 1] = (TransformedSphere1.y - tool_primitives_prev[init + 1]) / frame_time;
+        tool_primitives_velocity[init + 2] = (TransformedSphere1.z - tool_primitives_prev[init + 2]) / frame_time;
+        tool_primitives_velocity[init + 3] = (TransformedSphere2.x - tool_primitives_prev[init + 3]) / frame_time;
+        tool_primitives_velocity[init + 4] = (TransformedSphere2.y - tool_primitives_prev[init + 4]) / frame_time;
+        tool_primitives_velocity[init + 5] = (TransformedSphere2.z - tool_primitives_prev[init + 5]) / frame_time;
+        tool_primitives_velocity[init + 6] = (TransformedSphere3.x - tool_primitives_prev[init + 6]) / frame_time;
+        tool_primitives_velocity[init + 7] = (TransformedSphere3.y - tool_primitives_prev[init + 7]) / frame_time;
+        tool_primitives_velocity[init + 8] = (TransformedSphere3.z - tool_primitives_prev[init + 8]) / frame_time;
+
+        tool_primitives_prev[init] = TransformedSphere1.x;
+        tool_primitives_prev[init + 1] = TransformedSphere1.y;
+        tool_primitives_prev[init + 2] = TransformedSphere1.z;
+        tool_primitives_prev[init + 3] = TransformedSphere2.x;
+        tool_primitives_prev[init + 4] = TransformedSphere2.y;
+        tool_primitives_prev[init + 5] = TransformedSphere2.z;
+        tool_primitives_prev[init + 6] = TransformedSphere3.x;
+        tool_primitives_prev[init + 7] = TransformedSphere3.y;
+        tool_primitives_prev[init + 8] = TransformedSphere3.z;
+    }
 
     void UpdateCapsules()
     {
@@ -1388,7 +1495,12 @@ public class Mpm3DMarching : MonoBehaviour
         skeleton_segments_prev[init + 5] = TransformedEnd.z;
     }
 
-    bool IntersectwithTools(List<MpmTool> tools)
+    bool IntersectWithMatTools(List<MatTool> matTools)
+    {
+        return matTools.Count > 0;
+    }
+
+    bool IntersectWithCapsuleTools(List<MpmTool> tools)
     {
         return tools.Count > 0;
     }

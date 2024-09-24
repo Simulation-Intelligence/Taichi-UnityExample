@@ -268,6 +268,7 @@ def compute_sphere_slab_distance(sphere_centers_0: ti.types.vector(3, ti.f32), s
     dir = cq - cp
     distance = dir.norm() - (rp + rq)
     normal = dir.normalized()
+    print("cq: ", cq, "cp: ", cp)
     print("Distance: ", distance, "Normal: ", normal)
 
 def unique_everseen(iterable, key=None):
@@ -405,21 +406,21 @@ alpha = ti.ndarray(ti.f32, shape=(1,))
 beta = ti.ndarray(ti.f32, shape=(1,))
 
 # test: distance detection between sphere to cone & slab
-sphere_centers[0] = ti.Vector([0.0, 3.0, 0.0])
-sphere_centers[1] = ti.Vector([1.0, 3.0, 1.0])
-sphere_centers[2] = ti.Vector([2.0, 3.0, 0.0])
-sphere_centers[3] = ti.Vector([2.0, 0.0, 0.0])
+sphere_centers[0] = ti.Vector([0.0, 0.0, 0.0])
+sphere_centers[1] = ti.Vector([2.0, 0.0, 0.0])
+sphere_centers[2] = ti.Vector([2.1, 0, 0.0])
+sphere_centers[3] = ti.Vector([2.1, 0, 0.0])
 sphere_radii[0] = 0.5
 sphere_radii[1] = 0.5
-sphere_radii[2] = 0.5
-sphere_radii[3] = 0.5
-# compute_sphere_cone_distance(sphere_centers[0], sphere_radii[0], sphere_centers[1], sphere_radii[1], sphere_centers[2], sphere_radii[2], sphere_centers[3], sphere_radii[3])
+sphere_radii[2] = 0
+sphere_radii[3] = 0
+compute_sphere_cone_distance(sphere_centers[0], sphere_radii[0], sphere_centers[1], sphere_radii[1], sphere_centers[2], sphere_radii[2], sphere_centers[3], sphere_radii[3])
 # compute_sphere_slab_distance(sphere_centers[0], sphere_radii[0], sphere_centers[1], sphere_radii[1], sphere_centers[2], sphere_radii[2], sphere_centers[3], sphere_radii[3])
 
 # Load medial mesh data (.ma file)
-filepath = "./scripts/data/insect.ma"
-vcount, fcount, ecount, verts, radii, faces, edges = load_mat_file(filepath)
-mat_primitives, mat_primitives_radius = generate_medial_primitives(filepath, vcount, fcount, ecount, verts, radii, faces, edges)
+# filepath = "./scripts/data/insect.ma"
+# vcount, fcount, ecount, verts, radii, faces, edges = load_mat_file(filepath)
+# mat_primitives, mat_primitives_radius = generate_medial_primitives(filepath, vcount, fcount, ecount, verts, radii, faces, edges)
 # print(len(mat_primitives))
 # print(len(mat_primitives_radius))
 # print(mat_primitives)

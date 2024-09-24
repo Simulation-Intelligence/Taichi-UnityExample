@@ -11,6 +11,7 @@ public class MatTool : MonoBehaviour
         public Vector3 sphere3;
         public float radii3;
     }
+    [HideInInspector]
     public int numPrimitives;
     public Primitive[] init_primitives;
     public Primitive[] primitives;
