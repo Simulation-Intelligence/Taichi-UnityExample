@@ -179,12 +179,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     @ti.kernel
     def substep_p2g_multi(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
-                    dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),marching_m: ti.types.ndarray(ndim=4),
+                    dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
                     E: ti.types.ndarray(ndim=1), nu: ti.types.ndarray(ndim=1), material: ti.types.ndarray(ndim=1),
                     p_vol: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), dx: ti.f32, dt: ti.f32, 
                     min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for p in x:
-            dx_marching=1/marching_m.shape[1]
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
                 Xp = x[p] / dx
                 base = int(Xp - 0.5)
@@ -243,7 +242,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                                  material: ti.types.ndarray(ndim=1), SigY: ti.types.ndarray(ndim=1), 
                                  alpha: ti.types.ndarray(ndim=1), min_clamp: ti.types.ndarray(ndim=1), max_clamp: ti.types.ndarray(ndim=1),
                                  min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
+        ratio = float(dg.shape[0]) / E.shape[0]
         for p in dg:
+            p_ratio=int(p/ratio)
             # Check if the particle is within the specified simulation boundaries
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
                 U, sig, V = ti.svd(dg[p])
@@ -255,23 +256,23 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 epsilon_hat = epsilon - trace_epsilon / 3 * ti.Vector([1.0, 1.0, 1.0])
                 epsilon_hat_squared_norm = epsilon_hat.norm_sqr()
                 epsilon_hat_norm = ti.sqrt(epsilon_hat_squared_norm)
-                mu = E[p] / (2 * (1 + nu[p]))
-                la= E[p] * nu[p] / ((1 + nu[p]) * (1 - 2 * nu[p]))
+                mu = E[p_ratio] / (2 * (1 + nu[p_ratio]))
+                la= E[p_ratio] * nu[p_ratio] / ((1 + nu[p_ratio]) * (1 - 2 * nu[p_ratio]))
                 delta_gamma = 0.0
 
                 # Apply plasticity based on material type
-                plasticity_type = (material[p] >> 16) & 0xFFFF
+                plasticity_type = (material[p_ratio] >> 16) & 0xFFFF
                 if plasticity_type == 2:  # Clamp plasticity type
                     for i in ti.static(range(dim)):
-                        sig[i, i] = min(max(sig[i, i], 1 - min_clamp[p]), 1 + max_clamp[p])
+                        sig[i, i] = min(max(sig[i, i], 1 - min_clamp[p_ratio]), 1 + max_clamp[p_ratio])
                     dg[p] = U @ sig @ V.transpose()
                 else:
                     if plasticity_type == 1:  # Von_Mises plasticity type
-                        delta_gamma = epsilon_hat_norm - SigY[p] / (2 * mu)
+                        delta_gamma = epsilon_hat_norm - SigY[p_ratio] / (2 * mu)
 
                     elif plasticity_type == 3:  # Drucker_Prager plasticity type
                         if trace_epsilon <= 0:
-                            delta_gamma = epsilon_hat_norm + (3 * la + 2 * mu) / (2 * mu) * trace_epsilon * alpha[p]
+                            delta_gamma = epsilon_hat_norm + (3 * la + 2 * mu) / (2 * mu) * trace_epsilon * alpha[p_ratio]
                         else:
                             delta_gamma = epsilon_hat_norm
 
@@ -375,27 +376,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 C[p] = new_C
 
     @ti.kernel
-    def substep_g2p_dg(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),grid_v: ti.types.ndarray(ndim=3),dg: ti.types.ndarray(ndim=1),
-                    dx:ti.f32,dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
+    def substep_update_dg(x: ti.types.ndarray(ndim=1),C: ti.types.ndarray(ndim=1),dg: ti.types.ndarray(ndim=1),dt:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
         for p in x:
             if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
-                Xp = x[p] / dx
-                base = int(Xp - 0.5)
-                fx = Xp - base
-                w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
-                new_v = ti.zero(v[p])
-                new_C = ti.zero(C[p])
-                for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
-                    dpos = (offset - fx) * dx
-                    weight = 1.0
-                    for i in ti.static(range(dim)):
-                        weight *= w[offset[i]][i]
-                    g_v = grid_v[base + offset]
-                    new_v += weight * g_v
-                    new_C += 4 * weight * g_v.outer_product(dpos) / dx**2
-                v[p] = new_v
-                x[p] += dt * v[p]
-                C[p] = new_C
                 dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
 
     @ti.kernel
@@ -759,6 +742,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     # region - Gaussian Kernel Functions
     @ti.kernel
+    def init_sample_gaussian_data(x_gaussian: ti.types.ndarray(ndim=1), x: ti.types.ndarray(ndim=1)):
+        n_gaussian = x_gaussian.shape[0]
+        n_x = x.shape[0]
+        ratio = float(n_gaussian) / n_x  # 确保 ratio 是 float 类型
+        for i in x:
+            index = int(i * ratio)  # 将 i * ratio 转换为整数
+            x[i] = x_gaussian[index]
+
+    @ti.kernel
     def init_gaussian_data(init_rotation:ti.types.ndarray(ndim=1),
                            init_scale:ti.types.ndarray(ndim=1),
                            other_data:ti.types.ndarray(ndim=1)):
@@ -949,7 +941,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_p2g(x, v, C,  dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_p2g_multi(x, v, C,  dg, grid_v, grid_m, marching_m,E, nu, material, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_p2g_multi(x, v, C,  dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_p2marching(x, point_color, marching_m, p_mass, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt,min_x,max_x,min_y,max_y,min_z,max_z)
         substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -958,7 +950,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_update_grid_v(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=1)
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_g2p_dg(x, v, C,  grid_v,dg, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_update_dg(x, C,  dg,  dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle_hash(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle(x, v,skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_Von_Mises_plasticity(dg,x, mu_0, _SigY, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -976,7 +968,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_kirchhoff_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})  
         mod.add_kernel(substep_neohookean_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})
         mod.add_kernel(substep_g2p, template_args={'x': x, 'v': v, 'C': C, 'grid_v': grid_v})
-        mod.add_kernel(substep_g2p_dg, template_args={'x': x, 'v': v, 'C': C, 'dg': dg, 'grid_v': grid_v})
+        mod.add_kernel(substep_update_dg, template_args={'x': x, 'C': C, 'dg': dg})
         mod.add_kernel(substep_apply_Drucker_Prager_plasticity, template_args={'dg': dg,'x': x})
         mod.add_kernel(substep_apply_Von_Mises_plasticity, template_args={'dg': dg,'x': x})
         mod.add_kernel(substep_apply_clamp_plasticity, template_args={'dg': dg,'x': x})
@@ -989,7 +981,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'x': x,'max_speed': max_speed})
         mod.add_kernel(init_dg, template_args={'dg': dg})
         mod.add_kernel(substep_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m,'E':E,'nu':nu,'material':material,'p_vol':p_vol,'p_mass':p_mass})
-        mod.add_kernel(substep_p2g_multi, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m,'marching_m':marching_m,'E':E,'nu':nu,'material':material,'p_vol':p_vol,'p_mass':p_mass})
+        mod.add_kernel(substep_p2g_multi, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m,'E':E,'nu':nu,'material':material,'p_vol':p_vol,'p_mass':p_mass})
         mod.add_kernel(substep_p2marching, template_args={'x': x, 'point_color': point_color, 'marching_m': marching_m, 'p_mass': p_mass})
         mod.add_kernel(substep_apply_plasticity, template_args={'dg': dg,'x': x,'material':material,"E":E,"nu":nu,"SigY":SigY,"alpha":alpha,"min_clamp":min_clamp,"max_clamp":max_clamp})
         
@@ -1011,6 +1003,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(copy_array_1dim1, template_args={'src': E, 'dst': E})
         mod.add_kernel(copy_array_1dim3, template_args={'src': x, 'dst': x}) 
         mod.add_kernel(copy_array_1dim1I,template_args={'src': material, 'dst': material})
+        mod.add_kernel(init_sample_gaussian_data, template_args={'x_gaussian': x, 'x': x})
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part1.kernel.tcm")
         print("AOT done")
@@ -1030,6 +1023,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         init_sphere(x, dg, cube_size)
         init_cylinder(x, dg, 1, 0.05)
         init_torus(x, dg, 0.3, 0.05)
+        init_sample_gaussian_data(x, x)
         scale_to_unit_cube(x,  other_data, 0.1)
         init_dg(dg)
         init_gaussian_data(init_rotation, init_scale, other_data)

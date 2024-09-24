@@ -25,10 +25,10 @@ public class Mpm3DMarching : MonoBehaviour
     private Kernel _Kernel_subsetep_reset_grid, _Kernel_substep_neohookean_p2g, _Kernel_substep_Kirchhoff_p2g,
     _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_update_grid_v, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
-     _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash,_Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
+     _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere, _Kernel_init_cylinder, _Kernel_init_torus,
-     _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi,_Kernel_substep_p2marching,
-        _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_1dim1I;
+     _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi, _Kernel_substep_p2marching,
+        _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_1dim1I, _Kernel_init_sample_gaussian_data, _Kernel_substep_update_dg;
 
     public enum RenderType
     {
@@ -81,7 +81,7 @@ public class Mpm3DMarching : MonoBehaviour
     public StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
     private NdArray<float> x, v, C, dg, grid_v, grid_m, obstacle_velocities, hand_sdf, marching_m;
-    
+
     private NdArray<float> x_gaussian, v_gaussian, C_gaussian, dg_gaussian;
     public NdArray<float> skeleton_segments, skeleton_velocities, obstacle_normals, skeleton_capsule_radius, max_v;
     public NdArray<float> E, SigY, nu, min_clamp, max_clamp, alpha, p_vol, p_mass;
@@ -119,7 +119,12 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private float gy;
     [SerializeField]
-    public int n_grid = 64, bound = 3,render_n_grid = 64;
+    public int n_grid = 64, bound = 3, render_n_grid = 64;
+
+    [SerializeField]
+    public float gaussian_simulate_ratio = 0.5f;
+
+    public bool use_gaussian_acceleration = false;
 
     [SerializeField]
     private float bounding_eps = 0.1f;
@@ -152,7 +157,7 @@ public class Mpm3DMarching : MonoBehaviour
     public List<MpmTool> tools = new List<MpmTool>();
 
     private int totalCapsules;
-    private int NParticles,NParticles_gaussian;
+    private int NParticles, NParticles_gaussian;
     private float dx, _p_vol, _p_mass, v_allowed;
 
     [Header("Scalars")]
@@ -210,7 +215,7 @@ public class Mpm3DMarching : MonoBehaviour
         if (renderType == RenderType.GaussianSplat)
         {
             splatManager.init_gaussians();
-            Init_gaussian();
+            Init_gaussian_new();
         }
         else
         {
@@ -269,6 +274,9 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_copy_array_1dim1 = kernels["copy_array_1dim1"];
             _Kernel_copy_array_1dim3 = kernels["copy_array_1dim3"];
             _Kernel_copy_array_1dim1I = kernels["copy_array_1dim1I"];
+
+            _Kernel_init_sample_gaussian_data = kernels["init_sample_gaussian_data"];
+            _Kernel_substep_update_dg = kernels["substep_update_dg"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -330,6 +338,14 @@ public class Mpm3DMarching : MonoBehaviour
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
     }
+
+    public void Init_Particle_Data_Gaussian()
+    {
+        x_gaussian = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(3).HostWrite(true).Build();
+        v_gaussian = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(3).Build();
+        C_gaussian = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(3, 3).Build();
+        dg_gaussian = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(3, 3).Build();
+    }
     void Init_Particles()
     {
         float volume = 0;
@@ -378,7 +394,7 @@ public class Mpm3DMarching : MonoBehaviour
     {
         _p_vol = dx * dx * dx / particle_per_grid;
         _p_mass = _p_vol * p_rho;
-        max_density = particle_per_grid * _p_mass*n_grid*n_grid*n_grid/render_n_grid/render_n_grid/render_n_grid;
+        max_density = particle_per_grid * _p_mass * n_grid * n_grid * n_grid / render_n_grid / render_n_grid / render_n_grid;
 
         marchingCubeVisualizers[0]._dimensions = new Vector3Int(render_n_grid, render_n_grid, render_n_grid);
         marchingCubeVisualizers[0]._gridScale = 1.0f / render_n_grid;
@@ -423,6 +439,33 @@ public class Mpm3DMarching : MonoBehaviour
 
         }
     }
+
+    public void Init_gaussian_new()
+    {
+        if (!use_gaussian_acceleration)
+        {
+            Init_gaussian();
+            return;
+        }
+        NParticles_gaussian = splatManager.splatsNum;
+        Init_Particle_Data_Gaussian();
+        NParticles = (int)(NParticles_gaussian * gaussian_simulate_ratio);
+        Init_Particle_Data();
+        init_rotation = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(4).Build();
+        init_scale = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(3).Build();
+        other_data = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(4).HostWrite(true).Build();
+        init_sh = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(16, 3).HostWrite(true).Build();
+        sh = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(16, 3).Build();
+        x_gaussian.CopyFromArray(splatManager.m_pos);
+        other_data.CopyFromArray(splatManager.m_other);
+        init_sh.CopyFromArray(splatManager.m_SH);
+
+        _Kernel_init_dg.LaunchAsync(dg);
+        _Kernel_init_dg.LaunchAsync(dg_gaussian);
+        _Kernel_scale_to_unit_cube.LaunchAsync(x_gaussian, other_data, bounding_eps);
+        _Kernel_init_sample_gaussian_data.LaunchAsync(x_gaussian, x);
+        _Kernel_init_gaussian_data.LaunchAsync(init_rotation, init_scale, other_data);
+    }
     public void Init_materials()
     {
         dx = 1.0f / n_grid;
@@ -431,7 +474,7 @@ public class Mpm3DMarching : MonoBehaviour
         v_allowed = allowed_cfl * dx / max_dt;
         _p_vol = dx * dx * dx / particle_per_grid;
         _p_mass = _p_vol * p_rho;
-        max_density = particle_per_grid * _p_mass*n_grid*n_grid*n_grid/render_n_grid/render_n_grid/render_n_grid;
+        max_density = particle_per_grid * _p_mass * n_grid * n_grid * n_grid / render_n_grid / render_n_grid / render_n_grid;
         sin_phi = Mathf.Sin(friction_angle * Mathf.Deg2Rad);
         _alpha = Mathf.Sqrt(2.0f / 3.0f) * 2 * sin_phi / (3 - sin_phi);
 
@@ -670,8 +713,10 @@ public class Mpm3DMarching : MonoBehaviour
                 time_left -= dt;
 
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m, marching_m, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                //_Kernel_substep_p2g.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, marching_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
+                    _Kernel_substep_update_dg.LaunchAsync(x_gaussian, C_gaussian, dg_gaussian, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+
                 _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
                 // If fix the object in place during the modeling process
@@ -680,7 +725,11 @@ public class Mpm3DMarching : MonoBehaviour
 
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_apply_plasticity.LaunchAsync(dg, x, E, nu, material, SigY, alpha, min_clamp, max_clamp, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-
+                if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
+                {
+                    _Kernel_substep_g2p.LaunchAsync(x_gaussian, v_gaussian, C_gaussian, grid_v, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                    _Kernel_substep_apply_plasticity.LaunchAsync(dg_gaussian, x_gaussian, E, nu, material, SigY, alpha, min_clamp, max_clamp, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                }
                 if (use_correct_cfl)
                 {
                     v_allowed = float.MaxValue;
@@ -695,9 +744,14 @@ public class Mpm3DMarching : MonoBehaviour
             if (transform.lossyScale.x > 1.0f)
             {
                 _Kernel_substep_adjust_particle_hash.LaunchAsync(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
+                    _Kernel_substep_adjust_particle_hash.LaunchAsync(x_gaussian, v_gaussian, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             }
-            else{
+            else
+            {
                 _Kernel_substep_adjust_particle.LaunchAsync(x, v, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
+                    _Kernel_substep_adjust_particle.LaunchAsync(x_gaussian, v_gaussian, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             }
         }
 
@@ -707,15 +761,26 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else if (renderType == RenderType.GaussianSplat)
         {
-            _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh, x,
-                                                             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-            other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
-            sh.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuSHData.GetNativeBufferPtr());
-            x.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
+            if (use_gaussian_acceleration)
+            {
+                _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg_gaussian, other_data, init_sh, sh, x_gaussian,
+                                                                 boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
+                sh.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuSHData.GetNativeBufferPtr());
+                x_gaussian.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
+            }
+            else
+            {
+                _Kernel_substep_update_gaussian_data.LaunchAsync(init_rotation, init_scale, dg, other_data, init_sh, sh, x,
+                                                                 boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                other_data.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuOtherData.GetNativeBufferPtr());
+                sh.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuSHData.GetNativeBufferPtr());
+                x.CopyToNativeBufferAsync(splatManager.m_Render.m_GpuPosData.GetNativeBufferPtr());
+            }
         }
         else if (renderType == RenderType.MarchingCubes)
         {
-            _Kernel_substep_p2marching.LaunchAsync(x, point_color, marching_m, p_mass,boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+            _Kernel_substep_p2marching.LaunchAsync(x, point_color, marching_m, p_mass, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             _Kernel_normalize_m.LaunchAsync(marching_m, max_density);
             marching_m.CopyToNativeBufferAsync(marching_m_computeBuffer.GetNativeBufferPtr());
             int kernelId = copyShader.FindKernel("CopySubBuffer");
@@ -792,7 +857,7 @@ public class Mpm3DMarching : MonoBehaviour
                 if (child.TryGetComponent<MarchingCubeVisualizer>(out var m))
                 {
                     m._dimensions = new Vector3Int(render_n_grid, render_n_grid, render_n_grid);
-                    m._gridScale = (float)1.0/ render_n_grid;
+                    m._gridScale = (float)1.0 / render_n_grid;
                     m.Init();
                     marchingCubeVisualizers = marchingCubeVisualizers.Concat(new MarchingCubeVisualizer[] { m }).ToArray();
                     child.SetParent(transform, false);
@@ -1298,7 +1363,7 @@ public class Mpm3DMarching : MonoBehaviour
         skeleton_segments_prev[init + 4] = TransformedEnd.y;
         skeleton_segments_prev[init + 5] = TransformedEnd.z;
     }
-    
+
     bool IntersectwithTools(List<MpmTool> tools)
     {
         return tools.Count > 0;
