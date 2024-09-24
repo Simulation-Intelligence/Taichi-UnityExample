@@ -312,15 +312,13 @@ public class Mpm3DMarching : MonoBehaviour
         tool_primitives_radius = new float[totalPrimitives * 3];
         tool_primitives_velocity = new float[totalPrimitives * 9];
     }
-    
     public void Init_Tools()
     {
-        // If there are no tools, return
         if (tools.Count == 0)
         {
+            // If there are no tools, return
             return;
         }
-        // Given tools, initialize capsules
         totalCapsules = 0;
         foreach (var tool in tools)
         {
@@ -715,11 +713,13 @@ public class Mpm3DMarching : MonoBehaviour
             }
             else
             {
-                UpdateCapsules();
-                UpdateMatPrimitives();
+                if (tools.Count > 0)
+                    UpdateCapsules();
+                if (matTools.Count > 0)
+                    UpdateMatPrimitives();
             }
             
-            if (IntersectWithCapsuleTools(tools))
+            if (tools.Count > 0)
             {
                 // Use capsule-based tools  
                 if (transform.lossyScale.x > 1.0f)
@@ -736,7 +736,7 @@ public class Mpm3DMarching : MonoBehaviour
                     boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 }
             }
-            if (IntersectWithMatTools(matTools))
+            if (matTools.Count > 0)
             {
                 // Use Medial Primitives based tools
                 _Kernel_substep_calculate_mat_sdf.LaunchAsync(mat_primitives, mat_primitives_radius, mat_velocities, hand_sdf, obstacle_normals, obstacle_velocities, dx,
