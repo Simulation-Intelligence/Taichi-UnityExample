@@ -1,18 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Taichi;
-using UnityEngine.Rendering;
 using System.Linq;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
-using Meta.WitAi.CallbackHandlers;
-using UnityEngine.UIElements;
 using System.IO;
 using System.Text;
 using System;
 using UnityEngine.InputSystem;
 using Oculus.Interaction;
-using Oculus.Interaction.HandGrab;
 using static SkeletonRenderer;
 using GaussianSplatting.Runtime;
 using UnityEngine.Experimental.Rendering;
@@ -87,7 +81,8 @@ public class Mpm3DMarching : MonoBehaviour
     public StressType stressType = StressType.NeoHookean;
     private Kernel _Kernel_init_particles;
     private NdArray<float> x, v, C, dg, grid_v, grid_m, obstacle_velocities, hand_sdf, marching_m;
-
+    
+    private NdArray<float> x_gaussian, v_gaussian, C_gaussian, dg_gaussian;
     public NdArray<float> skeleton_segments, skeleton_velocities, obstacle_normals, skeleton_capsule_radius, max_v;
     public NdArray<float> E, SigY, nu, min_clamp, max_clamp, alpha, p_vol, p_mass;
 
@@ -153,11 +148,11 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private int use_sticky_boundary = 1;
 
-    [Header("Obstacle")]
+    [Header("Tools")]
     public List<MpmTool> tools = new List<MpmTool>();
 
     private int totalCapsules;
-    private int NParticles;
+    private int NParticles,NParticles_gaussian;
     private float dx, _p_vol, _p_mass, v_allowed;
 
     [Header("Scalars")]
