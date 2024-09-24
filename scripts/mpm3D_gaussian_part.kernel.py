@@ -348,9 +348,53 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 # Sticky boundary condition by setting tangential velocity to zero if it points outside the grid at the boundaries
                 # Limit the velocity w.r.t. CFL condition
                 grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
-                # Reset the SDF and obstacle normals for the next time step
-                sdf[I] = float('inf')
-                obstacle_normals[I] = [0, 0, 0]
+    
+    @ti.kernel
+    def substep_update_grid_v_lerp(grid_v: ti.types.ndarray(ndim=3),
+                              grid_m: ti.types.ndarray(ndim=3),
+                              sdf: ti.types.ndarray(ndim=3),
+                              obstacle_normals: ti.types.ndarray(ndim=3),
+                              obstacle_velocities: ti.types.ndarray(ndim=3),
+                              sdf_last: ti.types.ndarray(ndim=3),
+                              obstacle_normals_last: ti.types.ndarray(ndim=3),
+                              obstacle_velocities_last: ti.types.ndarray(ndim=3),
+                              ratio: ti.f32,
+                              gx: ti.f32, gy: ti.f32, gz: ti.f32, k: ti.f32, damping: ti.f32, friction_k: ti.f32,
+                              v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, use_sticky_cond: ti.i32,
+                              min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
+        for I in ti.grouped(grid_m):
+            pos = I * dx + dx * 0.5
+            sdf_lerp =sdf_last[I]+(sdf[I]-sdf_last[I])*ratio
+            obstacle_normals_lerp = obstacle_normals_last[I]+(obstacle_normals[I]-obstacle_normals_last[I])*ratio
+            obstacle_velocities_lerp = obstacle_velocities_last[I]+(obstacle_velocities[I]-obstacle_velocities_last[I])*ratio
+            # Check if the current position is within the specified bounding box
+            if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
+                # Normalize the velocity if the grid cell has mass
+                if grid_m[I] > 0:
+                    grid_v[I] /= grid_m[I]
+                # Apply gravitational force
+                gravity = ti.Vector([gx, gy, gz]) 
+                grid_v[I] += dt * gravity
+                # Apply damping to reduce the velocity over time
+                grid_v[I] *= ti.exp(-damping * dt)
+                if sdf_lerp < 0:
+                    d = -sdf_lerp # Calculate penetration depth
+                    rel_v = grid_v[I] - obstacle_velocities_lerp # Calculate relative velocity with respect to the obstacle
+                    normal_v = rel_v.dot(obstacle_normals_lerp) * obstacle_normals_lerp # Calculate the normal component of the relative velocity
+                    delta_v = obstacle_normals_lerp * d / dt * k - normal_v # Calculate the velocity correction due to collision
+                    tangent_direction = (rel_v - normal_v).normalized() # Determine the tangential direction of the relative velocity
+                    friction_force = friction_k * delta_v # Calculate the frictional force
+                    grid_v[I] += delta_v - friction_force * tangent_direction # Apply both the collision correction and the frictional force to the velocity
+                # Enforce boundary conditions by setting velocity to zero if it points outside the grid at the boundaries
+                cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
+                if (use_sticky_cond):
+                    if cond[0] or cond[1] or cond[2]:
+                        grid_v[I] = ti.Vector([0, 0, 0]) # Sticky boundary condition
+                else:
+                    grid_v[I] = ti.select(cond, 0, grid_v[I]) # Set normal velocity to 0
+                # Sticky boundary condition by setting tangential velocity to zero if it points outside the grid at the boundaries
+                # Limit the velocity w.r.t. CFL condition
+                grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
                 
     @ti.kernel
     def substep_g2p(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),grid_v: ti.types.ndarray(ndim=3),
@@ -653,6 +697,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         for I in ti.grouped(hand_sdf):
             pos = I * dx + dx * 0.5
             obstacle_velocities[I] = ti.Vector([0.0, 0.0, 0.0])
+            hand_sdf[I] = float('inf')
+            obstacle_normals[I] = ti.Vector([0.0, 0.0, 0.0])
             # Check if the current position is within the specified bounding box
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
                 min_dist = float('inf')
@@ -717,6 +763,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         for I in ti.grouped(hand_sdf):
             pos = I * dx + dx * 0.5
             obstacle_velocities[I] = ti.Vector([0.0, 0.0, 0.0])
+            hand_sdf[I] = float('inf')
+            obstacle_normals[I] = ti.Vector([0.0, 0.0, 0.0])
             # Check if the current position is within the specified bounding box
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
                 min_dist = float('inf')
@@ -846,6 +894,16 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def copy_array_1dim1I(src: ti.types.ndarray(ndim=1), dst:ti.types.ndarray(ndim=1)):
         for I in ti.grouped(src):
             dst[I] = src[I]
+
+    @ti.kernel
+    def copy_array_3dim1(src: ti.types.ndarray(ndim=3), dst:ti.types.ndarray(ndim=3)):
+        for I in ti.grouped(src):
+            dst[I] = src[I]
+    
+    @ti.kernel
+    def copy_array_3dim3(src: ti.types.ndarray(ndim=3), dst:ti.types.ndarray(ndim=3)):
+        for I in ti.grouped(src):
+            dst[I] = src[I]
     
     @ti.kernel
     def transform_and_merge(x1: ti.types.ndarray(ndim=1), 
@@ -948,6 +1006,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_calculate_hand_hash(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell)
         substep_calculate_hand_sdf_hash(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_update_grid_v(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_update_grid_v_lerp(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities,hand_sdf, obstacle_normals, obstacle_velocities,0.5, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=1)
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_update_dg(x, C,  dg,  dt, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -958,6 +1017,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_apply_Drucker_Prager_plasticity(dg, x,lambda_0, mu_0, _alpha, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_plasticity(dg, x,E,nu, material,SigY,alpha,min_clamp,max_clamp, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_get_max_speed(v,x, max_speed, min_x, max_x, min_y, max_y, min_z, max_z)
+        copy_array_1dim1(x, x)
+        copy_array_1dim3(v, v)
+        copy_array_1dim1I(material, material)
+        copy_array_3dim1(sdf, sdf)
+        copy_array_3dim3(obstacle_normals, obstacle_normals)
+
         normalize_m(marching_m,max_m)
 
         substep_calculate_mat_sdf(mat_primitives, mat_primitives_radius, mat_velocities, mat_sdf, obstacle_normals, obstacle_velocities, dx, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -978,6 +1043,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(init_torus, template_args={'x': x, 'dg': dg})
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
+        mod.add_kernel(substep_update_grid_v_lerp, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities,'sdf_last': sdf, 'obstacle_normals_last': obstacle_normals, 'obstacle_velocities_last': obstacle_velocities})
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'x': x,'max_speed': max_speed})
         mod.add_kernel(init_dg, template_args={'dg': dg})
         mod.add_kernel(substep_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m,'E':E,'nu':nu,'material':material,'p_vol':p_vol,'p_mass':p_mass})
@@ -1003,6 +1069,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(copy_array_1dim1, template_args={'src': E, 'dst': E})
         mod.add_kernel(copy_array_1dim3, template_args={'src': x, 'dst': x}) 
         mod.add_kernel(copy_array_1dim1I,template_args={'src': material, 'dst': material})
+        mod.add_kernel(copy_array_3dim1, template_args={'src': sdf, 'dst': sdf})
+        mod.add_kernel(copy_array_3dim3, template_args={'src': obstacle_normals, 'dst': obstacle_normals})
         mod.add_kernel(init_sample_gaussian_data, template_args={'x_gaussian': x, 'x': x})
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part1.kernel.tcm")
