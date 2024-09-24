@@ -75,8 +75,5 @@ public class MatToolRenderer: MonoBehaviour
         primitiveObject.transform.GetChild(0).position = sphere1;
         primitiveObject.transform.GetChild(1).position = sphere2;
         primitiveObject.transform.GetChild(2).position = sphere3;
-        primitiveObject.transform.GetChild(0).localScale = Vector3.one * radii1 * 2;
-        primitiveObject.transform.GetChild(1).localScale = Vector3.one * radii2 * 2;
-        primitiveObject.transform.GetChild(2).localScale = Vector3.one * radii3 * 2;
     }
 }

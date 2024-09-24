@@ -5,7 +5,7 @@ import taichi as ti
 from math import pi
 
 from mpm_util import *
-from medial_distance import *
+# from medial_distance import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--arch", type=str, default='vulkan')
@@ -326,7 +326,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 if grid_m[I] > 0:
                     grid_v[I] /= grid_m[I]
                 # Apply gravitational force
-                gravity = ti.Vector([gx, gy, gz]) 
+                gravity = ti.Vector([gx, gy, gz])
                 grid_v[I] += dt * gravity
                 # Apply damping to reduce the velocity over time
                 grid_v[I] *= ti.exp(-damping * dt)
@@ -610,27 +610,30 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             pos = I * dx + dx * 0.5
             obstacle_velocities[I] = ti.Vector([0.0, 0.0, 0.0])
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
-                min_dist = ti.Vector([float('inf'), float('inf'), float('inf')])
+                min_dist = float('inf')
+                norm = ti.Vector([0.0, 0.0, 0.0])
                 min_alpha = 0.0
                 min_beta = 0.0
                 for i in range(mat_primitives.shape[0]):
-                    dist = ti.Vector([0.0, 0.0, 0.0])
+                    dist = float('inf')
+                    dist_normal = ti.Vector([0.0, 0.0, 0.0])
                     alpha, beta = 0.0, 0.0
                     # Determine cone and slab by the radius of the third sphere
                     if mat_primitives_radius[i, 2] == 0.0:
                         # Compute distance from grid node to a Medial Cone
-                        dist, alpha, beta = compute_point_cone_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
+                        dist, dist_normal, alpha, beta = compute_point_cone_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
                                                      mat_primitives[i, 1], mat_primitives_radius[i, 1],
                                                      pos, 0.0,
                                                      pos, 0.0)
                     else:
                         # Compute distance from grid node to a Medial Slab
-                        dist, alpha, beta = compute_point_slab_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
+                        dist, dist_normal, alpha, beta = compute_point_slab_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
                                                      mat_primitives[i, 1], mat_primitives_radius[i, 1],
                                                      mat_primitives[i, 2], mat_primitives_radius[i, 2],
                                                      pos, 0.0)
-                    if dist.norm() < min_dist.norm():
+                    if dist < min_dist:
                         min_dist = dist
+                        norm = dist_normal
                         min_alpha = alpha
                         min_beta = beta
                         if mat_primitives_radius[i, 2] == 0.0:
@@ -639,8 +642,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         else:
                             # Slab velocity
                             obstacle_velocities[I] = mat_velocities[i, 0] * min_alpha + mat_velocities[i, 1] * min_beta + mat_velocities[i, 2] * (1 - min_alpha - min_beta) 
-                mat_sdf[I] = min_dist.norm()
-                obstacle_normals[I] = min_dist.normalized()
+                mat_sdf[I] = min_dist
+                obstacle_normals[I] = norm
     
     @ti.kernel
     def substep_calculate_hand_sdf(skeleton_segments: ti.types.ndarray(ndim=2),

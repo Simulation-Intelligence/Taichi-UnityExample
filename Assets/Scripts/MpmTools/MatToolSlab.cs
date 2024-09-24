@@ -60,7 +60,7 @@ public class MatToolSlab : MatTool
     
     protected override void UpdatePrimitives()
     {
-        // Update Transform
+        // Update Gameobject Transform
         if (oculus_hand.IsTracked)
         {
             foreach (var bone in oculus_skeleton.Bones)
@@ -73,9 +73,15 @@ public class MatToolSlab : MatTool
                     
                     for (int i = 0; i < numPrimitives; i++)
                     {
+                        // Update primitive position using the oculus Hand Joint Component
                         primitives[i].sphere1 = transform.TransformPoint(init_primitives[i].sphere1);
                         primitives[i].sphere2 = transform.TransformPoint(init_primitives[i].sphere2);
                         primitives[i].sphere3 = transform.TransformPoint(init_primitives[i].sphere3);
+                        
+                        // Multiply by localScale to get the correct radius
+                        primitives[i].radii1 = init_primitives[i].radii1 * transform.localScale.x;
+                        primitives[i].radii2 = init_primitives[i].radii2 * transform.localScale.x;
+                        primitives[i].radii3 = init_primitives[i].radii3 * transform.localScale.x;
                     }
                     break;
                 }
