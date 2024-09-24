@@ -312,7 +312,6 @@ public class Mpm3DMarching : MonoBehaviour
         {
             totalPrimitives += matTool.numPrimitives;
         }
-
         mat_primitives = new NdArrayBuilder<float>().Shape(totalPrimitives, 3).ElemShape(3).HostWrite(true).Build();
         mat_primitives_radius = new NdArrayBuilder<float>().Shape(totalPrimitives, 3).HostWrite(true).Build();
         mat_velocities = new NdArrayBuilder<float>().Shape(totalPrimitives, 3).ElemShape(3).HostWrite(true).Build();
@@ -728,6 +727,7 @@ public class Mpm3DMarching : MonoBehaviour
                 if (matTools.Count > 0)
                     UpdateMatPrimitives();
             }
+
 
             if (tools.Count > 0)
             {
@@ -1277,6 +1277,7 @@ public class Mpm3DMarching : MonoBehaviour
                     Vector3 sphere1 = primitive.sphere1;
                     Vector3 sphere2 = primitive.sphere2;
                     Vector3 sphere3 = primitive.sphere3;
+
 
                     UpdatePrimitivesVelocity(tool_primitives, tool_primitives_prev, tool_primitives_velocity, primitives_start * 9 + j * 9, sphere1, sphere2, sphere3, frame_time);
 
