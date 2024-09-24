@@ -1230,14 +1230,14 @@ public class Mpm3DMarching : MonoBehaviour
                     _tool_capsule_radius[capsules_start + j] = capsule.radius / transform.lossyScale.x;
                 }
 
-                // Copy the hand skeleton segments and velocities to the compute buffer
-                skeleton_segments.CopyFromArray(tool_segments);
-                skeleton_velocities.CopyFromArray(tool_velocities);
-                skeleton_capsule_radius.CopyFromArray(_tool_capsule_radius);
-
                 capsules_start += tools[i].numCapsules;
             }
         }
+
+        // Copy the hand skeleton segments and velocities to the compute buffer
+        skeleton_segments.CopyFromArray(tool_segments);
+        skeleton_velocities.CopyFromArray(tool_velocities);
+        skeleton_capsule_radius.CopyFromArray(_tool_capsule_radius);
 
         // Update the simulation box domain around the two hands based on the position of them
         Center /= tools.Count;
