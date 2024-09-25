@@ -24,9 +24,6 @@ public class MatToolCone : MatTool
     private HandJointId _handJointId;
     private OVRHand oculus_hand;
     private OVRSkeleton oculus_skeleton;
-
-    [SerializeField]
-    private Quaternion _rotationOffset = Quaternion.identity;
     
     void Awake()
     {

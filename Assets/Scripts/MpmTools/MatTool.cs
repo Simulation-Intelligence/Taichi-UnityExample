@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class MatTool : MonoBehaviour
 {
@@ -15,6 +16,26 @@ public class MatTool : MonoBehaviour
     public int numPrimitives;
     public Primitive[] init_primitives;
     public Primitive[] primitives;
+
+    [SerializeField]
+    protected Quaternion _rotationOffset = Quaternion.identity;
+
+    // Json Object to store the primitives
+    [System.Serializable]
+    public class PrimitiveData
+    {
+        public float[] sphere1;
+        public float radii1;
+        public float[] sphere2;
+        public float radii2;
+        public float[] sphere3;
+        public float radii3;
+    }
+    [System.Serializable]
+    public class PrimitiveList
+    {
+        public List<PrimitiveData> primitives;
+    }
     
     void Start()
     {
@@ -41,6 +62,41 @@ public class MatTool : MonoBehaviour
             primitives[i].sphere1 = transform.TransformPoint(init_primitives[i].sphere1);
             primitives[i].sphere2 = transform.TransformPoint(init_primitives[i].sphere2);
             primitives[i].sphere3 = transform.TransformPoint(init_primitives[i].sphere3);
+        }
+    }
+    protected void LoadPrimitivesFromJson(string filepath)
+    {
+        TextAsset jsonFile = Resources.Load<TextAsset>(filepath);
+
+        if (jsonFile != null)
+        {
+            PrimitiveList primitiveList = JsonUtility.FromJson<PrimitiveList>("{\"primitives\":" + jsonFile.text + "}");
+            numPrimitives = primitiveList.primitives.Count;
+            init_primitives = new Primitive[numPrimitives];
+
+            for (int i = 0; i < numPrimitives; i++)
+            {
+                PrimitiveData data = primitiveList.primitives[i];
+
+                Vector3 sphere1 = new Vector3(data.sphere1[0], data.sphere1[1], data.sphere1[2]);
+                Vector3 sphere2 = new Vector3(data.sphere2[0], data.sphere2[1], data.sphere2[2]);
+                Vector3 sphere3 = new Vector3(data.sphere3[0], data.sphere3[1], data.sphere3[2]);
+
+                init_primitives[i] = new Primitive
+                {
+                    sphere1 = sphere1,
+                    radii1 = data.radii1,
+                    sphere2 = sphere2,
+                    radii2 = data.radii2,
+                    sphere3 = sphere3,
+                    radii3 = data.radii3
+                };
+            }
+            Debug.Log("Primitives loaded successfully from JSON.");
+        }
+        else
+        {
+            Debug.LogError("Could not load JSON file.");
         }
     }
 }
