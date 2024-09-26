@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static SkeletonRenderer;
+
 public class SkeletonRenderer : MonoBehaviour
 {
     public enum HandType
@@ -44,20 +44,20 @@ public class SkeletonRenderer : MonoBehaviour
                                               0.015382f,
                                               0.013382f,
                                               0.01028295f,
-                                              0.01822828f,
+                                              0.014f,
                                               0.01029526f,
                                               0.008038102f,
-                                              0.02323196f,
-                                              0.01117394f,
+                                              0.019f,
+                                              0.011f,
                                               0.008030958f,
                                               0.01608828f,
                                               0.009922137f,
                                               0.007611672f,
-                                              0.01823196f,
-                                              0.015f,
+                                              0.013f,
+                                              0.013f,
                                               0.008483353f,
                                               0.006764194f,
-                                              0.009768805f,
+                                              0.0090f,
                                               0.007636196f,
                                               0.007629411f,
                                               0.007231089f,
@@ -65,20 +65,6 @@ public class SkeletonRenderer : MonoBehaviour
 
     private void Start()
     {
-        if (handType.ToString() == "HandLeft")
-        {
-            handIndex = 0;
-        }
-        else if (handType.ToString() == "HandRight")
-        {
-            handIndex = 1;
-        }
-        Debug.Log("handIndex is " + handIndex);
-
-        _segmentVisualizations = new List<SegmentVisualization>();
-        _capsuleVisualizations = new List<CapsuleVisualization>();
-        _ovrCapsuleVisualizations = new List<OVRCapsuleVisualization>();
-
         if (skeletonMaterial == null)
         {
             skeletonMaterial = new Material(Shader.Find("Diffuse"));
@@ -89,6 +75,27 @@ public class SkeletonRenderer : MonoBehaviour
             capsuleMaterial = new Material(Shader.Find("Transparent/Diffuse"));
             capsuleMaterial.color = new Color(1f, 1f, 1f, 0.5f); // Transparent white material
         }
+
+        _segmentVisualizations = new List<SegmentVisualization>();
+        _capsuleVisualizations = new List<CapsuleVisualization>();
+        _ovrCapsuleVisualizations = new List<OVRCapsuleVisualization>();
+
+        if (handType.ToString() == "HandLeft")
+        {
+            handIndex = 0;
+        }
+        else if (handType.ToString() == "HandRight")
+        {
+            handIndex = 1;
+            for (int i = 0; i < rightHandJoints.Count; i++)
+            {
+                var start = rightHandJoints[i];
+                var end = rightHandJoints[i].parent;
+                var capsuleVis = new CapsuleVisualization(i, start.position, end.position, preset_capsule_radius[i], capsuleMaterial);
+                _capsuleVisualizations.Add(capsuleVis);
+            }
+        }
+        Debug.Log("handIndex is " + handIndex);
 
         // 24 line segments with 24 capsules in total
         _skeleton_capsule_radius = preset_capsule_radius;
@@ -139,8 +146,6 @@ public class SkeletonRenderer : MonoBehaviour
 
     private void Initialize()
     {
-        //for (int i = 0; i < 1; i++)
-        //{
         if (oculus_hands[handIndex].IsTracked && oculus_hands[handIndex].HandConfidence == OVRHand.TrackingConfidence.High)
         {
             if (useCustomCapsules)
@@ -154,7 +159,7 @@ public class SkeletonRenderer : MonoBehaviour
                         var start = oculus_skeletons[handIndex].Bones[j].Transform;
                         var end = oculus_skeletons[handIndex].Bones[j].Transform.parent;
 
-                        var capsuleVis = new CapsuleVisualization(start.position, end.position, _skeleton_capsule_radius[j], capsuleMaterial);
+                        var capsuleVis = new CapsuleVisualization(j, start.position, end.position, _skeleton_capsule_radius[j], capsuleMaterial);
                         _capsuleVisualizations.Add(capsuleVis);
                     }
                     isInitialized = true;
@@ -189,7 +194,6 @@ public class SkeletonRenderer : MonoBehaviour
                 isInitialized = true;
             }
         }
-        //}
     }
 
     // Visualize hand skeleton by capsules (custom method)
@@ -201,9 +205,10 @@ public class SkeletonRenderer : MonoBehaviour
         private Material RenderMaterial;
         private float capsult_radius;
 
-        public CapsuleVisualization(Vector3 BoneBegin, Vector3 BoneEnd, float radius, Material renderMat)
+        public CapsuleVisualization(int index, Vector3 BoneBegin, Vector3 BoneEnd, float radius, Material renderMat)
         {
             CapsuleGO = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            CapsuleGO.name = "Capsule_" + index;
             CapsuleCollider collider = CapsuleGO.GetComponent<CapsuleCollider>();
             Destroy(collider);
             Renderer = CapsuleGO.GetComponent<MeshRenderer>();

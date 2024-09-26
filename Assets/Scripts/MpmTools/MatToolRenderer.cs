@@ -12,7 +12,10 @@ public class MatToolRenderer: MonoBehaviour
     void Start()
     {
         // Inherit material
-        material = GetComponent<MeshRenderer>().material;
+        if (material == null)
+        {
+            material = GetComponent<MeshRenderer>().material;
+        }
 
         // Get the MatTool component
         if (matTool == null)
