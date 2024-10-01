@@ -22,23 +22,36 @@ public class MatHand : MatTool
     // Map between primitive index and joint index
     Dictionary<int, int> primitivesJointMap = new Dictionary<int, int>(); 
     private Dictionary<int, Vector3[]> primitiveOffsets = new Dictionary<int, Vector3[]>();
+    public struct PrimitiveBinding
+    {
+        public int jointStartIndex;
+        public int jointEndIndex;
+        public float interpolation;
+    }
+    private Dictionary<int, PrimitiveBinding> primitivesJointBindings = new Dictionary<int, PrimitiveBinding>(); 
     [SerializeField]
     private List<Transform> leftHandJoints = new List<Transform>();
     [SerializeField]
     private List<Transform> rightHandJoints = new List<Transform>();
     
     // These primitives are removed from the hand_mat.json
-    private int[] removedPrimitives = new int[] {2, 8, 12, 19, 48, 58, 61, 97};
+    private int[] removedPrimitives = new int[] {2, 8, 12, 19, 42, 48, 58, 65, 98};
     
     void Awake()
     {
         // Initialization with hand_mat.json
-        LoadPrimitivesFromJson("Prefabs/Tools/hand_mat");
+        LoadPrimitivesFromJson("Prefabs/Tools/hand_mat_2");
+        
+        // RemoveNoUsedPrimitives();
+        // CalculateIntersection();
+        // AdjustPrimitivesJointMap();
+        // CalculateOffset();
+        
         RemoveNoUsedPrimitives();
-        CalculateIntersection();
-        AdjustPrimitivesJointMap();
-        CalculateOffset();
-
+        CalculateInteractionForLerp();
+        AdjustPrimitivesJointBindings();
+        CalculateOffsetForLerp();
+        
         // Oculus hands
         if (handType == HandType.LeftHand)
         {
@@ -51,10 +64,10 @@ public class MatHand : MatTool
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
         }
     }
-
+    
     // protected override void UpdatePrimitives()
     // {
-    //     // Update Gameobject Transform
+    //     // Update mat hand without hand tracking
     //     if (oculus_hand.IsTracked)
     //     {
     //         foreach (var bone in oculus_skeleton.Bones)
@@ -83,30 +96,55 @@ public class MatHand : MatTool
     //     }
     // }
     
+    // protected override void UpdatePrimitives()
+    // {
+    //     // Update mat hand without hand tracking
+    //     if (oculus_hand.IsTracked)
+    //     {
+    //         int numBones = oculus_skeleton.Bones.Count;
+    //         if (numBones > 0)
+    //         {
+    //             foreach (var entry in primitivesJointMap)
+    //             {
+    //                 int primitiveIndex = entry.Key;
+    //                 int jointIndex = entry.Value;
+    //                 OVRBone bone = oculus_skeleton.Bones[jointIndex];
+
+    //                 Vector3[] offsets = primitiveOffsets[primitiveIndex];
+    //                 primitives[primitiveIndex].sphere1 = bone.Transform.parent.TransformPoint(offsets[0]);
+    //                 primitives[primitiveIndex].sphere2 = bone.Transform.parent.TransformPoint(offsets[1]);
+    //                 primitives[primitiveIndex].sphere3 = bone.Transform.parent.TransformPoint(offsets[2]);
+    //             }
+    //         }
+    //     }
+    // }
+    
     protected override void UpdatePrimitives()
     {
+        // Update mat hand without hand tracking
         if (oculus_hand.IsTracked)
         {
             int numBones = oculus_skeleton.Bones.Count;
             if (numBones > 0)
             {
-                foreach (var entry in primitivesJointMap)
+                foreach (var entry in primitivesJointBindings)
                 {
                     int primitiveIndex = entry.Key;
-                    int jointIndex = entry.Value;
-                    OVRBone bone = oculus_skeleton.Bones[jointIndex];
-                    Vector3 bonePosition = bone.Transform.parent.position;
-                    Quaternion boneRotation = bone.Transform.parent.rotation;
+                    PrimitiveBinding binding = entry.Value;
+                    Transform jointStart = oculus_skeleton.Bones[binding.jointStartIndex].Transform;
+                    Transform jointEnd = (binding.jointEndIndex >= 0) ? oculus_skeleton.Bones[binding.jointEndIndex].Transform : jointStart;
 
+                    Vector3 primitiveLerpPosition = Vector3.Lerp(jointStart.position, jointEnd.position, binding.interpolation);
+                    Quaternion jointRotationLerp = Quaternion.Slerp(jointStart.rotation, jointEnd.rotation, binding.interpolation);
                     Vector3[] offsets = primitiveOffsets[primitiveIndex];
-                    primitives[primitiveIndex].sphere1 = bone.Transform.parent.TransformPoint(offsets[0]);
-                    primitives[primitiveIndex].sphere2 = bone.Transform.parent.TransformPoint(offsets[1]);
-                    primitives[primitiveIndex].sphere3 = bone.Transform.parent.TransformPoint(offsets[2]);
+                    primitives[primitiveIndex].sphere1 = jointEnd.rotation * offsets[0] + primitiveLerpPosition;
+                    primitives[primitiveIndex].sphere2 = jointEnd.rotation * offsets[1] + primitiveLerpPosition;
+                    primitives[primitiveIndex].sphere3 = jointEnd.rotation * offsets[2] + primitiveLerpPosition;
                 }
             }
         }
     }
-
+    
     void RemoveNoUsedPrimitives()
     {
         List<Primitive> primitiveList = new List<Primitive>(init_primitives);
@@ -123,7 +161,7 @@ public class MatHand : MatTool
         numPrimitives = init_primitives.Length;
         Debug.Log("Remaining primitives count: " + numPrimitives);
     }
-
+    
     void AdjustPrimitivesJointMap()
     {
         var keys = primitivesJointMap.Keys.ToList();
@@ -198,6 +236,208 @@ public class MatHand : MatTool
         }
     }
     
+    void AdjustPrimitivesJointBindings()
+    {
+        var keys = primitivesJointBindings.Keys.ToList();
+        for (int i = 0; i < keys.Count; i++)
+        {
+            int primitiveIndex = keys[i];
+            if (primitiveIndex == 3)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 11;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+                Debug.Log("Primitive " + primitiveIndex + " jointStartIndex is changed to " + binding.jointStartIndex + " and jointEndIndex is changed to " + binding.jointEndIndex);
+            }
+            if (primitiveIndex == 18)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 16;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 28)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 4;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 30)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 13;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+                Debug.Log("Primitive " + primitiveIndex + " jointStartIndex is changed to " + binding.jointStartIndex + " and jointEndIndex is changed to " + binding.jointEndIndex);
+            }
+            if (primitiveIndex == 43)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 9;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 44)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 6;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 56)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 9;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 64 || primitiveIndex == 65 || primitiveIndex == 66)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 12;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 69)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 20;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+                Debug.Log("Primitive " + primitiveIndex + " jointStartIndex is changed to " + binding.jointStartIndex + " and jointEndIndex is changed to " + binding.jointEndIndex);
+            }
+            if (primitiveIndex == 71)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 16;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 87)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 9;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 89)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 6;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 92)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 9;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 93)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 12;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 94)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 9;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+            if (primitiveIndex == 103)
+            {
+                PrimitiveBinding binding = primitivesJointBindings[primitiveIndex];
+                binding.jointStartIndex = 9;
+                binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
+                primitivesJointBindings[primitiveIndex] = binding;
+            }
+        }
+    }
+
+    void CalculateOffsetForLerp()
+    {
+        foreach (var entry in primitivesJointBindings)
+        {
+            int primitiveIndex = entry.Key;
+            PrimitiveBinding binding = entry.Value;
+            Transform jointStart = rightHandJoints[binding.jointStartIndex];
+            Transform jointEnd = rightHandJoints[binding.jointEndIndex];
+            
+            Vector3[] offsets = new Vector3[3];
+            // offsets[0] = jointStart.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere1);
+            // offsets[1] = jointStart.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere2);
+            // offsets[2] = jointStart.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere3);
+            Vector3 interpolatedPosition = Vector3.Lerp(jointStart.position, jointEnd.position, binding.interpolation);
+            offsets[0] = Quaternion.Inverse(jointEnd.rotation) * (init_primitives[primitiveIndex].sphere1 - interpolatedPosition);
+            offsets[1] = Quaternion.Inverse(jointEnd.rotation) * (init_primitives[primitiveIndex].sphere2 - interpolatedPosition);
+            offsets[2] = Quaternion.Inverse(jointEnd.rotation) * (init_primitives[primitiveIndex].sphere3 - interpolatedPosition);
+            primitiveOffsets[primitiveIndex] = offsets;
+        }
+    }
+    
+    void CalculateInteractionForLerp()
+    {
+        Dictionary<int, float> minDistances = new Dictionary<int, float>();
+        primitivesJointMap.Clear();
+        primitivesJointBindings.Clear();
+        for (int i = 0; i < rightHandJoints.Count; i++)
+        {
+            Vector3 start = rightHandJoints[i].position;
+            Vector3 end = rightHandJoints[i].parent.position;
+            int parentIndex = GetParentJointIndex(i);
+            for (int j = 0; j < numPrimitives; j++)
+            {
+                var primitive = init_primitives[j];
+                bool intersect = LinePrimitiveIntersection(start, end, primitive, out float distance);
+                if (!minDistances.ContainsKey(j) || distance < minDistances[j])
+                {
+                    minDistances[j] = distance;
+                    float interpolation = CalculateInterpolation(primitive, start, end);
+                    primitivesJointBindings[j] = new PrimitiveBinding
+                    {
+                        jointStartIndex = i,
+                        jointEndIndex = parentIndex,
+                        interpolation = interpolation
+                    };
+                }
+            }
+        }
+        foreach (var e in primitivesJointBindings.OrderBy(e => e.Key))
+        {
+            Debug.Log("Primitive " + e.Key + " is closest to start index " + e.Value.jointStartIndex + " and end index " + e.Value.jointEndIndex + " with interpolation " + e.Value.interpolation);
+        }
+        Debug.Log("Intersection calculation done with:" + primitivesJointBindings.Count);
+    }
+    
+    float CalculateInterpolation(Primitive primitive, Vector3 start, Vector3 end)
+    {
+        Vector3 primitiveCenter = (primitive.sphere1 + primitive.sphere2 + primitive.sphere3) / 3;
+        Vector3 line = (end - start).normalized;
+        float length = Vector3.Distance(start, end);
+        float projection = Vector3.Dot(primitiveCenter - start, line);
+        return Mathf.Clamp01(projection / length);
+    }
+
+    int GetParentJointIndex(int jointIndex)
+    {
+        Transform currentJoint = rightHandJoints[jointIndex];
+        Transform parentJoint = currentJoint.parent;
+        for (int i = 0; i < rightHandJoints.Count; i++)
+        {
+            if (rightHandJoints[i] == parentJoint)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+    
     void CalculateOffset()
     {
         foreach (var entry in primitivesJointMap)
@@ -206,16 +446,13 @@ public class MatHand : MatTool
             int jointIndex = entry.Value;
             Transform bone = rightHandJoints[jointIndex];
             Vector3[] offsets = new Vector3[3];
-            // offsets[0] = Quaternion.Inverse(bone.rotation) * init_primitives[primitiveIndex].sphere1 - bone.position;
-            // offsets[1] = Quaternion.Inverse(bone.rotation) * init_primitives[primitiveIndex].sphere2 - bone.position;
-            // offsets[2] = Quaternion.Inverse(bone.rotation) * init_primitives[primitiveIndex].sphere3 - bone.position;
             offsets[0] = bone.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere1); 
             offsets[1] = bone.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere2); 
             offsets[2] = bone.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere3);
             primitiveOffsets[primitiveIndex] = offsets;
         }
     }
-    
+
     void CalculateIntersection()
     {
         Dictionary<int, float> minDistances = new Dictionary<int, float>();
