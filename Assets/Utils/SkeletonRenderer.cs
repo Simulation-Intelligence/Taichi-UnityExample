@@ -83,6 +83,13 @@ public class SkeletonRenderer : MonoBehaviour
         if (handType.ToString() == "HandLeft")
         {
             handIndex = 0;
+            for (int i = 0; i < leftHandJoints.Count; i++)
+            {
+                var start = leftHandJoints[i];
+                var end = leftHandJoints[i].parent;
+                var capsuleVis = new CapsuleVisualization(i, start.position, end.position, preset_capsule_radius[i], capsuleMaterial);
+                _capsuleVisualizations.Add(capsuleVis);
+            }
         }
         else if (handType.ToString() == "HandRight")
         {

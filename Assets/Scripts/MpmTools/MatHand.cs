@@ -7,13 +7,13 @@ using Oculus.Interaction.Input;
 
 public class MatHand : MatTool
 {
-    private HandJoint handJoint;
     public enum HandType
     {
         LeftHand,
         RightHand
     }
     public HandType handType;
+    private HandJoint handJoint;
     [SerializeField]
     private HandJointId _handJointId;
     private OVRHand oculus_hand;
@@ -39,19 +39,6 @@ public class MatHand : MatTool
     
     void Awake()
     {
-        // Initialization with hand_mat.json
-        LoadPrimitivesFromJson("Prefabs/Tools/hand_mat_2");
-        
-        // RemoveNoUsedPrimitives();
-        // CalculateIntersection();
-        // AdjustPrimitivesJointMap();
-        // CalculateOffset();
-        
-        RemoveNoUsedPrimitives();
-        CalculateInteractionForLerp();
-        AdjustPrimitivesJointBindings();
-        CalculateOffsetForLerp();
-        
         // Oculus hands
         if (handType == HandType.LeftHand)
         {
@@ -63,6 +50,15 @@ public class MatHand : MatTool
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
         }
+        
+        // Initialization with hand_mat.json
+        bool isLeftHand = handType == HandType.LeftHand;
+        LoadPrimitivesFromJson("Prefabs/Tools/hand_mat_2", isLeftHand);
+        
+        RemoveNoUsedPrimitives();
+        CalculateInteractionForLerp(isLeftHand);
+        AdjustPrimitivesJointBindings();
+        CalculateOffsetForLerp(isLeftHand);
     }
     
     // protected override void UpdatePrimitives()
@@ -248,7 +244,6 @@ public class MatHand : MatTool
                 binding.jointStartIndex = 11;
                 binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
                 primitivesJointBindings[primitiveIndex] = binding;
-                Debug.Log("Primitive " + primitiveIndex + " jointStartIndex is changed to " + binding.jointStartIndex + " and jointEndIndex is changed to " + binding.jointEndIndex);
             }
             if (primitiveIndex == 18)
             {
@@ -270,7 +265,6 @@ public class MatHand : MatTool
                 binding.jointStartIndex = 13;
                 binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
                 primitivesJointBindings[primitiveIndex] = binding;
-                Debug.Log("Primitive " + primitiveIndex + " jointStartIndex is changed to " + binding.jointStartIndex + " and jointEndIndex is changed to " + binding.jointEndIndex);
             }
             if (primitiveIndex == 43)
             {
@@ -306,7 +300,6 @@ public class MatHand : MatTool
                 binding.jointStartIndex = 20;
                 binding.jointEndIndex = GetParentJointIndex(binding.jointStartIndex);
                 primitivesJointBindings[primitiveIndex] = binding;
-                Debug.Log("Primitive " + primitiveIndex + " jointStartIndex is changed to " + binding.jointStartIndex + " and jointEndIndex is changed to " + binding.jointEndIndex);
             }
             if (primitiveIndex == 71)
             {
@@ -360,19 +353,16 @@ public class MatHand : MatTool
         }
     }
 
-    void CalculateOffsetForLerp()
+    void CalculateOffsetForLerp(bool isLeftHand)
     {
+        List<Transform> handJoints = isLeftHand ? leftHandJoints : rightHandJoints;
         foreach (var entry in primitivesJointBindings)
         {
             int primitiveIndex = entry.Key;
             PrimitiveBinding binding = entry.Value;
-            Transform jointStart = rightHandJoints[binding.jointStartIndex];
-            Transform jointEnd = rightHandJoints[binding.jointEndIndex];
-            
+            Transform jointStart = handJoints[binding.jointStartIndex];
+            Transform jointEnd = handJoints[binding.jointEndIndex];
             Vector3[] offsets = new Vector3[3];
-            // offsets[0] = jointStart.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere1);
-            // offsets[1] = jointStart.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere2);
-            // offsets[2] = jointStart.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere3);
             Vector3 interpolatedPosition = Vector3.Lerp(jointStart.position, jointEnd.position, binding.interpolation);
             offsets[0] = Quaternion.Inverse(jointEnd.rotation) * (init_primitives[primitiveIndex].sphere1 - interpolatedPosition);
             offsets[1] = Quaternion.Inverse(jointEnd.rotation) * (init_primitives[primitiveIndex].sphere2 - interpolatedPosition);
@@ -381,15 +371,16 @@ public class MatHand : MatTool
         }
     }
     
-    void CalculateInteractionForLerp()
+    void CalculateInteractionForLerp(bool isLeftHand)
     {
         Dictionary<int, float> minDistances = new Dictionary<int, float>();
         primitivesJointMap.Clear();
         primitivesJointBindings.Clear();
+        List<Transform> handJoints = isLeftHand ? leftHandJoints : rightHandJoints;
         for (int i = 0; i < rightHandJoints.Count; i++)
         {
-            Vector3 start = rightHandJoints[i].position;
-            Vector3 end = rightHandJoints[i].parent.position;
+            Vector3 start = handJoints[i].position;
+            Vector3 end = handJoints[i].parent.position;
             int parentIndex = GetParentJointIndex(i);
             for (int j = 0; j < numPrimitives; j++)
             {

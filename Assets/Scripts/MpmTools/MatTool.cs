@@ -64,7 +64,7 @@ public class MatTool : MonoBehaviour
             primitives[i].sphere3 = transform.TransformPoint(init_primitives[i].sphere3);
         }
     }
-    protected void LoadPrimitivesFromJson(string filepath)
+    protected void LoadPrimitivesFromJson(string filepath, bool inverse)
     {
         TextAsset jsonFile = Resources.Load<TextAsset>(filepath);
 
@@ -77,11 +77,19 @@ public class MatTool : MonoBehaviour
             for (int i = 0; i < numPrimitives; i++)
             {
                 PrimitiveData data = primitiveList.primitives[i];
-
-                Vector3 sphere1 = new Vector3(data.sphere1[0], data.sphere1[1], data.sphere1[2]);
-                Vector3 sphere2 = new Vector3(data.sphere2[0], data.sphere2[1], data.sphere2[2]);
-                Vector3 sphere3 = new Vector3(data.sphere3[0], data.sphere3[1], data.sphere3[2]);
-
+                Vector3 sphere1, sphere2, sphere3;
+                if (inverse)
+                {
+                    sphere1 = new Vector3(data.sphere1[0] * -1, data.sphere1[1] * -1, data.sphere1[2] * -1);
+                    sphere2 = new Vector3(data.sphere2[0] * -1, data.sphere2[1] * -1, data.sphere2[2] * -1);
+                    sphere3 = new Vector3(data.sphere3[0] * -1, data.sphere3[1] * -1, data.sphere3[2] * -1);
+                }
+                else
+                {
+                    sphere1 = new Vector3(data.sphere1[0], data.sphere1[1], data.sphere1[2]);
+                    sphere2 = new Vector3(data.sphere2[0], data.sphere2[1], data.sphere2[2]);
+                    sphere3 = new Vector3(data.sphere3[0], data.sphere3[1], data.sphere3[2]);
+                }
                 init_primitives[i] = new Primitive
                 {
                     sphere1 = sphere1,
