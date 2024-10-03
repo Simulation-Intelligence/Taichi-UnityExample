@@ -129,9 +129,7 @@ public class MatHand : MatTool
                     PrimitiveBinding binding = entry.Value;
                     Transform jointStart = oculus_skeleton.Bones[binding.jointStartIndex].Transform;
                     Transform jointEnd = (binding.jointEndIndex >= 0) ? oculus_skeleton.Bones[binding.jointEndIndex].Transform : jointStart;
-
                     Vector3 primitiveLerpPosition = Vector3.Lerp(jointStart.position, jointEnd.position, binding.interpolation);
-                    Quaternion jointRotationLerp = Quaternion.Slerp(jointStart.rotation, jointEnd.rotation, binding.interpolation);
                     Vector3[] offsets = primitiveOffsets[primitiveIndex];
                     primitives[primitiveIndex].sphere1 = jointEnd.rotation * offsets[0] + primitiveLerpPosition;
                     primitives[primitiveIndex].sphere2 = jointEnd.rotation * offsets[1] + primitiveLerpPosition;

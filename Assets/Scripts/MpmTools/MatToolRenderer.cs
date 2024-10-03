@@ -63,7 +63,6 @@ public class MatToolRenderer: MonoBehaviour
         {
             return;
         }
-
         // Update each primitive's position and size
         for (int i = 0; i < matTool.numPrimitives; i++)
         {
