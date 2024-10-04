@@ -311,20 +311,17 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     @ti.kernel
     def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=3),
-                              grid_m: ti.types.ndarray(ndim=3),
                               sdf: ti.types.ndarray(ndim=3),
                               obstacle_normals: ti.types.ndarray(ndim=3),
                               obstacle_velocities: ti.types.ndarray(ndim=3),
                               gx: float, gy: float, gz: float, k: float, damping: float, friction_k: float,
                               v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, use_sticky_cond: ti.i32,
                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
-        for I in ti.grouped(grid_m):
+        for I in ti.grouped(grid_v):
             pos = I * dx + dx * 0.5
             # Check if the current position is within the specified bounding box
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
                 # Normalize the velocity if the grid cell has mass
-                if grid_m[I] > 0:
-                    grid_v[I] /= grid_m[I]
                 # Apply gravitational force
                 gravity = ti.Vector([gx, gy, gz])
                 grid_v[I] += dt * gravity
@@ -348,10 +345,25 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 # Sticky boundary condition by setting tangential velocity to zero if it points outside the grid at the boundaries
                 # Limit the velocity w.r.t. CFL condition
                 grid_v[I] = min(max(grid_v[I], -v_allowed), v_allowed)
+
+    @ti.kernel
+    def substep_apply_force_field(grid_v: ti.types.ndarray(ndim=3),
+                              grid_m: ti.types.ndarray(ndim=3),
+                              center_x: ti.f32, center_y: ti.f32, center_z: ti.f32, radius: ti.f32,force_x: ti.f32, force_y: ti.f32, force_z: ti.f32,dt: ti.f32, 
+                              min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
+        for I in ti.grouped(grid_m):
+            pos = I * dx + dx * 0.5
+            # Check if the current position is within the specified bounding box
+            if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
+                # Normalize the velocity if the grid cell has mass
+                if grid_m[I] > 0:
+                    grid_v[I] /= grid_m[I]
+                # Apply force field to the grid cell if it is within the specified sphere
+                if (pos - ti.Vector([center_x, center_y, center_z])).norm() < radius:
+                    grid_v[I] += ti.Vector([force_x, force_y, force_z]) * dt
     
     @ti.kernel
     def substep_update_grid_v_lerp(grid_v: ti.types.ndarray(ndim=3),
-                              grid_m: ti.types.ndarray(ndim=3),
                               sdf: ti.types.ndarray(ndim=3),
                               obstacle_normals: ti.types.ndarray(ndim=3),
                               obstacle_velocities: ti.types.ndarray(ndim=3),
@@ -362,16 +374,13 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                               gx: ti.f32, gy: ti.f32, gz: ti.f32, k: ti.f32, damping: ti.f32, friction_k: ti.f32,
                               v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, use_sticky_cond: ti.i32,
                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
-        for I in ti.grouped(grid_m):
+        for I in ti.grouped(grid_v):
             pos = I * dx + dx * 0.5
             sdf_lerp =sdf_last[I]+(sdf[I]-sdf_last[I])*ratio
             obstacle_normals_lerp = obstacle_normals_last[I]+(obstacle_normals[I]-obstacle_normals_last[I])*ratio
             obstacle_velocities_lerp = obstacle_velocities_last[I]+(obstacle_velocities[I]-obstacle_velocities_last[I])*ratio
             # Check if the current position is within the specified bounding box
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
-                # Normalize the velocity if the grid cell has mass
-                if grid_m[I] > 0:
-                    grid_v[I] /= grid_m[I]
                 # Apply gravitational force
                 gravity = ti.Vector([gx, gy, gz]) 
                 grid_v[I] += dt * gravity
@@ -1008,8 +1017,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_calculate_hand_hash(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell)
         substep_calculate_hand_sdf_hash(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_update_grid_v(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_update_grid_v_lerp(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities,hand_sdf, obstacle_normals, obstacle_velocities,0.5, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_apply_force_field(grid_v,grid_m,0.5,0.5,0.5,0.2,0,0,0,0.001,min_x,max_x,min_y,max_y,min_z,max_z)
+        substep_update_grid_v(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_update_grid_v_lerp(grid_v, hand_sdf, obstacle_normals, obstacle_velocities,hand_sdf, obstacle_normals, obstacle_velocities,0.5, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=1)
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_update_dg(x, C,  dg,  dt, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -1045,8 +1055,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(init_cylinder, template_args={'x': x, 'dg': dg})
         mod.add_kernel(init_torus, template_args={'x': x, 'dg': dg})
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
-        mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
-        mod.add_kernel(substep_update_grid_v_lerp, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities,'sdf_last': sdf, 'obstacle_normals_last': obstacle_normals, 'obstacle_velocities_last': obstacle_velocities})
+        mod.add_kernel(substep_apply_force_field, template_args={'grid_v': grid_v, 'grid_m': grid_m})
+        mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v,  'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
+        mod.add_kernel(substep_update_grid_v_lerp, template_args={'grid_v': grid_v,  'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities,'sdf_last': sdf, 'obstacle_normals_last': obstacle_normals, 'obstacle_velocities_last': obstacle_velocities})
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'x': x,'max_speed': max_speed})
         mod.add_kernel(init_dg, template_args={'dg': dg})
         mod.add_kernel(substep_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m,'E':E,'nu':nu,'material':material,'p_vol':p_vol,'p_mass':p_mass})

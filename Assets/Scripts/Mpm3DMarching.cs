@@ -11,6 +11,7 @@ using static SkeletonRenderer;
 using GaussianSplatting.Runtime;
 using UnityEngine.Experimental.Rendering;
 using MarchingCubes;
+using System.Xml;
 
 public class Mpm3DMarching : MonoBehaviour
 {
@@ -23,7 +24,7 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private AotModuleAsset Mpm3DModule;
     private Kernel _Kernel_subsetep_reset_grid, _Kernel_substep_neohookean_p2g, _Kernel_substep_Kirchhoff_p2g,
-    _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_update_grid_v, _Kernel_substep_update_grid_v_lerp, _Kernel_substep_g2p,
+    _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_apply_force_field, _Kernel_substep_update_grid_v, _Kernel_substep_update_grid_v_lerp, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
      _Kernel_substep_calculate_mat_sdf,
@@ -135,6 +136,9 @@ public class Mpm3DMarching : MonoBehaviour
     public bool adjust_particle = true;
 
     [SerializeField]
+    private int smooth_iter = 0;
+
+    [SerializeField]
     private float bounding_eps = 0.1f;
     [SerializeField]
     public float max_dt = 1e-4f, frame_time = 0.005f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
@@ -160,6 +164,11 @@ public class Mpm3DMarching : MonoBehaviour
     // Use sticky boundary condition, 1 for sticky boundary, 0 for non-sticky boundary
     [SerializeField]
     private int use_sticky_boundary = 1;
+
+    [SerializeField]
+    private PinchGesture pinchGesture;
+    [SerializeField]
+    private float pinchratio = 1.0f, pinchradius = 0.1f;
 
     [Header("Tools")]
     public List<MatTool> matTools = new List<MatTool>();
@@ -248,6 +257,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_substep_neohookean_p2g = kernels["substep_neohookean_p2g"];
             _Kernel_substep_Kirchhoff_p2g = kernels["substep_kirchhoff_p2g"];
             _Kernel_substep_calculate_signed_distance_field = kernels["substep_calculate_signed_distance_field"];
+            _Kernel_substep_apply_force_field = kernels["substep_apply_force_field"];
             _Kernel_substep_update_grid_v = kernels["substep_update_grid_v"];
             _Kernel_substep_update_grid_v_lerp = kernels["substep_update_grid_v_lerp"];
             _Kernel_substep_g2p = kernels["substep_g2p"];
@@ -433,6 +443,8 @@ public class Mpm3DMarching : MonoBehaviour
         marchingCubeVisualizers[0]._gridScale = 1.0f / render_n_grid;
 
         marchingCubeVisualizers[0].Init();
+
+        SetSmoothingIterations(smooth_iter);
     }
     public void Init_gaussian()
     {
@@ -761,13 +773,16 @@ public class Mpm3DMarching : MonoBehaviour
                 _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
                     _Kernel_substep_update_dg.LaunchAsync(x_gaussian, C_gaussian, dg_gaussian, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+
+
+                ApplyPinchForce();
                 if (lerp_tool)
                 {
                     float lerp_factor = 1 - time_left / frame_time;
-                    _Kernel_substep_update_grid_v_lerp.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, hand_sdf_last, obstacle_normals_last, obstacle_velocities_last, lerp_factor, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                    _Kernel_substep_update_grid_v_lerp.LaunchAsync(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, hand_sdf_last, obstacle_normals_last, obstacle_velocities_last, lerp_factor, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 }
                 else
-                    _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                    _Kernel_substep_update_grid_v.LaunchAsync(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
                 // If fix the object in place during the modeling process
                 if (is_fixed)
@@ -923,6 +938,10 @@ public class Mpm3DMarching : MonoBehaviour
         }
         marching_m = new NdArrayBuilder<float>().Shape(marchingCubeVisualizers.Length, render_n_grid, render_n_grid, render_n_grid).Build();
         marching_m_computeBuffer = new ComputeBuffer(render_n_grid * render_n_grid * render_n_grid * marchingCubeVisualizers.Length, sizeof(float));
+    }
+    public void set_grabbable(bool grabbable)
+    {
+        _grabbable.MaxGrabPoints = grabbable ? -1 : 0;
     }
     private void MergeParticles(Mpm3DMarching other)
     {
@@ -1384,6 +1403,18 @@ public class Mpm3DMarching : MonoBehaviour
         {
             writer.WriteLine(string.Join(",", position));
         }
+    }
+    void ApplyPinchForce()
+    {
+        Vector3 pinchPosition = Vector3.zero;
+        Vector3 pinchDirection = Vector3.zero;
+        if (pinchGesture.isPinching)
+        {
+            pinchPosition = transform.InverseTransformPoint(pinchGesture.initialPinchPosition);
+            pinchDirection = pinchGesture.pinchSpeed * pinchratio * transform.InverseTransformDirection(pinchGesture.pinchMovement);
+        }
+        _Kernel_substep_apply_force_field.LaunchAsync(grid_v, grid_m, pinchPosition.x, pinchPosition.y, pinchPosition.z, pinchradius, pinchDirection.x, pinchDirection.y, pinchDirection.z, max_dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+
     }
 
     void LoadHandMotionData()
