@@ -3,9 +3,7 @@ import os
 import numpy as np
 import taichi as ti
 from math import pi
-
 from mpm_util import *
-# from medial_distance import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--arch", type=str, default='vulkan')
@@ -476,6 +474,50 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     v[p] = skeleton_velocities[min_seg_idx, 0] * (1 - min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
     
     @ti.kernel
+    def substep_adjust_particle_mat(x: ti.types.ndarray(ndim=1),
+                                    v: ti.types.ndarray(ndim=1),
+                                    mat_primitives: ti.types.ndarray(ndim=2),
+                                    mat_primitives_radius: ti.types.ndarray(ndim=2),
+                                    mat_velocities: ti.types.ndarray(ndim=2),
+                                    min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
+        for p in x:
+            if (x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
+                min_dist = float('inf')
+                norm = ti.Vector([0.0, 0.0, 0.0])
+                min_alpha = 0.0
+                min_beta = 0.0
+                min_primitive_idx = -1
+                for i in range(mat_primitives.shape[0]):
+                    dist = float('inf')
+                    dist_normal = ti.Vector([0.0, 0.0, 0.0])
+                    alpha, beta = 0.0, 0.0
+                    if mat_primitives_radius[i, 2] == 0.0:
+                        dist, dist_normal, alpha, beta = compute_point_cone_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
+                                                     mat_primitives[i, 1], mat_primitives_radius[i, 1],
+                                                     x[p], 0.0,
+                                                     x[p], 0.0)
+                    else:
+                        dist, dist_normal, alpha, beta = compute_point_slab_distance(mat_primitives[i, 0], mat_primitives_radius[i, 0],
+                                                     mat_primitives[i, 1], mat_primitives_radius[i, 1],
+                                                     mat_primitives[i, 2], mat_primitives_radius[i, 2],
+                                                     x[p], 0.0)
+                    # dist < 0 means the particle is inside the primitive
+                    if dist < 0.0 and dist < min_dist:
+                        min_dist = dist
+                        norm = dist_normal
+                        min_alpha = alpha
+                        min_beta = beta
+                        min_primitive_idx = i
+                if min_primitive_idx != -1:
+                    # Adjust the particle's position to be just outside the primitive
+                    x[p] = x[p] + norm * min_dist * (-1)
+                    # Update the particle's velocity to match the primitive velocity
+                    if (mat_primitives_radius[min_primitive_idx, 2] == 0.0):
+                        v[p] = mat_velocities[min_primitive_idx, 0] * min_alpha + mat_velocities[min_primitive_idx, 1] * (1 - min_alpha)
+                    else:
+                        v[p] = mat_velocities[min_primitive_idx, 0] * min_alpha + mat_velocities[min_primitive_idx, 1] * min_beta + mat_velocities[min_primitive_idx, 2] * (1 - min_alpha - min_beta) 
+
+    @ti.kernel
     def substep_adjust_particle(x: ti.types.ndarray(ndim=1), 
                                 v: ti.types.ndarray(ndim=1),
                                 skeleton_capsule_radius: ti.types.ndarray(ndim=1),
@@ -503,7 +545,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         min_r = r
                         min_dist = dist # Update the minimum distance
                 if min_seg_idx != -1:
-                    # Adjust the particle's position to be outside the capsule radius
+                    # Adjust the particle's position to be just outside the capsule radius
                     x[p] = x[p] + min_dist.normalized() * (skeleton_capsule_radius[min_seg_idx] - min_dist.norm())
                     # Update the particle's velocity to match the segment's velocity (with interpolation)
                     v[p] = skeleton_velocities[min_seg_idx, 0] * (1 - min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
@@ -1024,7 +1066,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_update_dg(x, C,  dg,  dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle_hash(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_adjust_particle(x, v,skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_adjust_particle(x, v, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_Von_Mises_plasticity(dg,x, mu_0, _SigY, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_clamp_plasticity(dg, x,_min_clamp,_max_clamp, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_Drucker_Prager_plasticity(dg, x,lambda_0, mu_0, _alpha, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -1035,11 +1077,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         copy_array_1dim1I(material, material)
         copy_array_3dim1(sdf, sdf)
         copy_array_3dim3(obstacle_normals, obstacle_normals)
-
         normalize_m(marching_m,max_m)
-
         substep_calculate_mat_sdf(mat_primitives, mat_primitives_radius, mat_velocities, mat_sdf, obstacle_normals, obstacle_velocities, dx, min_x, max_x, min_y, max_y, min_z, max_z)
-    
+        substep_adjust_particle_mat(x, v, mat_primitives, mat_primitives_radius, mat_velocities, min_x, max_x, min_y, max_y, min_z, max_z)
+
     def run_aot():
         mod = ti.aot.Module(arch)
         mod.add_kernel(substep_reset_grid, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'marching_m': marching_m})
@@ -1070,6 +1111,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius})
         mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
         mod.add_kernel(substep_calculate_hand_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
+        mod.add_kernel(substep_adjust_particle_mat, template_args={'x': x, 'v': v, 'mat_primitives': mat_primitives, 'mat_primitives_radius': mat_primitives_radius, 'mat_velocities': mat_velocities})
         mod.add_kernel(substep_adjust_particle_hash, template_args={'x': x, 'v': v, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'skeleton_capsule_radius': skeleton_capsule_radius, 'skeleton_velocities': skeleton_velocities, 'skeleton_segments': skeleton_segments})
         mod.add_kernel(substep_adjust_particle, template_args={'x': x, 'v': v, 'skeleton_capsule_radius': skeleton_capsule_radius, 'skeleton_velocities': skeleton_velocities, 'skeleton_segments': skeleton_segments})
 
