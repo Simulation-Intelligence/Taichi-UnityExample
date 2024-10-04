@@ -26,7 +26,7 @@ public class Mpm3DMarching : MonoBehaviour
     _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_update_grid_v, _Kernel_substep_update_grid_v_lerp, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
-     _Kernel_substep_calculate_mat_sdf,
+     _Kernel_substep_calculate_mat_sdf, _Kernel_substep_adjust_particle_mat,
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere, _Kernel_init_cylinder, _Kernel_init_torus,
      _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi, _Kernel_substep_p2marching,
         _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_3dim1, _Kernel_copy_array_3dim3, _Kernel_copy_array_1dim1I, _Kernel_init_sample_gaussian_data, _Kernel_substep_update_dg;
@@ -244,6 +244,7 @@ public class Mpm3DMarching : MonoBehaviour
         var kernels = Mpm3DModule.GetAllKernels().ToDictionary(x => x.Name);
         if (kernels.Count > 0)
         {
+            // Mpm
             _Kernel_subsetep_reset_grid = kernels["substep_reset_grid"];
             _Kernel_substep_neohookean_p2g = kernels["substep_neohookean_p2g"];
             _Kernel_substep_Kirchhoff_p2g = kernels["substep_kirchhoff_p2g"];
@@ -264,6 +265,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_substep_calculate_hand_hash = kernels["substep_calculate_hand_hash"];
             _Kernel_substep_calculate_hand_sdf_hash = kernels["substep_calculate_hand_sdf_hash"];
             _Kernel_substep_adjust_particle_hash = kernels["substep_adjust_particle_hash"];
+            _Kernel_substep_adjust_particle_mat = kernels["substep_adjust_particle_mat"];
             _Kernel_substep_adjust_particle = kernels["substep_adjust_particle"];
             _Kernel_substep_p2g = kernels["substep_p2g"];
             _Kernel_substep_apply_plasticity = kernels["substep_apply_plasticity"];
@@ -712,7 +714,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else
         {
-            // Simulation
+            // Simulation loop
             float dt = max_dt, time_left = frame_time;
 
             if (UseRecordDate)
@@ -728,20 +730,17 @@ public class Mpm3DMarching : MonoBehaviour
                     UpdateMatPrimitives();
             }
 
-
             if (tools.Count > 0)
             {
-                // Use capsule-based tools  
+                // Use Capsule based tools  
                 if (transform.lossyScale.x > 1.0f)
                 {
-                    // The object is scaled up
                     _Kernel_substep_calculate_hand_hash.LaunchAsync(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell);
                     _Kernel_substep_calculate_hand_sdf_hash.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell,
                     boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 }
                 else
                 {
-                    // The object is scaled down
                     _Kernel_substep_calculate_hand_sdf.LaunchAsync(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx,
                     boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 }
@@ -769,8 +768,8 @@ public class Mpm3DMarching : MonoBehaviour
                 else
                     _Kernel_substep_update_grid_v.LaunchAsync(grid_v, grid_m, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
-                // If fix the object in place during the modeling process
                 if (is_fixed)
+                    // If fix the object in place during the modeling process
                     _Kernel_substep_fix_object.LaunchAsync(grid_v, fix_center.x, fix_center.y, fix_center.z, fix_radius);
 
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
@@ -797,19 +796,32 @@ public class Mpm3DMarching : MonoBehaviour
                 _Kernel_copy_array_3dim3.LaunchAsync(obstacle_normals, obstacle_normals_last);
                 _Kernel_copy_array_3dim3.LaunchAsync(obstacle_velocities, obstacle_velocities_last);
             }
+
             if (adjust_particle)
-                if (transform.lossyScale.x > 1.0f)
+            {
+                // Particle projection
+                if (tools.Count > 0)
                 {
-                    _Kernel_substep_adjust_particle_hash.LaunchAsync(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                    if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
-                        _Kernel_substep_adjust_particle_hash.LaunchAsync(x_gaussian, v_gaussian, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                    if (transform.lossyScale.x > 1.0f)
+                    {
+                        _Kernel_substep_adjust_particle_hash.LaunchAsync(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                        if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
+                            _Kernel_substep_adjust_particle_hash.LaunchAsync(x_gaussian, v_gaussian, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                    }
+                    else
+                    {
+                        _Kernel_substep_adjust_particle.LaunchAsync(x, v, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                        if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
+                            _Kernel_substep_adjust_particle.LaunchAsync(x_gaussian, v_gaussian, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                    }
                 }
-                else
+                if (matTools.Count > 0)
                 {
-                    _Kernel_substep_adjust_particle.LaunchAsync(x, v, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                    _Kernel_substep_adjust_particle_mat.LaunchAsync(x, v, mat_primitives, mat_primitives_radius, mat_velocities, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                     if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
-                        _Kernel_substep_adjust_particle.LaunchAsync(x_gaussian, v_gaussian, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                        _Kernel_substep_adjust_particle_mat.LaunchAsync(x_gaussian, v_gaussian, mat_primitives, mat_primitives_radius, mat_velocities, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 }
+            }
         }
 
         if (renderType == RenderType.PointMesh)
@@ -1162,7 +1174,6 @@ public class Mpm3DMarching : MonoBehaviour
         tex.SetPixelData(colorData, 0);
         tex.Apply(false, true);
         splatManager.m_Render.m_GpuColorData = tex;
-
     }
     void AdjustGaussianTextureColorRed(float r)
     {

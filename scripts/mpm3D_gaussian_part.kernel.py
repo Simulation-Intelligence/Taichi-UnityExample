@@ -501,7 +501,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         min_primitive_idx = i
                 if min_primitive_idx != -1:
                     # Adjust the particle's position to be just outside the primitive
-                    x[p] = x[p] + norm * (min_dist)
+                    x[p] = x[p] + norm * min_dist * (-1)
                     # Update the particle's velocity to match the primitive velocity
                     if (mat_primitives_radius[min_primitive_idx, 2] == 0.0):
                         v[p] = mat_velocities[min_primitive_idx, 0] * min_alpha + mat_velocities[min_primitive_idx, 1] * (1 - min_alpha)
@@ -1100,6 +1100,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_calculate_hand_sdf, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius})
         mod.add_kernel(substep_calculate_hand_sdf_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_velocities': skeleton_velocities, 'hand_sdf': hand_sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
         mod.add_kernel(substep_calculate_hand_hash, template_args={'skeleton_segments': skeleton_segments, 'skeleton_capsule_radius': skeleton_capsule_radius, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell})
+        mod.add_kernel(substep_adjust_particle_mat, template_args={'x': x, 'v': v, 'mat_primitives': mat_primitives, 'mat_primitives_radius': mat_primitives_radius, 'mat_velocities': mat_velocities})
         mod.add_kernel(substep_adjust_particle_hash, template_args={'x': x, 'v': v, 'hash_table': hash_table, 'segments_count_per_cell': segments_count_per_cell, 'skeleton_capsule_radius': skeleton_capsule_radius, 'skeleton_velocities': skeleton_velocities, 'skeleton_segments': skeleton_segments})
         mod.add_kernel(substep_adjust_particle, template_args={'x': x, 'v': v, 'skeleton_capsule_radius': skeleton_capsule_radius, 'skeleton_velocities': skeleton_velocities, 'skeleton_segments': skeleton_segments})
 
@@ -1146,7 +1147,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             substep_update_gaussian_data(init_rotation, init_scale, dg, other_data, init_sh, sh, x, min_x, max_x, min_y, max_y, min_z, max_z)
             gui.circles(T(x.to_numpy()), radius=1.5, color=0x66CCFF)
             gui.show()
-    # run_aot()
+    run_aot()
     
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph
