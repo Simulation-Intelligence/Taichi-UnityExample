@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: pillow sofa
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 636360
+  m_BoundsMin: {x: -0.6215851, y: -0.4965348, z: -0.90768856}
+  m_BoundsMax: {x: 0.6037212, y: 0.5768941, z: 0.8663747}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: b864f7552c793ba27339482abfe24b13
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 1eebd5aadae0320418113b0965db6dbb, type: 3}
+  m_ColorData: {fileID: 4900000, guid: eb35d22e40d735f49a8b28e10e9e8064, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 3ade2d0857d165442b8cf20c71b649fd, type: 3}
+  m_SHData: {fileID: 4900000, guid: 2035bb315e657cd44b28039ddd60781b, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

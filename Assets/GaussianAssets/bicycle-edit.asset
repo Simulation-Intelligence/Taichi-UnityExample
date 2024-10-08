@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: bicycle-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 479597
+  m_BoundsMin: {x: -11.290733, y: -6.287133, z: -21.079153}
+  m_BoundsMax: {x: 17.01907, y: 7.194397, z: 10.425964}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 3e2be422d6a2a638b2aa9c67394a85d0
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: a78ff94665f591642a1e4acc31407534, type: 3}
+  m_ColorData: {fileID: 4900000, guid: a1f4c9c4fa42bcf4ea3988d46150788e, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 77ae45ede33a164458f8df603fc15118, type: 3}
+  m_SHData: {fileID: 4900000, guid: 7d68a8850a7fbc247a3d464a253c3dc6, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: cube3filled_particles
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 179347
+  m_BoundsMin: {x: 0.5073445, y: 0.5, z: 0.5507504}
+  m_BoundsMax: {x: 1.4926555, y: 1.5, z: 1.4492496}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 9d1179508c72c96c89f5c939fa2ac6fa
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 8936d992d29157543b38674600d4b9b1, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 950b16f326cfeaf4480497a0216df33e, type: 3}
+  m_OtherData: {fileID: 4900000, guid: ad0a78d45e44d55499a6139b65a1adcb, type: 3}
+  m_SHData: {fileID: 4900000, guid: 422f8df2ff906d34aa01397fc8366079, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
