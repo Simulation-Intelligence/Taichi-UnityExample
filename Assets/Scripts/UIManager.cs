@@ -12,6 +12,9 @@ class UIManager : MonoBehaviour
 {
     [SerializeField]
     private GameObject Mpm3DObject;
+    [SerializeField]
+    private GameObject colorPickerObject;
+    private ColorPicker colorPicker;
     private List<GameObject> createdObjectLists = new List<GameObject>();
     private GameObject selectedObject;
     private GameObject prevSelectedObject;
@@ -112,7 +115,7 @@ class UIManager : MonoBehaviour
         InstantiateTools(); // Instantiate tools
         AddMpm3DObject();
     }
-    
+
     void AddMpm3DObject()
     {
         if (Mpm3DObject != null)
@@ -169,6 +172,16 @@ class UIManager : MonoBehaviour
 
         prevLeftHandTool = leftHandTool;
         prevRightHandTool = rightHandTool;
+    }
+    
+    void OnColorChanged(Color newColor)
+    {
+        if (selectedObject != null)
+        {
+            Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+            if (mpm3DSimulation != null)
+                mpm3DSimulation.AdjustTextureColor(newColor);
+        }
     }
     
     void Update()
@@ -505,6 +518,24 @@ class UIManager : MonoBehaviour
     {
         Debug.Log("Toggle " + toggle.name + " is " + (isOn ? "On" : "Off"));
 
+        // Enable/Disable color picker object
+        if (toggle.name == "Toggle_ColorPicker")
+        {
+            if (colorPickerObject != null)
+            {
+                colorPickerObject.SetActive(isOn);
+                if (isOn)
+                {
+                    ColorPicker colorPicker = colorPickerObject.GetComponentInChildren<ColorPicker>();
+                    colorPicker.onColorChanged += OnColorChanged;
+                }
+                else
+                {
+                    ColorPicker colorPicker = colorPickerObject.GetComponentInChildren<ColorPicker>();
+                    colorPicker.onColorChanged -= OnColorChanged;
+                }
+            }
+        }
         // Enable/Disable object grab
         if (toggle.name == "Toggle_EnableGrab")
         {
