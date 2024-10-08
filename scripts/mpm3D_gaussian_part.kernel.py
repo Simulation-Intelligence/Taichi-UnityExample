@@ -347,7 +347,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     @ti.kernel
     def substep_apply_force_field(grid_v: ti.types.ndarray(ndim=3),
                               grid_m: ti.types.ndarray(ndim=3),
-                              center_x: ti.f32, center_y: ti.f32, center_z: ti.f32, radius: ti.f32,force_x: ti.f32, force_y: ti.f32, force_z: ti.f32,dt: ti.f32, 
+                              center_x: ti.f32, center_y: ti.f32, center_z: ti.f32, radius: ti.f32, force_x: ti.f32, force_y: ti.f32, force_z: ti.f32, dt: ti.f32, 
                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
         for I in ti.grouped(grid_m):
             pos = I * dx + dx * 0.5

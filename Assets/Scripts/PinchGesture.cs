@@ -13,6 +13,7 @@ public class PinchGesture : MonoBehaviour
         Pinky
     }
 
+    public OVRHand hand;
     public OVRSkeleton handSkeleton;
 
     // 可以在编辑器中选择手指
@@ -32,7 +33,7 @@ public class PinchGesture : MonoBehaviour
     void Update()
     {
         // 检测右手的捏合
-        if (handSkeleton != null)
+        if (hand.IsTracked && handSkeleton != null)
         {
             DetectPinch(handSkeleton);
         }
