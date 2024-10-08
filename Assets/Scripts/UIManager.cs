@@ -37,9 +37,7 @@ class UIManager : MonoBehaviour
     public GameObject[] parameterObjects;
     public TouchScreenKeyboard overlayKeyboard;
 
-    private int lastValue = -1;
-
-    // Mpm Tools
+    // Tools
     private Dictionary<string, MpmTool> mpmToolDict = new Dictionary<string, MpmTool>();
     private string prevLeftHandTool;
     private string prevRightHandTool;
@@ -47,6 +45,7 @@ class UIManager : MonoBehaviour
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
 
+        // Load UI components
         foreach (Button button in buttons)
         {
             button.onClick.AddListener(() => OnButtonClick(button));
@@ -110,9 +109,24 @@ class UIManager : MonoBehaviour
             }
         }
 
-        InstantiateTools();
+        InstantiateTools(); // Instantiate tools
+        AddMpm3DObject();
     }
     
+    void AddMpm3DObject()
+    {
+        if (Mpm3DObject != null)
+        {
+            createdObjectLists.Add(Mpm3DObject);
+            // Use the just created object as the selected object for further interactions
+            selectedObject = Mpm3DObject;
+            // Select tools for modeling
+            SelectTools(selectedObject, "Tool_LeftHand", "Tool_RightHand");
+            // Apply materials specified from UI
+            // ApplyMaterial(newMpm3DObject);
+        }
+    }
+
     void InstantiateTools()
     {
         // Instantiate all tools at the beginning
@@ -341,7 +355,8 @@ class UIManager : MonoBehaviour
         // Create a new object in the scene
         if (button.name == "Button_CreateObject")
         {
-            CreateNewMpm3DObject();
+            // May need to have a file brower
+            // CreateNewMpm3DObject();
         }
         // Adjust materials during the modeling process
         if (button.name == "Button_ApplyMaterials")

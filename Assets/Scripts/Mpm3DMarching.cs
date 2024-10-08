@@ -1082,7 +1082,6 @@ public class Mpm3DMarching : MonoBehaviour
         dx = 1.0f / n_grid;
 
         InitGrid();
-
     }
     public void SetRenderGridSize(int n)
     {
@@ -1268,7 +1267,14 @@ public class Mpm3DMarching : MonoBehaviour
     {
         if (renderType == RenderType.GaussianSplat)
         {
-            Init_gaussian();
+            if (use_gaussian_acceleration)
+            {
+                Init_gaussian_new();
+            }
+            else
+            {
+                Init_gaussian();
+            }
         }
         else
         {
@@ -1300,17 +1306,13 @@ public class Mpm3DMarching : MonoBehaviour
             if (matTools[i].numPrimitives > 0)
             {
                 Center += matTools[i].primitives[0].sphere1;
-
                 for (int j = 0; j < matTools[i].numPrimitives; j++)
                 {
                     var primitive = matTools[i].primitives[j];
                     Vector3 sphere1 = primitive.sphere1;
                     Vector3 sphere2 = primitive.sphere2;
                     Vector3 sphere3 = primitive.sphere3;
-
-
                     UpdatePrimitivesVelocity(tool_primitives, tool_primitives_prev, tool_primitives_velocity, primitives_start * 9 + j * 9, sphere1, sphere2, sphere3, frame_time);
-
                     tool_primitives_radius[primitives_start * 3 + j * 3] = primitive.radii1 / transform.lossyScale.x;
                     tool_primitives_radius[primitives_start * 3 + j * 3 + 1] = primitive.radii2 / transform.lossyScale.x;
                     tool_primitives_radius[primitives_start * 3 + j * 3 + 2] = primitive.radii3 / transform.lossyScale.x;
@@ -1363,7 +1365,6 @@ public class Mpm3DMarching : MonoBehaviour
         tool_primitives_prev[init + 7] = TransformedSphere3.y;
         tool_primitives_prev[init + 8] = TransformedSphere3.z;
     }
-
     void UpdateCapsules()
     {
         Vector3 Center = new();
@@ -1374,7 +1375,6 @@ public class Mpm3DMarching : MonoBehaviour
             {
                 // Use the wrist position as the hand position
                 Center += tools[i].capsules[0].start;
-
                 for (int j = 0; j < tools[i].numCapsules; j++)
                 {
                     var capsule = tools[i].capsules[j];
@@ -1384,23 +1384,18 @@ public class Mpm3DMarching : MonoBehaviour
                     {
                         handPositions.Add(new float[] { start.x, start.y, start.z, end.x, end.y, end.z });
                     }
-
                     // World to local coordinate conversion and calculate the velocity of the segment
                     UpdateSkeletonSegment(tool_segments, tool_segments_prev, tool_velocities, capsules_start * 6 + j * 6, start, end, frame_time);
-
                     // Get the radius of each capsule
                     _tool_capsule_radius[capsules_start + j] = capsule.radius / transform.lossyScale.x;
                 }
-
                 capsules_start += tools[i].numCapsules;
             }
         }
-
         // Copy the hand skeleton segments and velocities to the compute buffer
         skeleton_segments.CopyFromArray(tool_segments);
         skeleton_velocities.CopyFromArray(tool_velocities);
         skeleton_capsule_radius.CopyFromArray(_tool_capsule_radius);
-
         // Update the simulation box domain around the two hands based on the position of them
         Center /= tools.Count;
         boundary_min = transform.InverseTransformPoint(Center) - Vector3.one * hand_simulation_radius / transform.lossyScale.x;
@@ -1595,12 +1590,10 @@ public class Mpm3DMarching : MonoBehaviour
     }
     void RotateAroundPoint(Vector3 localPoint, Vector3 localAxis, float angle)
     {
+        // Global anchor and axis
         Vector3 globalPoint = transform.TransformPoint(localPoint);
-
-        // 获取全局坐标系下的旋转轴
         Vector3 globalAxis = transform.TransformDirection(localAxis);
-
-        // 旋转对象
+        // Rotate around the axis
         transform.RotateAround(globalPoint, globalAxis, angle);
     }
 }
