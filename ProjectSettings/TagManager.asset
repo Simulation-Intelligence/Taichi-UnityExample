@@ -41,3 +41,6 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Color Picker
+    uniqueID: 1367071805
+    locked: 0

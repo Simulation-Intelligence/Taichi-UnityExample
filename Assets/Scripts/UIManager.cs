@@ -42,6 +42,7 @@ class UIManager : MonoBehaviour
 
     // Tools
     private Dictionary<string, MpmTool> mpmToolDict = new Dictionary<string, MpmTool>();
+    private Dictionary<string, MatTool> matToolDict = new Dictionary<string, MatTool>();
     private string prevLeftHandTool;
     private string prevRightHandTool;
     void Start()
@@ -124,7 +125,7 @@ class UIManager : MonoBehaviour
             // Use the just created object as the selected object for further interactions
             selectedObject = Mpm3DObject;
             // Select tools for modeling
-            SelectTools(selectedObject, "Tool_LeftHand", "Tool_RightHand");
+            SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
             // Apply materials specified from UI
             // ApplyMaterial(newMpm3DObject);
         }
@@ -133,42 +134,48 @@ class UIManager : MonoBehaviour
     void InstantiateTools()
     {
         // Instantiate all tools at the beginning
-        mpmToolDict.Add("Tool_LeftHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_LeftHand")).GetComponent<MpmTool>());
-        mpmToolDict.Add("Tool_RightHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_RightHand")).GetComponent<MpmTool>());
-        mpmToolDict.Add("Tool_Sphere_LeftHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_Sphere_LeftHand")).GetComponent<MpmTool>());
-        mpmToolDict.Add("Tool_Sphere_RightHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_Sphere_RightHand")).GetComponent<MpmTool>());
-        
-        // Disable all tools at the beginning
-        foreach (var mpmTool in mpmToolDict.Values)
+        matToolDict.Add("MatTool_Hand_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatTool_Hand_Left")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Hand_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatTool_Hand_Right")).GetComponent<MatTool>());
+        foreach (var matTool in matToolDict.Values)
         {
-            mpmTool.transform.SetParent(transform);
-            mpmTool.gameObject.SetActive(false);
+            matTool.transform.SetParent(transform);
+            matTool.gameObject.SetActive(false);
         }
+
+        // mpmToolDict.Add("Tool_LeftHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_LeftHand")).GetComponent<MpmTool>());
+        // mpmToolDict.Add("Tool_RightHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_RightHand")).GetComponent<MpmTool>());
+        // mpmToolDict.Add("Tool_Sphere_LeftHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_Sphere_LeftHand")).GetComponent<MpmTool>());
+        // mpmToolDict.Add("Tool_Sphere_RightHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_Sphere_RightHand")).GetComponent<MpmTool>());
+        // foreach (var mpmTool in mpmToolDict.Values)
+        // {
+        //     mpmTool.transform.SetParent(transform);
+        //     mpmTool.gameObject.SetActive(false);
+        // }
     }
     
     void SelectTools(GameObject slectedMpm3DObject, string leftHandTool, string rightHandTool)
     {
         // Use hands as the default tool
         Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
-        mpm3DSimulation.tools.Clear();
+        mpm3DSimulation.matTools.Clear();
         
         // Add left hand tool and set active
         if (!string.IsNullOrEmpty(prevLeftHandTool) && prevLeftHandTool != leftHandTool)
         {
-            mpmToolDict[prevLeftHandTool].gameObject.SetActive(false);
+            matToolDict[prevLeftHandTool].gameObject.SetActive(false);
         }
-        mpmToolDict[leftHandTool].gameObject.SetActive(true);
-        mpm3DSimulation.tools.Add(mpmToolDict[leftHandTool]);
+        matToolDict[leftHandTool].gameObject.SetActive(true);
+        mpm3DSimulation.matTools.Add(matToolDict[leftHandTool]);
         
         // Add right hand tool and set active
         if (!string.IsNullOrEmpty(prevRightHandTool) && prevRightHandTool != rightHandTool)
         {
-            mpmToolDict[prevRightHandTool].gameObject.SetActive(false);
+            matToolDict[prevRightHandTool].gameObject.SetActive(false);
         }
-        mpmToolDict[rightHandTool].gameObject.SetActive(true);
-        mpm3DSimulation.tools.Add(mpmToolDict[rightHandTool]);
+        matToolDict[rightHandTool].gameObject.SetActive(true);
+        mpm3DSimulation.matTools.Add(matToolDict[rightHandTool]);
         
-        mpm3DSimulation.Init_Tools();
+        mpm3DSimulation.Init_MatTools();
 
         prevLeftHandTool = leftHandTool;
         prevRightHandTool = rightHandTool;
