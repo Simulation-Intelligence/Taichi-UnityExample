@@ -16,7 +16,7 @@ public class PinchGesture : MonoBehaviour
     public OVRHand hand;
     public OVRSkeleton handSkeleton;
 
-    // 可以在编辑器中选择手指
+    // Specify finger type in inspector
     public FingerType firstFinger = FingerType.Thumb;
     public FingerType secondFinger = FingerType.Middle;
 
@@ -24,8 +24,8 @@ public class PinchGesture : MonoBehaviour
     [HideInInspector] public Vector3 initialPinchPosition;
     [HideInInspector] public Vector3 pinchMovement;
 
-    [HideInInspector] public Vector3 lastPinchPosition; // 上一次捏合位置
-    [HideInInspector] public float pinchSpeed = 0.0f; // 捏合移动的速度
+    [HideInInspector] public Vector3 lastPinchPosition; 
+    [HideInInspector] public float pinchSpeed = 0.0f;
 
     // 捏合检测的阈值
     public float pinchThreshold = 0.02f;
@@ -44,7 +44,11 @@ public class PinchGesture : MonoBehaviour
         // 获取用户选择的两根手指
         Transform firstFingerTip = GetFingerTransform(handSkeleton, firstFinger);
         Transform secondFingerTip = GetFingerTransform(handSkeleton, secondFinger);
-
+        if (firstFingerTip == null || secondFingerTip == null)
+        {
+            return;
+        }
+        
         // 计算两指间的距离
         float distance = Vector3.Distance(firstFingerTip.position, secondFingerTip.position);
 
@@ -84,23 +88,63 @@ public class PinchGesture : MonoBehaviour
         }
     }
 
-    // 根据枚举获取指定手指的Transform
+    // Transform GetFingerTransform(OVRSkeleton handSkeleton, FingerType fingerType)
+    // {
+    //     switch (fingerType)
+    //     {
+    //         case FingerType.Thumb:
+    //             return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_ThumbTip].Transform;
+    //         case FingerType.Index:
+    //             return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_IndexTip].Transform;
+    //         case FingerType.Middle:
+    //             return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_MiddleTip].Transform;
+    //         case FingerType.Ring:
+    //             return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_RingTip].Transform;
+    //         case FingerType.Pinky:
+    //             return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_PinkyTip].Transform;
+    //         default:
+    //             return null;
+    //     }
+    // }
+
     Transform GetFingerTransform(OVRSkeleton handSkeleton, FingerType fingerType)
     {
-        switch (fingerType)
+        foreach (var bone in handSkeleton.Bones)
         {
-            case FingerType.Thumb:
-                return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_ThumbTip].Transform;
-            case FingerType.Index:
-                return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_IndexTip].Transform;
-            case FingerType.Middle:
-                return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_MiddleTip].Transform;
-            case FingerType.Ring:
-                return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_RingTip].Transform;
-            case FingerType.Pinky:
-                return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_PinkyTip].Transform;
-            default:
-                return null;
+            switch (fingerType)
+            {
+                case FingerType.Thumb:
+                    if (bone.Id == OVRSkeleton.BoneId.Hand_ThumbTip)
+                    {
+                        return bone.Transform;
+                    }
+                    break;
+                case FingerType.Index:
+                    if (bone.Id == OVRSkeleton.BoneId.Hand_IndexTip)
+                    {
+                        return bone.Transform;
+                    }
+                    break;
+                case FingerType.Middle:
+                    if (bone.Id == OVRSkeleton.BoneId.Hand_MiddleTip)
+                    {
+                        return bone.Transform;
+                    }
+                    break;
+                case FingerType.Ring:
+                    if (bone.Id == OVRSkeleton.BoneId.Hand_RingTip)
+                    {
+                        return bone.Transform;
+                    }
+                    break;
+                case FingerType.Pinky:
+                    if (bone.Id == OVRSkeleton.BoneId.Hand_PinkyTip)
+                    {
+                        return bone.Transform;
+                    }
+                    break;
+            }
         }
+        return null;
     }
 }
