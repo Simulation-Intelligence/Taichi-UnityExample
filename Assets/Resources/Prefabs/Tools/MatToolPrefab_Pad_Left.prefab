@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &4985507042139840009
+--- !u!1001 &8564727743351115087
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -70,7 +70,7 @@ PrefabInstance:
       objectReference: {fileID: 3588358341120385843, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
     - target: {fileID: 919132149155446097, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
       propertyPath: m_Name
-      value: MatToolPrefab_Pad_Right 1
+      value: MatToolPrefab_Pad_Left
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
       propertyPath: m_IsActive
@@ -82,23 +82,23 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 245354991595486366}
+      addedObject: {fileID: 2096716872512166718}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 843065160590502256}
+      addedObject: {fileID: 6409630632033866753}
   m_SourcePrefab: {fileID: 100100000, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
---- !u!1 &5328178288533250904 stripped
+--- !u!1 &8799311639836717086 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
-  m_PrefabInstance: {fileID: 4985507042139840009}
+  m_PrefabInstance: {fileID: 8564727743351115087}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &245354991595486366
+--- !u!114 &2096716872512166718
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5328178288533250904}
+  m_GameObject: {fileID: 8799311639836717086}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 364a98b130f54df4cae01e1d00e77a01, type: 3}
@@ -106,15 +106,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numPrimitives: 0
   _rotationOffset: {x: 0, y: 0, z: 0, w: 1}
-  handType: 1
+  handType: 0
   _handJointId: 6
---- !u!114 &843065160590502256
+--- !u!114 &6409630632033866753
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5328178288533250904}
+  m_GameObject: {fileID: 8799311639836717086}
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cc82275191eb01344a7e47378297e524, type: 3}
