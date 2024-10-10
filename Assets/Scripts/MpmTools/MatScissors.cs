@@ -108,7 +108,7 @@ public class MatScissors : MatTool
             Vector3 perpendicular = Vector3.Cross(normal, p12);
             Vector3 midPoint = (point1 + point2) / 2;
             float len = p12.magnitude / 2;
-            float new_len = Mathf.Sqrt(transform.localScale.x * transform.localScale.x / 9 - len * len);
+            float new_len = Mathf.Sqrt(transform.localScale.x * transform.localScale.x / 4 - len * len);
             Vector3 cross_point = midPoint + perpendicular.normalized * new_len;
             {
                 Vector3 xAxis = cross_point - point1;
