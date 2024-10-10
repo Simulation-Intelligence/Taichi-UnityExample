@@ -13,6 +13,10 @@ class UIManager : MonoBehaviour
     [SerializeField]
     private GameObject Mpm3DObject;
     [SerializeField]
+    private GameObject MatTool_Hand_Left;
+    [SerializeField]
+    private GameObject MatTool_Hand_Right;
+    [SerializeField]
     private GameObject colorPickerObject;
     private ColorPicker colorPicker;
     private List<GameObject> createdObjectLists = new List<GameObject>();
@@ -134,8 +138,8 @@ class UIManager : MonoBehaviour
     void InstantiateTools()
     {
         // Instantiate all tools at the beginning
-        matToolDict.Add("MatTool_Hand_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatTool_Hand_Left")).GetComponent<MatTool>());
-        matToolDict.Add("MatTool_Hand_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatTool_Hand_Right")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Hand_Left", MatTool_Hand_Left.GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Hand_Right", MatTool_Hand_Right.GetComponent<MatTool>());
         foreach (var matTool in matToolDict.Values)
         {
             matTool.transform.SetParent(transform);
