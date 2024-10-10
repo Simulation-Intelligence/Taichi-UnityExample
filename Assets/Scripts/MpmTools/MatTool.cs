@@ -36,7 +36,7 @@ public class MatTool : MonoBehaviour
     {
         public List<PrimitiveData> primitives;
     }
-    
+
     void Start()
     {
         primitives = new Primitive[numPrimitives];
@@ -64,6 +64,20 @@ public class MatTool : MonoBehaviour
             primitives[i].sphere3 = transform.TransformPoint(init_primitives[i].sphere3);
         }
     }
+    // 定义一个函数来更新 primitive
+    protected void UpdatePrimitive(ref Primitive primitive, Primitive init_primitive, Transform transform)
+    {
+        // 更新 primitive 的球体位置，使用 transform 的 TransformPoint 进行转换
+        primitive.sphere1 = transform.TransformPoint(init_primitive.sphere1);
+        primitive.sphere2 = transform.TransformPoint(init_primitive.sphere2);
+        primitive.sphere3 = transform.TransformPoint(init_primitive.sphere3);
+
+        // 乘以 localScale 来获得正确的半径
+        primitive.radii1 = transform.localScale.x * init_primitive.radii1;
+        primitive.radii2 = transform.localScale.x * init_primitive.radii2;
+        primitive.radii3 = transform.localScale.x * init_primitive.radii3;
+    }
+
     protected void LoadPrimitivesFromJson(string filepath, bool inverse)
     {
         TextAsset jsonFile = Resources.Load<TextAsset>(filepath);
