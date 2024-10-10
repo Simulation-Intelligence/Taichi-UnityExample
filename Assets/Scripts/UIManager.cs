@@ -134,18 +134,25 @@ class UIManager : MonoBehaviour
             // ApplyMaterial(newMpm3DObject);
         }
     }
-
+    
     void InstantiateTools()
     {
-        // Instantiate all tools at the beginning
+        // Instantiate all mat tools at the beginning, either hands gameobject or prefabs
         matToolDict.Add("MatTool_Hand_Left", MatTool_Hand_Left.GetComponent<MatTool>());
         matToolDict.Add("MatTool_Hand_Right", MatTool_Hand_Right.GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Pad_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Pad_Left")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Pad_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Pad_Right")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Cone_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Cone_Left")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Cone_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Cone_Right")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Slab_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Left")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Slab_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Right")).GetComponent<MatTool>());
         foreach (var matTool in matToolDict.Values)
         {
             matTool.transform.SetParent(transform);
             matTool.gameObject.SetActive(false);
         }
 
+        // Capsule based tools
         // mpmToolDict.Add("Tool_LeftHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_LeftHand")).GetComponent<MpmTool>());
         // mpmToolDict.Add("Tool_RightHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_RightHand")).GetComponent<MpmTool>());
         // mpmToolDict.Add("Tool_Sphere_LeftHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_Sphere_LeftHand")).GetComponent<MpmTool>());
@@ -680,23 +687,23 @@ class UIManager : MonoBehaviour
             {
                 if (dropdown.options[value].text == "Left Hand Tool")
                 {
-                    SelectTools(selectedObject, "Tool_LeftHand", prevRightHandTool);
+                    SelectTools(selectedObject, "MatTool_Hand_Left", prevRightHandTool);
                 }
-                else if (dropdown.options[value].text == "Sphere")
+                else if (dropdown.options[value].text == "Planar Pad")
                 {
-                    SelectTools(selectedObject, "Tool_Sphere_LeftHand", prevRightHandTool);
+                    SelectTools(selectedObject, "MatTool_Pad_Left", prevRightHandTool);
                 }
                 else if (dropdown.options[value].text == "Cone")
                 {
-                    SelectTools(selectedObject, "Tool_Cone_LeftHand", prevRightHandTool);
+                    SelectTools(selectedObject, "MatTool_Cone_Left", prevRightHandTool);
                 }
-                else if (dropdown.options[value].text == "Capsule")
+                else if (dropdown.options[value].text == "Slab")
                 {
-                    SelectTools(selectedObject, "Tool_Capsule_LeftHand", prevRightHandTool);
+                    SelectTools(selectedObject, "MatTool_Slab_Left", prevRightHandTool);
                 }
                 else if (dropdown.options[value].text == "Scissor")
                 {
-                    SelectTools(selectedObject, "Tool_Scissor_LeftHand", prevRightHandTool);
+                    SelectTools(selectedObject, "MatTool_Scissor_Left", prevRightHandTool);
                 }
             }
         }
@@ -707,23 +714,23 @@ class UIManager : MonoBehaviour
             {
                 if (dropdown.options[value].text == "Right Hand Tool")
                 {
-                    SelectTools(selectedObject, prevLeftHandTool, "Tool_RightHand");
+                    SelectTools(selectedObject, prevLeftHandTool, "MatTool_Hand_Left");
                 }
-                else if (dropdown.options[value].text == "Sphere")
+                else if (dropdown.options[value].text == "Planar Pad")
                 {
-                    SelectTools(selectedObject, prevLeftHandTool, "Tool_Sphere_RightHand");
+                    SelectTools(selectedObject, prevLeftHandTool, "MatTool_Pad_Right");
                 }
                 else if (dropdown.options[value].text == "Cone")
                 {
-                    SelectTools(selectedObject, prevLeftHandTool, "Tool_Cone_RightHand");
+                    SelectTools(selectedObject, prevLeftHandTool, "MatTool_Cone_Right");
                 }
-                else if (dropdown.options[value].text == "Capsule")
+                else if (dropdown.options[value].text == "Slab")
                 {
-                    SelectTools(selectedObject, prevLeftHandTool, "Tool_Capsule_RightHand");
+                    SelectTools(selectedObject, prevLeftHandTool, "MatTool_Slab_Right");
                 }
                 else if (dropdown.options[value].text == "Scissor")
                 {
-                    SelectTools(selectedObject, prevLeftHandTool, "Tool_Scissor_RightHand");
+                    SelectTools(selectedObject, prevLeftHandTool, "MatTool_Scissor_Right");
                 }
             }
         }
@@ -737,7 +744,7 @@ class UIManager : MonoBehaviour
         {
         }
     }
-
+    
     void CreateMpm3DObjectFromPrefab(string prefabName)
     {
         GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/PrimitiveShapes/Mpm3DExample_" + prefabName);
