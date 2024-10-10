@@ -104,7 +104,7 @@ public class MatScissors : MatTool
             Vector3 point1 = transform1.position;
             Vector3 point2 = transform2.position;
             Vector3 p12 = point2 - point1;
-            Vector3 normal = Vector3.Cross(transform.right, p12);
+            Vector3 normal = Vector3.Cross(transform1.right, p12);
             Vector3 perpendicular = Vector3.Cross(normal, p12);
             Vector3 midPoint = (point1 + point2) / 2;
             float len = p12.magnitude / 2;
