@@ -441,10 +441,13 @@ public class Mpm3DMarching : MonoBehaviour
         _p_mass = _p_vol * p_rho;
         max_density = particle_per_grid * _p_mass * n_grid * n_grid * n_grid / render_n_grid / render_n_grid / render_n_grid;
 
-        marchingCubeVisualizers[0]._dimensions = new Vector3Int(render_n_grid, render_n_grid, render_n_grid);
-        marchingCubeVisualizers[0]._gridScale = 1.0f / render_n_grid;
+        for (int i = 0; i < marchingCubeVisualizers.Length; i++)
+        {
+            marchingCubeVisualizers[i]._dimensions = new Vector3Int(render_n_grid, render_n_grid, render_n_grid);
+            marchingCubeVisualizers[i]._gridScale = 1.0f / render_n_grid;
 
-        marchingCubeVisualizers[0].Init();
+            marchingCubeVisualizers[i].Init();
+        }
 
         SetSmoothingIterations(smooth_iter);
     }
@@ -1229,14 +1232,14 @@ public class Mpm3DMarching : MonoBehaviour
         {
             other.Initiate();
             other.NParticles = NParticles;
-            Init_Particle_Data();
+            other.Init_Particle_Data();
 
             _Kernel_copy_array_1dim3.LaunchAsync(x, other.x);
             _Kernel_init_dg.LaunchAsync(other.dg);
 
             CopyMaterials(other);
             other.Update_materials();
-            other.SetSimulateGridSize(other.n_grid);
+            //other.SetSimulateGridSize(other.n_grid);
         }
     }
     public void CopyMaterials(Mpm3DMarching other)

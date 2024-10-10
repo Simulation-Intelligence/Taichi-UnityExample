@@ -78,7 +78,7 @@ class UIManager : MonoBehaviour
         {
             TMP_Text parameter_text = parameter.transform.Find("Name").GetComponent<TMP_Text>();
             Slider parameter_slider = parameter.GetComponentInChildren<Slider>();
-            
+
             // Adjust slider value by granularity
             float granularityDivisor = 20f;
             float minValue = parameter_slider.minValue;
@@ -156,13 +156,13 @@ class UIManager : MonoBehaviour
         //     mpmTool.gameObject.SetActive(false);
         // }
     }
-    
+
     void SelectTools(GameObject slectedMpm3DObject, string leftHandTool, string rightHandTool)
     {
         // Use hands as the default tool
         Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
         mpm3DSimulation.matTools.Clear();
-        
+
         // Add left hand tool and set active
         if (!string.IsNullOrEmpty(prevLeftHandTool) && prevLeftHandTool != leftHandTool)
         {
@@ -170,7 +170,7 @@ class UIManager : MonoBehaviour
         }
         matToolDict[leftHandTool].gameObject.SetActive(true);
         mpm3DSimulation.matTools.Add(matToolDict[leftHandTool]);
-        
+
         // Add right hand tool and set active
         if (!string.IsNullOrEmpty(prevRightHandTool) && prevRightHandTool != rightHandTool)
         {
@@ -178,13 +178,13 @@ class UIManager : MonoBehaviour
         }
         matToolDict[rightHandTool].gameObject.SetActive(true);
         mpm3DSimulation.matTools.Add(matToolDict[rightHandTool]);
-        
+
         mpm3DSimulation.Init_MatTools();
 
         prevLeftHandTool = leftHandTool;
         prevRightHandTool = rightHandTool;
     }
-    
+
     void OnColorChanged(Color newColor)
     {
         if (selectedObject != null)
@@ -194,7 +194,7 @@ class UIManager : MonoBehaviour
                 mpm3DSimulation.AdjustTextureColor(newColor);
         }
     }
-    
+
     void Update()
     {
         // Find the last grabbed object as the selected object for further manipulations
@@ -255,16 +255,16 @@ class UIManager : MonoBehaviour
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-            
+
             // Initialize the object
             newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
             // Select tools for modeling
-            SelectTools(selectedObject, "Tool_LeftHand", "Tool_RightHand");
+            SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Left");
             // Apply materials specified from UI
             // ApplyMaterial(newMpm3DObject);
         }
     }
-    
+
     void ApplyMaterial(GameObject slectedMpm3DObject)
     {
         // Store the object parameters when creating the object
@@ -276,7 +276,7 @@ class UIManager : MonoBehaviour
         int grid_size = mpm3DSimulation.GetGridSize();
         string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size).ToString();
         valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
-        
+
         // Initialize or update the object parameters
         foreach (TMP_Dropdown dropdown in dropdowns)
         {
@@ -366,7 +366,7 @@ class UIManager : MonoBehaviour
         Debug.Log("friction_angle: " + mpm3DSimulation.friction_angle);
         Debug.Log("damping: " + mpm3DSimulation.damping);
         Debug.Log("n_grid: " + mpm3DSimulation.GetGridSize());
-        
+
         // Adjust materials
         mpm3DSimulation.Init_materials();
         mpm3DSimulation.Update_materials();
@@ -606,11 +606,11 @@ class UIManager : MonoBehaviour
             }
         }
     }
-    
+
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
         Debug.Log(dropdown.name + " selected: " + dropdown.options[value].text);
-        
+
         if (dropdown.name == "Dropdown_PrimitiveShape")
         {
             // Select a primitive shape
@@ -740,7 +740,7 @@ class UIManager : MonoBehaviour
 
     void CreateMpm3DObjectFromPrefab(string prefabName)
     {
-        GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/PrimitiveShapes/Mpm3DMarching" + prefabName);
+        GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/PrimitiveShapes/Mpm3DExample_" + prefabName);
 
         if (Mpm3DObject != null)
         {
@@ -755,11 +755,11 @@ class UIManager : MonoBehaviour
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-            
+
             // Initialize the object
             newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
             // Select tools for modeling
-            SelectTools(selectedObject, "Tool_LeftHand", "Tool_RightHand");
+            SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
             // Apply materials specified from UI
             ApplyMaterial(newMpm3DObject);
         }
