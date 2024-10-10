@@ -1414,7 +1414,7 @@ public class Mpm3DMarching : MonoBehaviour
     {
         Vector3 pinchPosition = Vector3.zero;
         Vector3 pinchDirection = Vector3.zero;
-        if (pinchGesture.isPinching)
+        if (pinchGesture != null && pinchGesture.isPinching)
         {
             pinchPosition = transform.InverseTransformPoint(pinchGesture.initialPinchPosition);
             pinchDirection = pinchGesture.pinchSpeed * pinchratio * transform.InverseTransformDirection(pinchGesture.pinchMovement);
