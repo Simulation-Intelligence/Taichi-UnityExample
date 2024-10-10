@@ -65,12 +65,16 @@ PrefabInstance:
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
+      propertyPath: frame_time
+      value: 0.0005
+      objectReference: {fileID: 0}
+    - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: renderType
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: matTools.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4801245597221521104, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: m_Enabled
@@ -86,7 +90,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6346840257427048670, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: m_Name
-      value: Mpm3DExample_Cylinder Variant
+      value: Mpm3DExample_Cylinder
       objectReference: {fileID: 0}
     - target: {fileID: 6346840257427048670, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: m_IsActive
