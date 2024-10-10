@@ -1299,7 +1299,7 @@ public class Mpm3DMarching : MonoBehaviour
     {
         return gy;
     }
-
+    
     void UpdateMatPrimitives()
     {
         Vector3 Center = new();
