@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &681145251608623916
+--- !u!1001 &1515657256208429991
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -26,7 +26,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.1569
+      value: 0.014
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
       propertyPath: m_LocalPosition.z
@@ -69,16 +69,24 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 3588358341120385843, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
+      objectReference: {fileID: 2100000, guid: 30256115fe22d7541ba62642ff8a1c99, type: 2}
+    - target: {fileID: -7511558181221131132, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
+      propertyPath: m_Materials.Array.data[1]
+      value: 
+      objectReference: {fileID: 2100000, guid: 30256115fe22d7541ba62642ff8a1c99, type: 2}
     - target: {fileID: 919132149155446097, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
       propertyPath: m_Name
-      value: MatToolPrefab_Cone_Right
+      value: MatToolPrefab_Cone_Right 1
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -86,43 +94,43 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 4104142513184819421}
+      addedObject: {fileID: 72784045084250216}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1608883932603324146}
+      addedObject: {fileID: 7854276326356300217}
   m_SourcePrefab: {fileID: 100100000, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
---- !u!1 &410531454299031165 stripped
+--- !u!1 &1858258142446931702 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
-  m_PrefabInstance: {fileID: 681145251608623916}
+  m_PrefabInstance: {fileID: 1515657256208429991}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &4104142513184819421
+--- !u!114 &72784045084250216
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 410531454299031165}
+  m_GameObject: {fileID: 1858258142446931702}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1202718e7dd832a4fb0e690f9200362b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   numPrimitives: 0
-  _rotationOffset: {x: 0, y: 0, z: 0, w: 1}
+  _rotationOffset: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
   handType: 1
   _handJointId: 20
---- !u!114 &1608883932603324146
+--- !u!114 &7854276326356300217
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 410531454299031165}
+  m_GameObject: {fileID: 1858258142446931702}
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cc82275191eb01344a7e47378297e524, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  matTool: {fileID: 4104142513184819421}
+  matTool: {fileID: 72784045084250216}
   material: {fileID: 2100000, guid: f629c6e43dba4bf38cb74d8860150664, type: 2}

@@ -276,7 +276,6 @@ class UIManager : MonoBehaviour
     {
         // Store the object parameters when creating the object
         Mpm3DMarching mpm3DSimulation = slectedMpm3DObject.GetComponent<Mpm3DMarching>();
-        Debug.Log("Mpm3DObject" + slectedMpm3DObject.name + " is created and selected");
 
         // Update the grid size in UI
         string initial_text = valueAdjustGridSize.GetComponent<TMP_Text>().text;
@@ -754,6 +753,7 @@ class UIManager : MonoBehaviour
             // Position and name
             Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.1f;
             position.x -= 0.2f;
+            position.y -= 0.2f;
             Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
 
             GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
@@ -765,10 +765,11 @@ class UIManager : MonoBehaviour
 
             // Initialize the object
             newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
+            
             // Select tools for modeling
-            SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
+            // SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
             // Apply materials specified from UI
-            ApplyMaterial(newMpm3DObject);
+            // ApplyMaterial(newMpm3DObject);
         }
     }
 
@@ -951,7 +952,6 @@ class UIManager : MonoBehaviour
             UI_canvas.transform.rotation = UI_anchor.rotation;
         }
     }
-
     void OnDestroy()
     {
 
