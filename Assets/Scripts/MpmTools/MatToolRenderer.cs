@@ -65,8 +65,6 @@ public class MatToolRenderer : MonoBehaviour
             primitive.transform.GetChild(1).localScale = Vector3.one * matTool.init_primitives[i].radii2 * 2;
             primitive.transform.GetChild(2).localScale = Vector3.one * matTool.init_primitives[i].radii3 * 2;
 
-
-
             primitiveObjects[i] = primitive;
         }
     }

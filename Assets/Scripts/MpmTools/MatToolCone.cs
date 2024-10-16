@@ -7,7 +7,7 @@ public class MatToolCone : MatTool
 {
     private Vector3 sphere1 = new Vector3(0, 0, 0);
     private float radii1 = 0.04f;
-    private Vector3 sphere2 = new Vector3(1.0f, 0.0f, 0.0f);
+    private Vector3 sphere2 = new Vector3(0.0f, 0.0f, 1.0f);
     private float radii2 = 0.1f;
     // Note: Set sphere3 and radii3 to 0.0f to treat it as a cone in the system
     private Vector3 sphere3 = new Vector3(0, 0, 0);
