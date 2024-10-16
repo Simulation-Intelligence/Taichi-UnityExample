@@ -20,16 +20,15 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Purple
+  m_Name: Tool Transparent Material
   m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _ALPHAPREMULTIPLY_ON
-  - _EMISSION
   m_InvalidKeywords:
   - _SURFACE_TYPE_TRANSPARENT
-  m_LightmapFlags: 0
+  m_LightmapFlags: 6
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 3000
@@ -129,11 +128,11 @@ Material:
     - _FeatheringEffect: 0.2
     - _FlipbookMode: 0
     - _GlossMapScale: 1
-    - _Glossiness: 0.059
+    - _Glossiness: 0.01
     - _GlossinessSource: 0
     - _GlossyReflections: 1
     - _LightingEnabled: 0
-    - _Metallic: 0.256
+    - _Metallic: 0.01
     - _Mode: 3
     - _OcclusionStrength: 1
     - _Parallax: 0.02
@@ -166,7 +165,7 @@ Material:
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 0.14117648}
     - _CameraFadeParams: {r: 0, g: Infinity, b: 0, a: 0}
-    - _Color: {r: 1, g: 1, b: 1, a: 0}
+    - _Color: {r: 1, g: 1, b: 1, a: 0.39215687}
     - _ColorAddSubDiff: {r: 0, g: 0, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SoftParticleFadeParams: {r: 0, g: 0, b: 0, a: 0}
