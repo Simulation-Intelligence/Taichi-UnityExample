@@ -319,7 +319,9 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             pos = I * dx + dx * 0.5
             # Check if the current position is within the specified bounding box
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
-                # Normalize the velocity if the grid cell has mass
+                # # Normalize the velocity if the grid cell has mass
+                # if grid_m[I] > 0:
+                #     grid_v[I] /= grid_m[I]
                 # Apply gravitational force
                 gravity = ti.Vector([gx, gy, gz])
                 grid_v[I] += dt * gravity
@@ -349,6 +351,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                               grid_m: ti.types.ndarray(ndim=3),
                               center_x: ti.f32, center_y: ti.f32, center_z: ti.f32, radius: ti.f32, force_x: ti.f32, force_y: ti.f32, force_z: ti.f32, dt: ti.f32, 
                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
+        dx=1/grid_v.shape[0]
         for I in ti.grouped(grid_m):
             pos = I * dx + dx * 0.5
             # Check if the current position is within the specified bounding box
@@ -374,11 +377,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
         for I in ti.grouped(grid_v):
             pos = I * dx + dx * 0.5
-            sdf_lerp =sdf_last[I]+(sdf[I]-sdf_last[I])*ratio
-            obstacle_normals_lerp = obstacle_normals_last[I]+(obstacle_normals[I]-obstacle_normals_last[I])*ratio
-            obstacle_velocities_lerp = obstacle_velocities_last[I]+(obstacle_velocities[I]-obstacle_velocities_last[I])*ratio
             # Check if the current position is within the specified bounding box
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
+                sdf_lerp =sdf_last[I]+(sdf[I]-sdf_last[I])*ratio
+                obstacle_normals_lerp = obstacle_normals_last[I]+(obstacle_normals[I]-obstacle_normals_last[I])*ratio
+                obstacle_velocities_lerp = obstacle_velocities_last[I]+(obstacle_velocities[I]-obstacle_velocities_last[I])*ratio
                 # Apply gravitational force
                 gravity = ti.Vector([gx, gy, gz]) 
                 grid_v[I] += dt * gravity
