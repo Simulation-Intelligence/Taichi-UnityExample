@@ -10,8 +10,8 @@ using Oculus.Interaction;
 
 class UIManager : MonoBehaviour
 {
-    [SerializeField]
-    private GameObject Mpm3DObject;
+    public GameObject Mpm3DObject;
+    public GameObject Mpm3DObject_2;
     [SerializeField]
     private GameObject MatTool_Hand_Left;
     [SerializeField]
@@ -134,6 +134,11 @@ class UIManager : MonoBehaviour
             // Select tools for modeling
             SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
             ShowSelectedObjectCanvas();
+        }
+        if (Mpm3DObject_2 != null)
+        {
+            createdObjectLists.Add(Mpm3DObject_2);
+            SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
         }
     }
     
