@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
-  m_Name: cubefilled_particles
+  m_Name: green_plant
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 198605
-  m_BoundsMin: {x: 0.5744077, y: 0.5, z: 0.5590575}
-  m_BoundsMax: {x: 1.4255923, y: 1.5026795, z: 1.4409425}
+  m_SplatCount: 203930
+  m_BoundsMin: {x: -0.37380004, y: -0.8558952, z: -1.0335774}
+  m_BoundsMax: {x: 0.5525734, y: 0.575094, z: 1.14035}
   m_DataHash:
     serializedVersion: 2
-    Hash: 2ebd6353793d3691c62a66291bcdb7d5
+    Hash: 3c30e4cf2f4243cf9d75ce26c8a9e90e
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: e656ca721faf1ef418193fdbf1b847e6, type: 3}
-  m_ColorData: {fileID: 4900000, guid: 3707abc0ddf4afd45a0ff081a89d22e3, type: 3}
-  m_OtherData: {fileID: 4900000, guid: 1dffff0d6000284449d54147d4836d7e, type: 3}
-  m_SHData: {fileID: 4900000, guid: 0e669376d3b19214d9596a8e85777897, type: 3}
+  m_PosData: {fileID: 4900000, guid: be66327aa58a0914ca3b3a4a1bfb9cf9, type: 3}
+  m_ColorData: {fileID: 4900000, guid: a95fe0429cb216849beefdf505d0d610, type: 3}
+  m_OtherData: {fileID: 4900000, guid: ef10fb1d92d50dc42aebdb770bfb79b0, type: 3}
+  m_SHData: {fileID: 4900000, guid: bed8eb5e114fda64c8a3b98621558fac, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []

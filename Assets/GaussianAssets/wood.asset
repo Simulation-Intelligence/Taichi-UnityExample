@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
-  m_Name: multi-bike-mini-edit
+  m_Name: wood
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 292829
-  m_BoundsMin: {x: -8.030695, y: -4.1288514, z: -5.579098}
-  m_BoundsMax: {x: 5.312187, y: 2.8572109, z: 9.209711}
+  m_SplatCount: 141950
+  m_BoundsMin: {x: -0.16747038, y: -0.22382829, z: -0.38071507}
+  m_BoundsMax: {x: 0.6564091, y: 0.6022743, z: 0.55327374}
   m_DataHash:
     serializedVersion: 2
-    Hash: 875336bca7456876951850184264e7d9
+    Hash: e88ec0d674e343e29bb304e6d4a06a86
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: 65e5585ede520d94cad6859e6f02e37d, type: 3}
-  m_ColorData: {fileID: 4900000, guid: aa16ea1f50d2c7045af60bd787e3c84d, type: 3}
-  m_OtherData: {fileID: 4900000, guid: 38c72223008a9d947a828069575dfd29, type: 3}
-  m_SHData: {fileID: 4900000, guid: 8839c3e9d9af3ca47a8e97978a07772c, type: 3}
+  m_PosData: {fileID: 4900000, guid: f7597bebf4009ab4cac1b92b538ae40b, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 7577565b07cc9e644bfa2aa00860719b, type: 3}
+  m_OtherData: {fileID: 4900000, guid: fd2838803b273e34d9e013b67bb7809c, type: 3}
+  m_SHData: {fileID: 4900000, guid: 07c412328a57ee845b7d5d97630ff728, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []
