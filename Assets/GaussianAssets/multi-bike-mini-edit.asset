@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: multi-bike-mini-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 292829
+  m_BoundsMin: {x: -8.030695, y: -4.1288514, z: -5.579098}
+  m_BoundsMax: {x: 5.312187, y: 2.8572109, z: 9.209711}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 875336bca7456876951850184264e7d9
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 65e5585ede520d94cad6859e6f02e37d, type: 3}
+  m_ColorData: {fileID: 4900000, guid: aa16ea1f50d2c7045af60bd787e3c84d, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 38c72223008a9d947a828069575dfd29, type: 3}
+  m_SHData: {fileID: 4900000, guid: 8839c3e9d9af3ca47a8e97978a07772c, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
