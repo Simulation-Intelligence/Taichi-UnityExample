@@ -109,7 +109,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   numPrimitives: 0
-  _rotationOffset: {x: 0, y: 0, z: 0, w: 1}
+  _rotationOffset: {x: 0, y: 0.70710677, z: 0, w: 0.70710677}
   handType: 0
   _handJointId: 20
 --- !u!114 &6065776040788315018
