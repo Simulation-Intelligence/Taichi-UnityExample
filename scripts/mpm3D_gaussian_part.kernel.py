@@ -550,6 +550,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 if min_seg_idx != -1:
                     # Adjust the particle's position to be just outside the capsule radius
                     x[p] = x[p] + min_dist.normalized() * (skeleton_capsule_radius[min_seg_idx] - min_dist.norm())
+
+                    #vectorized version keep in bound
+                    x[p] = ti.Vector([min(max(x[p][i], 0.02), 0.98) for i in range(3)])
+
                     # Update the particle's velocity to match the segment's velocity (with interpolation)
                     v[p] = skeleton_velocities[min_seg_idx, 0] * (1 - min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
     
