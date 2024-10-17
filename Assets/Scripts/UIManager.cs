@@ -36,6 +36,7 @@ class UIManager : MonoBehaviour
     public Button[] buttons;
     public GameObject mergePrompt;
     public GameObject valueAdjustGridSize;
+    public GameObject valueAdjustSmoothness;
     private bool isMerging = false;
     public Toggle[] toggles;
     public TMP_Dropdown[] dropdowns;
@@ -49,6 +50,7 @@ class UIManager : MonoBehaviour
     private Dictionary<string, MatTool> matToolDict = new Dictionary<string, MatTool>();
     private string prevLeftHandTool;
     private string prevRightHandTool;
+    
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
@@ -132,8 +134,6 @@ class UIManager : MonoBehaviour
             // Select tools for modeling
             SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
             ShowSelectedObjectCanvas();
-            // Apply materials specified from UI
-            // ApplyMaterial(newMpm3DObject);
         }
     }
     
@@ -188,6 +188,7 @@ class UIManager : MonoBehaviour
         matToolDict[rightHandTool].gameObject.SetActive(true);
         mpm3DSimulation.matTools.Add(matToolDict[rightHandTool]);
 
+        // Initialize tools for simulation
         mpm3DSimulation.Init_MatTools();
 
         prevLeftHandTool = leftHandTool;
@@ -196,6 +197,7 @@ class UIManager : MonoBehaviour
 
     void OnColorChanged(Color newColor)
     {
+        // Used by color picker to adjust color
         if (selectedObject != null)
         {
             Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
@@ -241,6 +243,11 @@ class UIManager : MonoBehaviour
                     else
                     {
                         selectedObject = createdObject;
+                        if (selectedObject != prevSelectedObject)
+                        {
+                            ShowSelectedObjectCanvas();
+                            prevSelectedObject = selectedObject;
+                        }
                     }
                     break;
                 }
@@ -486,6 +493,30 @@ class UIManager : MonoBehaviour
                 createdObjectLists.Remove(selectedObject);
                 Destroy(selectedObject);
                 selectedObject = null;
+            }
+        }
+        if (button.name == "Button_MoreSmooth")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.IncreaseSmoothingIterations();
+                string initial_text_smooth = valueAdjustSmoothness.GetComponent<TMP_Text>().text;
+                int smooth_value = mpm3DSimulation.GetSmoothingIterations(); // smooth iterations
+                string new_text_smooth = initial_text_smooth.Substring(0, initial_text_smooth.IndexOf(":") + 2) + (smooth_value).ToString();
+                valueAdjustSmoothness.GetComponent<TMP_Text>().text = new_text_smooth;
+            }
+        }
+        if (button.name == "Button_LessSmooth")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.DecreaseSmoothingIterations();
+                string initial_text_smooth = valueAdjustSmoothness.GetComponent<TMP_Text>().text;
+                int smooth_value = mpm3DSimulation.GetSmoothingIterations(); // smooth iterations
+                string new_text_smooth = initial_text_smooth.Substring(0, initial_text_smooth.IndexOf(":") + 2) + (smooth_value).ToString();
+                valueAdjustSmoothness.GetComponent<TMP_Text>().text = new_text_smooth;
             }
         }
         // Increase or decrease grid size for marching cubes
@@ -929,7 +960,7 @@ class UIManager : MonoBehaviour
             newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
             
             // Select tools for modeling
-            SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
+            SelectTools(selectedObject, prevLeftHandTool, prevRightHandTool);
             // Apply materials specified from UI
             // ApplyMaterial(newMpm3DObject);
         }
@@ -988,11 +1019,15 @@ class UIManager : MonoBehaviour
                 Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                 if (mpm3DSimulation != null)
                 {
-                    // Update the grid size number in UI
+                    // Update the grid size number, rendering smooth iterations in UI
                     string initial_text = valueAdjustGridSize.GetComponent<TMP_Text>().text;
-                    int grid_size = mpm3DSimulation.GetGridSize();
+                    int grid_size = mpm3DSimulation.GetGridSize(); // grid size
                     string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size).ToString();
                     valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
+                    string initial_text_smooth = valueAdjustSmoothness.GetComponent<TMP_Text>().text;
+                    int smooth_value = mpm3DSimulation.GetSmoothingIterations(); // smooth iterations
+                    string new_text_smooth = initial_text_smooth.Substring(0, initial_text_smooth.IndexOf(":") + 2) + (smooth_value).ToString();
+                    valueAdjustSmoothness.GetComponent<TMP_Text>().text = new_text_smooth;
 
                     // Set the toggle, dropdown, and slider values accordingly
                     foreach (Toggle toggle in toggles)
@@ -1108,10 +1143,12 @@ class UIManager : MonoBehaviour
                 }
             }
             UI_canvas.SetActive(true);
-            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.3f;
-            UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
-            UI_canvas.transform.position = UI_anchor.position + canvas_anchor_offset;
-            UI_canvas.transform.rotation = UI_anchor.rotation;
+            
+            // Move the UI canvas to the hand position
+            // UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.3f;
+            // UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
+            // UI_canvas.transform.position = UI_anchor.position + canvas_anchor_offset;
+            // UI_canvas.transform.rotation = UI_anchor.rotation;
         }
     }
     

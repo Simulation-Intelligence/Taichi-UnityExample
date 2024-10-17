@@ -134,7 +134,6 @@ public class Mpm3DMarching : MonoBehaviour
     public bool lerp_tool = false;
 
     public bool adjust_particle = true;
-
     [SerializeField]
     private int smooth_iter = 0;
 
@@ -1042,13 +1041,26 @@ public class Mpm3DMarching : MonoBehaviour
     {
         return hand_simulation_radius;
     }
-
     public void SetSmoothingIterations(int iterations)
     {
         for (int i = 0; i < marchingCubeVisualizers.Length; i++)
         {
             marchingCubeVisualizers[i].SetSmoothingIterations(iterations);
         }
+    }
+    public int GetSmoothingIterations()
+    {
+        return smooth_iter;
+    }
+    public void IncreaseSmoothingIterations()
+    {
+        smooth_iter += 1;
+        SetSmoothingIterations(smooth_iter);
+    }
+    public void DecreaseSmoothingIterations()
+    {
+        smooth_iter -= 1;
+        SetSmoothingIterations(smooth_iter);
     }
     public void InitGrid()
     {
