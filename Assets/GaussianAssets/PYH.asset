@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: PYH
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 505102
+  m_BoundsMin: {x: -0.75192404, y: -1.3646297, z: -0.37741333}
+  m_BoundsMax: {x: 2.54172, y: 3.0784452, z: 2.6786697}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 1fb47d680f544c590884817dc7fe3c87
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 50b5f0aaa7f25c946a88202b0d153f97, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 66664eaa8cb2ef8438429c7dba9afe94, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 6bde010371d168a45a2d51bf62aa6bff, type: 3}
+  m_SHData: {fileID: 4900000, guid: c70ea10895a852b4193636d2babf9474, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

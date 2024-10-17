@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: flowerpot
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 270254
+  m_BoundsMin: {x: -0.9778368, y: -0.95619184, z: -0.9314828}
+  m_BoundsMax: {x: 0.9524656, y: 0.5749033, z: 0.94972265}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 63dcf3c13fc48278a3a2a41581378697
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 18f9e675e636ac24ba067ab36183e40d, type: 3}
+  m_ColorData: {fileID: 4900000, guid: d4308a855f262734c8904938e929d488, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 0cd1951324292a64ca105038a062dfef, type: 3}
+  m_SHData: {fileID: 4900000, guid: 0799b771297b8ac468e9355f0976b1d0, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

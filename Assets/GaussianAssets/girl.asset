@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: girl
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 615408
+  m_BoundsMin: {x: -0.99279577, y: -1.2003498, z: -0.84079254}
+  m_BoundsMax: {x: 0.74872667, y: 1.1406811, z: 0.9133456}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 607a69eec32d9552512bf67bb18539b0
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: b68443c7a6cd683459916e61738bb543, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 533e6d1834a60e94a99e81e2d70bb182, type: 3}
+  m_OtherData: {fileID: 4900000, guid: b721bdd365e64dc4d8f6fb050ed5d511, type: 3}
+  m_SHData: {fileID: 4900000, guid: 74106d6d05c09a844894722b9176967d, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
