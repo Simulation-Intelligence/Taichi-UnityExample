@@ -448,6 +448,8 @@ class UIManager : MonoBehaviour
                 Mpm3DMarching mpm3DSimulation = copiedObject.GetComponent<Mpm3DMarching>();
                 selectedObject.GetComponent<Mpm3DMarching>().CopyObjectTo(mpm3DSimulation);
                 selectedObject = copiedObject;
+                // Select tools for modeling
+                SelectTools(selectedObject, prevLeftHandTool, prevRightHandTool);
             }
         }
         // Reset the object with original parameters
