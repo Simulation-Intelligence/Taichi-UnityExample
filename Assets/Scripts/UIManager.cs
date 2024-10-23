@@ -138,7 +138,8 @@ class UIManager : MonoBehaviour
         if (Mpm3DObject_2 != null)
         {
             createdObjectLists.Add(Mpm3DObject_2);
-            SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
+            // SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
+            SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
         }
     }
     
@@ -149,10 +150,14 @@ class UIManager : MonoBehaviour
         matToolDict.Add("MatTool_Hand_Right", MatTool_Hand_Right.GetComponent<MatTool>());
         matToolDict.Add("MatTool_Pad_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Pad_Left")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Pad_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Pad_Right")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Rod_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Rod_Left")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Rod_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Rod_Right")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Cone_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Cone_Left")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Cone_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Cone_Right")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Slab_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Left")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Slab_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Right")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Scissor_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Left")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Scissor_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Right")).GetComponent<MatTool>());
         foreach (var matTool in matToolDict.Values)
         {
             matTool.transform.SetParent(transform);
@@ -891,6 +896,10 @@ class UIManager : MonoBehaviour
                 {
                     SelectTools(selectedObject, "MatTool_Pad_Left", prevRightHandTool);
                 }
+                else if (dropdown.options[value].text == "Rod")
+                {
+                    SelectTools(selectedObject, "MatTool_Rod_Left", prevRightHandTool);
+                }
                 else if (dropdown.options[value].text == "Cone")
                 {
                     SelectTools(selectedObject, "MatTool_Cone_Left", prevRightHandTool);
@@ -917,6 +926,10 @@ class UIManager : MonoBehaviour
                 else if (dropdown.options[value].text == "Planar Pad")
                 {
                     SelectTools(selectedObject, prevLeftHandTool, "MatTool_Pad_Right");
+                }
+                else if (dropdown.options[value].text == "Rod")
+                {
+                    SelectTools(selectedObject, prevLeftHandTool, "MatTool_Rod_Right");
                 }
                 else if (dropdown.options[value].text == "Cone")
                 {

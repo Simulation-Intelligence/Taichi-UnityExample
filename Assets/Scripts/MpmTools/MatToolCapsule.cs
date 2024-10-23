@@ -6,9 +6,9 @@ using Oculus.Interaction.Input;
 public class MatToolCapsule : MatTool
 {
     private Vector3 sphere1 = new Vector3(-0.6f, 0, 0);
-    private float radii1 = 0.04f;
+    private float radii1 = 0.05f;
     private Vector3 sphere2 = new Vector3(0.6f, 0, 0);
-    private float radii2 = 0.04f;
+    private float radii2 = 0.05f;
     // Note: Set sphere3 and radii3 to 0.0f to treat it as a cone in the system
     private Vector3 sphere3 = new Vector3(0, 0, 0);
     private float radii3 = 0.0f;

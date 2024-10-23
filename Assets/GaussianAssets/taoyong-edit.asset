@@ -13,19 +13,19 @@ MonoBehaviour:
   m_Name: taoyong-edit
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 103278
-  m_BoundsMin: {x: -0.50958204, y: -1.157409, z: -0.7325177}
-  m_BoundsMax: {x: 0.77592015, y: 1.3745086, z: 1.1366317}
+  m_SplatCount: 103369
+  m_BoundsMin: {x: 0.66463816, y: 0.52560735, z: 0.55430967}
+  m_BoundsMax: {x: 1.1270878, y: 1.4364455, z: 1.226722}
   m_DataHash:
     serializedVersion: 2
-    Hash: 87413d1455995e75801358edb722c048
+    Hash: 214912907994abeb0a9fb75b7f604de7
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: 6f22754fac123764a8eaa0ce3074d6ee, type: 3}
-  m_ColorData: {fileID: 4900000, guid: be8c3bf991d25274d8c3e599a2c790a0, type: 3}
-  m_OtherData: {fileID: 4900000, guid: acffc6c885a61424ba719639ef2e2e09, type: 3}
-  m_SHData: {fileID: 4900000, guid: 4e623bbd7225f884d8db6612280e9610, type: 3}
+  m_PosData: {fileID: 4900000, guid: 13e25bc9a4b6ab144aa0b26feedcf2b0, type: 3}
+  m_ColorData: {fileID: 4900000, guid: dc9ff1a8f6700f749a97554009fc5429, type: 3}
+  m_OtherData: {fileID: 4900000, guid: ebe2be48d7669e04d94106623a933b7b, type: 3}
+  m_SHData: {fileID: 4900000, guid: 3257d0e8ed827c847be1daed6a6d2d9e, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []

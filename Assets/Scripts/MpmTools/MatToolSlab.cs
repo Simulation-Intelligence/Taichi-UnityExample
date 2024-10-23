@@ -69,7 +69,7 @@ public class MatToolSlab : MatTool
                 if (bone.Id == (OVRSkeleton.BoneId)Enum.Parse(typeof(OVRSkeleton.BoneId), jointId))
                 {
                     transform.position = bone.Transform.position;
-                    transform.rotation = bone.Transform.rotation;
+                    transform.rotation = bone.Transform.rotation * _rotationOffset;
 
                     for (int i = 0; i < numPrimitives; i++)
                     {

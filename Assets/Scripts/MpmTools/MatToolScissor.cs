@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Oculus.Interaction;
 using Oculus.Interaction.Input;
 
-public class MatScissors : MatTool
+public class MatToolScissor : MatTool
 {
     public enum HandType
     {
@@ -18,21 +18,27 @@ public class MatScissors : MatTool
     private OVRHand oculus_hand;
     private OVRSkeleton oculus_skeleton;
 
-    private Vector3 sphere11 = new Vector3(0, 0, 0);
-    private float radii11 = 0.04f;
-    private Vector3 sphere12 = new Vector3(1.0f, 0, 0.0f);
-    private float radii12 = 0.04f;
-    // Note: Set sphere3 and radii3 to 0.0f to treat it as a cone in the system
-    private Vector3 sphere13 = new Vector3(0, 0, 0);
-    private float radii13 = 0.0f;
+    public GameObject _scissorMesh1;
+    public GameObject _scissorMesh2;
+    
+    [Range(1.0f, 2.0f)]
+    public float _scissor_joint_ratio = 1.0f;
+    [Range(1.0f, 2.0f)]
+    public float _scissor_rotation_ratio = 1.0f;
 
+    private Vector3 sphere11 = new Vector3(0, 0, 0);
+    private float radii11 = 0.005f;
+    private Vector3 sphere12 = new Vector3(0.05f, 0.1f, 0);
+    private float radii12 = 0.02f;
+    private Vector3 sphere13 = new Vector3(0.8f, 0, 0);
+    private float radii13 = 0.005f;
+    
     private Vector3 sphere21 = new Vector3(0, 0, 0);
-    private float radii21 = 0.04f;
-    private Vector3 sphere22 = new Vector3(1.0f, 0, 0.0f);
-    private float radii22 = 0.04f;
-    // Note: Set sphere3 and radii3 to 0.0f to treat it as a cone in the system
-    private Vector3 sphere23 = new Vector3(0, 0, 0);
-    private float radii23 = 0.0f;
+    private float radii21 = 0.005f;
+    private Vector3 sphere22 = new Vector3(0.05f, -0.1f, 0);
+    private float radii22 = 0.02f;
+    private Vector3 sphere23 = new Vector3(0.8f, 0, 0);
+    private float radii23 = 0.005f;
 
     // Map between primitive index and joint index
     void Awake()
@@ -54,6 +60,7 @@ public class MatScissors : MatTool
         init_primitives[1].radii2 = radii22;
         init_primitives[1].sphere3 = sphere23;
         init_primitives[1].radii3 = radii23;
+        
         // Oculus hands
         if (handType == HandType.LeftHand)
         {
@@ -65,10 +72,7 @@ public class MatScissors : MatTool
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
         }
-
     }
-
-
 
     protected override void UpdatePrimitives()
     {
@@ -81,24 +85,18 @@ public class MatScissors : MatTool
             var jointId2 = _handJointId2.ToString().Replace("Hand", "Hand_");
             foreach (var bone in oculus_skeleton.Bones)
             {
-
                 if (bone.Id == (OVRSkeleton.BoneId)Enum.Parse(typeof(OVRSkeleton.BoneId), jointId1))
                 {
-
                     transform1.position = bone.Transform.position;
-                    transform1.rotation = bone.Transform.rotation;
+                    transform1.rotation = bone.Transform.rotation * _rotationOffset;
                     transform1.localScale = transform.localScale;
-                    //
                 }
                 if (bone.Id == (OVRSkeleton.BoneId)Enum.Parse(typeof(OVRSkeleton.BoneId), jointId2))
                 {
-
                     transform2.position = bone.Transform.position;
-                    transform2.rotation = bone.Transform.rotation;
+                    transform2.rotation = bone.Transform.rotation * _rotationOffset;
                     transform2.localScale = transform.localScale;
-
                 }
-
             }
 
             Vector3 point1 = transform1.position;
@@ -109,15 +107,22 @@ public class MatScissors : MatTool
             Vector3 midPoint = (point1 + point2) / 2;
             float len = p12.magnitude / 2;
             float new_len = Mathf.Sqrt(transform.localScale.x * transform.localScale.x / 4 - len * len);
-            Vector3 cross_point = midPoint + perpendicular.normalized * new_len;
+            float new_len_scaled = new_len * _scissor_joint_ratio;
+            
+            Vector3 cross_point = midPoint + perpendicular.normalized * new_len_scaled;
             {
-                Vector3 xAxis = cross_point - point1;
+                Vector3 xAxis = (cross_point - point1);
                 Vector3 zAxis = normal;
                 Vector3 yAxis = Vector3.Cross(zAxis, xAxis).normalized;
                 zAxis = Vector3.Cross(xAxis, yAxis).normalized;  // 确保 Z 轴正交
                 Quaternion targetRotation = Quaternion.LookRotation(zAxis, yAxis);
                 transform1.rotation = targetRotation;
                 UpdatePrimitive(ref primitives[0], init_primitives[0], transform1);
+                
+                // Update the scissor mesh
+                Transform scissor_transform_1 = _scissorMesh1.transform;
+                scissor_transform_1.position = transform1.position;
+                scissor_transform_1.rotation = transform1.rotation * Quaternion.Euler(new Vector3(180f, 0f, 0f));
             }
             {
                 Vector3 xAxis = cross_point - point2;
@@ -127,8 +132,12 @@ public class MatScissors : MatTool
                 Quaternion targetRotation = Quaternion.LookRotation(zAxis, yAxis);
                 transform2.rotation = targetRotation;
                 UpdatePrimitive(ref primitives[1], init_primitives[1], transform2);
+                
+                // Update the scissor mesh
+                Transform scissor_transform_2 = _scissorMesh2.transform;
+                scissor_transform_2.position = transform2.position;
+                scissor_transform_2.rotation = transform2.rotation; 
             }
-
         }
     }
 }
