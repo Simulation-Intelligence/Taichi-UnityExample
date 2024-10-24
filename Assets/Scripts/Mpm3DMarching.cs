@@ -1429,12 +1429,14 @@ public class Mpm3DMarching : MonoBehaviour
     {
         Vector3 pinchPosition = Vector3.zero;
         Vector3 pinchDirection = Vector3.zero;
+        float radius = 0.0f;
         if (pinchGesture != null && pinchGesture.isPinching)
         {
             pinchPosition = transform.InverseTransformPoint(pinchGesture.lastPinchPosition);
             pinchDirection = pinchratio * transform.InverseTransformDirection(pinchGesture.pinchSpeed);
+            radius = pinchGesture.pinchRadius / transform.lossyScale.x;
         }
-        _Kernel_substep_apply_force_field.LaunchAsync(grid_v, grid_m, pinchPosition.x, pinchPosition.y, pinchPosition.z, pinchGesture.pinchRadius / transform.lossyScale.x, pinchDirection.x, pinchDirection.y, pinchDirection.z, max_dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+        _Kernel_substep_apply_force_field.LaunchAsync(grid_v, grid_m, pinchPosition.x, pinchPosition.y, pinchPosition.z, radius, pinchDirection.x, pinchDirection.y, pinchDirection.z, max_dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
     }
 
