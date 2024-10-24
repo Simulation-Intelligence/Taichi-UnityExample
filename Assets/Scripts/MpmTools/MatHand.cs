@@ -18,9 +18,9 @@ public class MatHand : MatTool
     private HandJointId _handJointId;
     private OVRHand oculus_hand;
     private OVRSkeleton oculus_skeleton;
-    
+
     // Map between primitive index and joint index
-    Dictionary<int, int> primitivesJointMap = new Dictionary<int, int>(); 
+    Dictionary<int, int> primitivesJointMap = new Dictionary<int, int>();
     private Dictionary<int, Vector3[]> primitiveOffsets = new Dictionary<int, Vector3[]>();
     public struct PrimitiveBinding
     {
@@ -28,15 +28,15 @@ public class MatHand : MatTool
         public int jointEndIndex;
         public float interpolation;
     }
-    private Dictionary<int, PrimitiveBinding> primitivesJointBindings = new Dictionary<int, PrimitiveBinding>(); 
+    private Dictionary<int, PrimitiveBinding> primitivesJointBindings = new Dictionary<int, PrimitiveBinding>();
     [SerializeField]
     private List<Transform> leftHandJoints = new List<Transform>();
     [SerializeField]
     private List<Transform> rightHandJoints = new List<Transform>();
-    
+
     // These primitives are removed from the hand_mat.json
-    private int[] removedPrimitives = new int[] {2, 8, 12, 19, 42, 48, 58, 65, 98};
-    
+    private int[] removedPrimitives = new int[] { 2, 8, 12, 19, 42, 48, 58, 65, 98 };
+
     void Awake()
     {
         // Oculus hands
@@ -50,17 +50,17 @@ public class MatHand : MatTool
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
         }
-        
+
         // Initialization with hand_mat.json
         bool isLeftHand = handType == HandType.LeftHand;
         LoadPrimitivesFromJson("Prefabs/Tools/hand_mat_2", isLeftHand);
-        
+
         RemoveNoUsedPrimitives();
         CalculateInteractionForLerp(isLeftHand);
         AdjustPrimitivesJointBindings();
         CalculateOffsetForLerp(isLeftHand);
     }
-    
+
     // protected override void UpdatePrimitives()
     // {
     //     // Update mat hand without hand tracking
@@ -73,14 +73,14 @@ public class MatHand : MatTool
     //             {
     //                 transform.position = bone.Transform.position;
     //                 transform.rotation = bone.Transform.rotation * _rotationOffset;
-                    
+
     //                 for (int i = 0; i < numPrimitives; i++)
     //                 {
     //                     // Update primitive position using the oculus Hand Joint Component
     //                     primitives[i].sphere1 = transform.TransformPoint(init_primitives[i].sphere1);
     //                     primitives[i].sphere2 = transform.TransformPoint(init_primitives[i].sphere2);
     //                     primitives[i].sphere3 = transform.TransformPoint(init_primitives[i].sphere3);
-                        
+
     //                     // Multiply by localScale to get the correct radius
     //                     primitives[i].radii1 = init_primitives[i].radii1 * transform.localScale.x;
     //                     primitives[i].radii2 = init_primitives[i].radii2 * transform.localScale.x;
@@ -91,7 +91,7 @@ public class MatHand : MatTool
     //         }
     //     }
     // }
-    
+
     // protected override void UpdatePrimitives()
     // {
     //     // Update mat hand without hand tracking
@@ -114,11 +114,11 @@ public class MatHand : MatTool
     //         }
     //     }
     // }
-    
+
     protected override void UpdatePrimitives()
     {
         // Update mat hand without hand tracking
-        if (oculus_hand.IsTracked)
+        //if (oculus_hand.IsTracked)
         {
             int numBones = oculus_skeleton.Bones.Count;
             if (numBones > 0)
@@ -138,7 +138,7 @@ public class MatHand : MatTool
             }
         }
     }
-    
+
     void RemoveNoUsedPrimitives()
     {
         List<Primitive> primitiveList = new List<Primitive>(init_primitives);
@@ -155,7 +155,7 @@ public class MatHand : MatTool
         numPrimitives = init_primitives.Length;
         Debug.Log("Remaining primitives count: " + numPrimitives);
     }
-    
+
     void AdjustPrimitivesJointMap()
     {
         var keys = primitivesJointMap.Keys.ToList();
@@ -229,7 +229,7 @@ public class MatHand : MatTool
             }
         }
     }
-    
+
     void AdjustPrimitivesJointBindings()
     {
         var keys = primitivesJointBindings.Keys.ToList();
@@ -368,7 +368,7 @@ public class MatHand : MatTool
             primitiveOffsets[primitiveIndex] = offsets;
         }
     }
-    
+
     void CalculateInteractionForLerp(bool isLeftHand)
     {
         Dictionary<int, float> minDistances = new Dictionary<int, float>();
@@ -403,7 +403,7 @@ public class MatHand : MatTool
         }
         Debug.Log("Intersection calculation done with:" + primitivesJointBindings.Count);
     }
-    
+
     float CalculateInterpolation(Primitive primitive, Vector3 start, Vector3 end)
     {
         Vector3 primitiveCenter = (primitive.sphere1 + primitive.sphere2 + primitive.sphere3) / 3;
@@ -426,7 +426,7 @@ public class MatHand : MatTool
         }
         return -1;
     }
-    
+
     void CalculateOffset()
     {
         foreach (var entry in primitivesJointMap)
@@ -435,8 +435,8 @@ public class MatHand : MatTool
             int jointIndex = entry.Value;
             Transform bone = rightHandJoints[jointIndex];
             Vector3[] offsets = new Vector3[3];
-            offsets[0] = bone.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere1); 
-            offsets[1] = bone.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere2); 
+            offsets[0] = bone.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere1);
+            offsets[1] = bone.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere2);
             offsets[2] = bone.parent.InverseTransformPoint(init_primitives[primitiveIndex].sphere3);
             primitiveOffsets[primitiveIndex] = offsets;
         }
@@ -470,14 +470,14 @@ public class MatHand : MatTool
         }
         Debug.Log("Intersection calculation done with:" + minDistances.Count);
     }
-    
+
     bool LinePrimitiveIntersection(Vector3 start, Vector3 end, Primitive primitive, out float shortestDistance)
     {
         shortestDistance = float.MaxValue;
         bool intersected = false;
         Vector3[] spheres = { primitive.sphere1, primitive.sphere2, primitive.sphere3 };
         float[] radii = { primitive.radii1, primitive.radii2, primitive.radii3 };
-        
+
         for (int i = 0; i < 3; i++)
         {
             Vector3 sphere = spheres[i];
@@ -497,7 +497,7 @@ public class MatHand : MatTool
         }
         return intersected;
     }
-    
+
     bool LineSphereIntersection(Vector3 start, Vector3 end, Vector3 sphereCenter, float sphereRadius, out float distance)
     {
         Vector3 line = end - start;
