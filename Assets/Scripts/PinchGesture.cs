@@ -24,8 +24,9 @@ public class PinchGesture : MonoBehaviour
     [HideInInspector] public Vector3 pinchSpeed;
 
     public float pinchThreshold = 0.02f;
-    public float pinchRadius = 0.05f; // Sphere radius
+    public float pinchRadius = 0.05f; // Sphere radius for the control area
     private GameObject pinchSphere;
+    public bool RenderPinchSphere = true;
     void Start()
     {
         if (handType == HandType.LeftHand)
@@ -62,7 +63,7 @@ public class PinchGesture : MonoBehaviour
             initialPinchPosition = (firstFingerTip.position + secondFingerTip.position) / 2;
             lastPinchPosition = initialPinchPosition;
             CreateOrUpdateSphere(initialPinchPosition);
-            Debug.Log("Pinch started at position: " + initialPinchPosition);
+            // Debug.Log("Pinch started at position: " + initialPinchPosition);
         }
         else if (distance >= pinchThreshold && isPinching)
         {
@@ -80,14 +81,13 @@ public class PinchGesture : MonoBehaviour
             lastPinchPosition = currentPinchPosition;
 
             CreateOrUpdateSphere(currentPinchPosition);
-
-            Debug.Log("Pinch movement: " + pinchMovement + ", Speed: " + pinchSpeed);
+            // Debug.Log("Pinch movement: " + pinchMovement + ", Speed: " + pinchSpeed);
         }
     }
-
+    
     void CreateOrUpdateSphere(Vector3 position)
     {
-        if (pinchSphere == null)
+        if (pinchSphere == null && RenderPinchSphere)
         {
             pinchSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             pinchSphere.transform.localScale = Vector3.one * (2 * pinchRadius);

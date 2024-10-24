@@ -164,6 +164,8 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private int use_sticky_boundary = 1;
 
+    [Header("Mid-air Pinch Gesture")]
+    public bool UsePinchGesture = true;
     [SerializeField]
     private PinchGesture pinchGesture;
     [SerializeField]
@@ -775,8 +777,10 @@ public class Mpm3DMarching : MonoBehaviour
                 if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
                     _Kernel_substep_update_dg.LaunchAsync(x_gaussian, C_gaussian, dg_gaussian, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
+                // Use mid-air pinch gesture
+                if (UsePinchGesture)
+                    ApplyPinchForce();
 
-                ApplyPinchForce();
                 if (lerp_tool)
                 {
                     float lerp_factor = 1 - time_left / frame_time;
@@ -1436,8 +1440,20 @@ public class Mpm3DMarching : MonoBehaviour
             pinchDirection = pinchratio * transform.InverseTransformDirection(pinchGesture.pinchSpeed);
             radius = pinchGesture.pinchRadius / transform.lossyScale.x;
         }
+<<<<<<< HEAD
         _Kernel_substep_apply_force_field.LaunchAsync(grid_v, grid_m, pinchPosition.x, pinchPosition.y, pinchPosition.z, radius, pinchDirection.x, pinchDirection.y, pinchDirection.z, max_dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
+=======
+        _Kernel_substep_apply_force_field.LaunchAsync(grid_v, grid_m, pinchPosition.x, pinchPosition.y, pinchPosition.z, pinchGesture.pinchRadius / transform.lossyScale.x, pinchDirection.x, pinchDirection.y, pinchDirection.z, max_dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+    }
+    public float GetPinchForceRatio()
+    {
+        return pinchratio;
+    }
+    public void SetPinchForceRatio(float ratio)
+    {
+        pinchratio = ratio;
+>>>>>>> 9e6225c0d68af8e09519b75642b7f0974a5443e6
     }
 
     void LoadHandMotionData()
