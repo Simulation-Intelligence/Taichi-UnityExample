@@ -126,9 +126,7 @@ namespace MarchingCubes
       var ext = new Vector3(_grids.x, _grids.y, _grids.z) * scale;
       _mesh.bounds = new Bounds(Vector3.zero, ext);
 
-      //     uint[] hostneighborCountBuffer;
-      // hostneighborCountBuffer = new uint[_triangleBudget*3];
-      // _neighborCountBuffer.GetData(hostneighborCountBuffer);
+
     }
 
     void LaplacianSmoothing(int iterations)

@@ -50,7 +50,7 @@ class UIManager : MonoBehaviour
     private Dictionary<string, MatTool> matToolDict = new Dictionary<string, MatTool>();
     private string prevLeftHandTool;
     private string prevRightHandTool;
-    
+
     void Start()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
@@ -138,10 +138,10 @@ class UIManager : MonoBehaviour
         if (Mpm3DObject_2 != null)
         {
             createdObjectLists.Add(Mpm3DObject_2);
-            SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
+            SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
         }
     }
-    
+
     void InstantiateTools()
     {
         // Instantiate all mat tools at the beginning, either hands gameobject or prefabs
@@ -942,7 +942,7 @@ class UIManager : MonoBehaviour
         {
         }
     }
-    
+
     void CreateMpm3DObjectFromPrefab(string prefabName)
     {
         GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/PrimitiveShapes/Mpm3DExample_" + prefabName);
@@ -965,7 +965,7 @@ class UIManager : MonoBehaviour
 
             // Initialize the object
             newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
-            
+
             // Select tools for modeling
             SelectTools(selectedObject, prevLeftHandTool, prevRightHandTool);
             // Apply materials specified from UI
@@ -1150,7 +1150,7 @@ class UIManager : MonoBehaviour
                 }
             }
             UI_canvas.SetActive(true);
-            
+
             // Move the UI canvas to the hand position
             // UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.3f;
             // UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
@@ -1158,7 +1158,7 @@ class UIManager : MonoBehaviour
             // UI_canvas.transform.rotation = UI_anchor.rotation;
         }
     }
-    
+
     void OnDestroy()
     {
 

@@ -40,7 +40,7 @@ public class NeRFDataGenerator : MonoBehaviour
             Destroy(renderTexture);
 
             byte[] bytes = screenShot.EncodeToPNG();
-            string filename = Path.Combine(savePath, "image" + i.ToString("D3") + ".png");
+            string filename = Path.Combine(savePath, "image" + model.name + i.ToString("D3") + ".png");
             File.WriteAllBytes(filename, bytes);
 
             Debug.Log("Saved: " + filename);

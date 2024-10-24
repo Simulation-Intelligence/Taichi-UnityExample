@@ -167,7 +167,7 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private PinchGesture pinchGesture;
     [SerializeField]
-    private float pinchratio = 1.0f, pinchradius = 0.1f;
+    private float pinchratio = 1.0f;
 
     [Header("Tools")]
     public List<MatTool> matTools = new List<MatTool>();
@@ -1126,20 +1126,20 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void IncreaseGridSize(int num)
     {
-        if (n_grid + num >= 150)
+        if (n_grid + num >= 400)
         {
             UnityEngine.Debug.LogWarning("Cannot increase grid size anymore.");
-            SetSimulateGridSize(150);
+            SetSimulateGridSize(400);
             return;
         }
         SetSimulateGridSize(n_grid + num);
     }
     public void DecreaseGridSize(int num)
     {
-        if (n_grid - num <= 50)
+        if (n_grid - num <= 40)
         {
             UnityEngine.Debug.LogWarning("Cannot decrease grid size anymore.");
-            SetSimulateGridSize(50);
+            SetSimulateGridSize(40);
             return;
         }
         SetSimulateGridSize(n_grid - num);
@@ -1431,10 +1431,10 @@ public class Mpm3DMarching : MonoBehaviour
         Vector3 pinchDirection = Vector3.zero;
         if (pinchGesture != null && pinchGesture.isPinching)
         {
-            pinchPosition = transform.InverseTransformPoint(pinchGesture.initialPinchPosition);
-            pinchDirection = pinchGesture.pinchSpeed * pinchratio * transform.InverseTransformDirection(pinchGesture.pinchMovement);
+            pinchPosition = transform.InverseTransformPoint(pinchGesture.lastPinchPosition);
+            pinchDirection = pinchratio * transform.InverseTransformDirection(pinchGesture.pinchSpeed);
         }
-        _Kernel_substep_apply_force_field.LaunchAsync(grid_v, grid_m, pinchPosition.x, pinchPosition.y, pinchPosition.z, pinchradius, pinchDirection.x, pinchDirection.y, pinchDirection.z, max_dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+        _Kernel_substep_apply_force_field.LaunchAsync(grid_v, grid_m, pinchPosition.x, pinchPosition.y, pinchPosition.z, pinchGesture.pinchRadius / transform.lossyScale.x, pinchDirection.x, pinchDirection.y, pinchDirection.z, max_dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
     }
 

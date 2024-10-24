@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: garden-edit-add-vase
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 971758
+  m_BoundsMin: {x: 0.09999999, y: 0.26720712, z: 0.15656258}
+  m_BoundsMax: {x: 0.90000004, y: 0.7327929, z: 0.8434375}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: b95cab8b83d6641a14f355ed846f14a7
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 0d5043d09c6f6ae4f8788bb47b483b09, type: 3}
+  m_ColorData: {fileID: 4900000, guid: fc8eee5444a6210439100d8b280d0488, type: 3}
+  m_OtherData: {fileID: 4900000, guid: b1079ba79e23da14a8d4ce69ad19cf98, type: 3}
+  m_SHData: {fileID: 4900000, guid: ab368b995b2a1754abf01de526b0a561, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

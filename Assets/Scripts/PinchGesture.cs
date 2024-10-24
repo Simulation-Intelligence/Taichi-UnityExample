@@ -4,35 +4,44 @@ using UnityEngine;
 
 public class PinchGesture : MonoBehaviour
 {
-    public enum FingerType
+    public enum FingerType { Thumb, Index, Middle, Ring, Pinky }
+    public enum HandType
     {
-        Thumb,
-        Index,
-        Middle,
-        Ring,
-        Pinky
+        LeftHand,
+        RightHand
     }
 
-    public OVRHand hand;
-    public OVRSkeleton handSkeleton;
-
-    // Specify finger type in inspector
+    public HandType handType = HandType.RightHand;
+    private OVRHand hand;
+    private OVRSkeleton handSkeleton;
     public FingerType firstFinger = FingerType.Thumb;
     public FingerType secondFinger = FingerType.Middle;
 
     [HideInInspector] public bool isPinching = false;
     [HideInInspector] public Vector3 initialPinchPosition;
     [HideInInspector] public Vector3 pinchMovement;
+    [HideInInspector] public Vector3 lastPinchPosition;
+    [HideInInspector] public Vector3 pinchSpeed;
 
-    [HideInInspector] public Vector3 lastPinchPosition; 
-    [HideInInspector] public float pinchSpeed = 0.0f;
-
-    // 捏合检测的阈值
     public float pinchThreshold = 0.02f;
+    public float pinchRadius = 0.05f; // Sphere radius
+    private GameObject pinchSphere;
+    void Start()
+    {
+        if (handType == HandType.LeftHand)
+        {
+            hand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>();
+            handSkeleton = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>();
+        }
+        else if (handType == HandType.RightHand)
+        {
+            hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
+            handSkeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
+        }
+    }
 
     void Update()
     {
-        // 检测右手的捏合
         if (hand.IsTracked && handSkeleton != null)
         {
             DetectPinch(handSkeleton);
@@ -41,110 +50,93 @@ public class PinchGesture : MonoBehaviour
 
     void DetectPinch(OVRSkeleton handSkeleton)
     {
-        // 获取用户选择的两根手指
         Transform firstFingerTip = GetFingerTransform(handSkeleton, firstFinger);
         Transform secondFingerTip = GetFingerTransform(handSkeleton, secondFinger);
-        if (firstFingerTip == null || secondFingerTip == null)
-        {
-            return;
-        }
-        
-        // 计算两指间的距离
+        if (firstFingerTip == null || secondFingerTip == null) return;
+
         float distance = Vector3.Distance(firstFingerTip.position, secondFingerTip.position);
 
-        // 判断是否捏合
         if (distance < pinchThreshold && !isPinching)
         {
-            // 开始捏合
             isPinching = true;
-            initialPinchPosition = (firstFingerTip.position + secondFingerTip.position) / 2; // 获取捏合的初始位置
-            lastPinchPosition = initialPinchPosition; // 初始化捏合位置
+            initialPinchPosition = (firstFingerTip.position + secondFingerTip.position) / 2;
+            lastPinchPosition = initialPinchPosition;
+            CreateOrUpdateSphere(initialPinchPosition);
             Debug.Log("Pinch started at position: " + initialPinchPosition);
         }
         else if (distance >= pinchThreshold && isPinching)
         {
-            // 结束捏合
             isPinching = false;
-            pinchSpeed = 0.0f; // 捏合结束时速度归零
+            DestroySphere();
+            pinchSpeed = Vector3.zero;
             Debug.Log("Pinch ended");
         }
 
-        // 如果正在捏合，获取当前的捏合位置和移动方向、速度
         if (isPinching)
         {
             Vector3 currentPinchPosition = (firstFingerTip.position + secondFingerTip.position) / 2;
-            pinchMovement = currentPinchPosition - initialPinchPosition; // 计算移动的方向
-
-            // 计算速度
-            float distanceMoved = Vector3.Distance(currentPinchPosition, lastPinchPosition);
-            float deltaTime = Time.deltaTime; // 获取每帧时间
-            pinchSpeed = distanceMoved / deltaTime; // 移动的速度
-
-            // 更新上一次位置
+            pinchMovement = currentPinchPosition - initialPinchPosition;
+            pinchSpeed = (currentPinchPosition - lastPinchPosition) / Time.deltaTime;
             lastPinchPosition = currentPinchPosition;
 
-            Debug.Log("Pinch movement direction: " + pinchMovement);
-            Debug.Log("Pinch movement speed: " + pinchSpeed);
+            CreateOrUpdateSphere(currentPinchPosition);
+
+            Debug.Log("Pinch movement: " + pinchMovement + ", Speed: " + pinchSpeed);
         }
     }
 
-    // Transform GetFingerTransform(OVRSkeleton handSkeleton, FingerType fingerType)
-    // {
-    //     switch (fingerType)
-    //     {
-    //         case FingerType.Thumb:
-    //             return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_ThumbTip].Transform;
-    //         case FingerType.Index:
-    //             return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_IndexTip].Transform;
-    //         case FingerType.Middle:
-    //             return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_MiddleTip].Transform;
-    //         case FingerType.Ring:
-    //             return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_RingTip].Transform;
-    //         case FingerType.Pinky:
-    //             return handSkeleton.Bones[(int)OVRPlugin.BoneId.Hand_PinkyTip].Transform;
-    //         default:
-    //             return null;
-    //     }
-    // }
+    void CreateOrUpdateSphere(Vector3 position)
+    {
+        if (pinchSphere == null)
+        {
+            pinchSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            pinchSphere.transform.localScale = Vector3.one * (2 * pinchRadius);
+
+            // Create a transparent material
+            Material transparentMaterial = new Material(Shader.Find("Standard"));
+            transparentMaterial.color = new Color(0, 1, 0, 0.2f); // Semi-transparent green
+            transparentMaterial.SetFloat("_Mode", 3); // Enable transparency mode
+            transparentMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            transparentMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            transparentMaterial.SetInt("_ZWrite", 0);
+            transparentMaterial.DisableKeyword("_ALPHATEST_ON");
+            transparentMaterial.EnableKeyword("_ALPHABLEND_ON");
+            transparentMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            transparentMaterial.renderQueue = 3000;
+
+            pinchSphere.GetComponent<Renderer>().material = transparentMaterial;
+        }
+        pinchSphere.transform.position = position;
+    }
+
+    void DestroySphere()
+    {
+        if (pinchSphere != null)
+        {
+            Destroy(pinchSphere);
+            pinchSphere = null;
+        }
+    }
 
     Transform GetFingerTransform(OVRSkeleton handSkeleton, FingerType fingerType)
     {
         foreach (var bone in handSkeleton.Bones)
         {
-            switch (fingerType)
-            {
-                case FingerType.Thumb:
-                    if (bone.Id == OVRSkeleton.BoneId.Hand_ThumbTip)
-                    {
-                        return bone.Transform;
-                    }
-                    break;
-                case FingerType.Index:
-                    if (bone.Id == OVRSkeleton.BoneId.Hand_IndexTip)
-                    {
-                        return bone.Transform;
-                    }
-                    break;
-                case FingerType.Middle:
-                    if (bone.Id == OVRSkeleton.BoneId.Hand_MiddleTip)
-                    {
-                        return bone.Transform;
-                    }
-                    break;
-                case FingerType.Ring:
-                    if (bone.Id == OVRSkeleton.BoneId.Hand_RingTip)
-                    {
-                        return bone.Transform;
-                    }
-                    break;
-                case FingerType.Pinky:
-                    if (bone.Id == OVRSkeleton.BoneId.Hand_PinkyTip)
-                    {
-                        return bone.Transform;
-                    }
-                    break;
-            }
+            if (bone.Id == GetBoneId(fingerType)) return bone.Transform;
         }
         return null;
+    }
+
+    OVRSkeleton.BoneId GetBoneId(FingerType fingerType)
+    {
+        return fingerType switch
+        {
+            FingerType.Thumb => OVRSkeleton.BoneId.Hand_ThumbTip,
+            FingerType.Index => OVRSkeleton.BoneId.Hand_IndexTip,
+            FingerType.Middle => OVRSkeleton.BoneId.Hand_MiddleTip,
+            FingerType.Ring => OVRSkeleton.BoneId.Hand_RingTip,
+            FingerType.Pinky => OVRSkeleton.BoneId.Hand_PinkyTip,
+            _ => OVRSkeleton.BoneId.Invalid
+        };
     }
 }
