@@ -138,10 +138,6 @@ class UIManager : MonoBehaviour
         if (Mpm3DObject_2 != null)
         {
             createdObjectLists.Add(Mpm3DObject_2);
-<<<<<<< HEAD
-=======
-            // SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
->>>>>>> 78c8321d320e72972d30efbc223f13a79e5ce321
             SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
         }
     }
