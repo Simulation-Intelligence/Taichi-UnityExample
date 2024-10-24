@@ -22,6 +22,8 @@ class UIManager : MonoBehaviour
     private List<GameObject> createdObjectLists = new List<GameObject>();
     private GameObject selectedObject;
     private GameObject prevSelectedObject;
+    [SerializeField]
+    private PinchGesture pinchGesture;
 
     // UI Components
     public GameObject UI_canvas;
@@ -214,7 +216,7 @@ class UIManager : MonoBehaviour
                 mpm3DSimulation.AdjustTextureColor(newColor);
         }
     }
-
+    
     void Update()
     {
         // Find the last grabbed object as the selected object for further manipulations
@@ -251,6 +253,7 @@ class UIManager : MonoBehaviour
                     }
                     else
                     {
+                        // Update data in UI
                         selectedObject = createdObject;
                         if (selectedObject != prevSelectedObject)
                         {
@@ -260,6 +263,15 @@ class UIManager : MonoBehaviour
                     }
                     break;
                 }
+            }
+
+            if (selectedObject.GetComponent<Mpm3DMarching>().UsePinchGesture)
+            {
+                pinchGesture.RenderPinchSphere = true;
+            }
+            else
+            {
+                pinchGesture.RenderPinchSphere = false;
             }
         }
     }
@@ -419,7 +431,7 @@ class UIManager : MonoBehaviour
         {
             if (selectedObject != null)
             {
-                ApplyMaterial(selectedObject);
+                // ApplyMaterial(selectedObject);
             }
         }
         // Merge the object with another object
@@ -494,6 +506,34 @@ class UIManager : MonoBehaviour
                 //     mpm3DSimulation.AdjustTextureColor(originalColor);
                 //     ApplyMaterial(newMpm3DObject);
                 // }
+            }
+        }
+        if (button.name == "Button_Pinch_Selection_Radius")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                foreach (GameObject parameter in parameterObjects)
+                {
+                    if (parameter.name == "Parameter_Pinch_Selection_Radius")
+                    {
+                        pinchGesture.pinchRadius = parameter.GetComponentInChildren<Slider>().value;
+                    }
+                }
+            }
+        }
+        if (button.name == "Button_Pinch_Force")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                foreach (GameObject parameter in parameterObjects)
+                {
+                    if (parameter.name == "Parameter_Pinch_Force")
+                    {
+                        mpm3DSimulation.SetPinchForceRatio(parameter.GetComponentInChildren<Slider>().value);
+                    }
+                }
             }
         }
         // Delete the object from the scene
@@ -738,6 +778,16 @@ class UIManager : MonoBehaviour
     {
         Debug.Log("Toggle " + toggle.name + " is " + (isOn ? "On" : "Off"));
 
+        // Enable/Disable pinch gesture for mid-air interactions
+        if (toggle.name == "Toggle_EnablePinchGesture")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.UsePinchGesture = toggle.isOn;
+            }
+        }
+
         // Enable/Disable color picker object
         if (toggle.name == "Toggle_ColorPicker")
         {
@@ -815,6 +865,30 @@ class UIManager : MonoBehaviour
             }
         }
     }
+
+    // void CreateOrUpdatePinchSphere(Vector3 pinchPosition, float pinchRadius, GameObject pinchSphere)
+    // {
+    //     if (pinchVisualizationSphere == null)
+    //     {
+    //         pinchVisualizationSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+    //         pinchVisualizationSphere.transform.localScale = Vector3.one * (2 * pinchRadius);
+
+    //         // Create a transparent material
+    //         Material transparentMaterial = new Material(Shader.Find("Standard"));
+    //         transparentMaterial.color = new Color(0, 1, 0, 0.2f); // Semi-transparent green
+    //         transparentMaterial.SetFloat("_Mode", 3); // Enable transparency mode
+    //         transparentMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+    //         transparentMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+    //         transparentMaterial.SetInt("_ZWrite", 0);
+    //         transparentMaterial.DisableKeyword("_ALPHATEST_ON");
+    //         transparentMaterial.EnableKeyword("_ALPHABLEND_ON");
+    //         transparentMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+    //         transparentMaterial.renderQueue = 3000;
+
+    //         pinchVisualizationSphere.GetComponent<Renderer>().material = transparentMaterial;
+    //     }
+    //     pinchVisualizationSphere.transform.position = pinchPosition;
+    // }
 
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
@@ -1059,6 +1133,10 @@ class UIManager : MonoBehaviour
                         {
                             toggle.isOn = mpm3DSimulation.RunSimulation;
                         }
+                        if (toggle.name == "Toggle_EnablePinchGesture")
+                        {
+                            toggle.isOn = mpm3DSimulation.UsePinchGesture;
+                        }
                         if (toggle.name == "Toggle_StickyGround")
                         {
                             toggle.isOn = mpm3DSimulation.GetIsStickyBoundary();
@@ -1091,6 +1169,14 @@ class UIManager : MonoBehaviour
 
                     foreach (GameObject parameter in parameterObjects)
                     {
+                        if (parameter.name == "Parameter_Pinch_Selection_Radius")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = pinchGesture.pinchRadius;
+                        }
+                        if (parameter.name == "Parameter_Pinch_Force")
+                        {
+                            parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.GetPinchForceRatio();
+                        }
                         if (parameter.name == "Parameter_E")
                         {
                             parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation._E;
