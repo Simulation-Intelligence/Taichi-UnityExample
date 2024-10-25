@@ -24,7 +24,8 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private AotModuleAsset Mpm3DModule;
     private Kernel _Kernel_subsetep_reset_grid, _Kernel_substep_neohookean_p2g, _Kernel_substep_Kirchhoff_p2g,
-    _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_apply_force_field, _Kernel_substep_update_grid_v, _Kernel_substep_update_grid_v_lerp, _Kernel_substep_g2p,
+    _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_apply_force_field, _Kernel_substep_apply_force_field_two_hands,
+    _Kernel_substep_update_grid_v, _Kernel_substep_update_grid_v_lerp, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
      _Kernel_substep_calculate_mat_sdf, _Kernel_substep_adjust_particle_mat,
@@ -163,14 +164,17 @@ public class Mpm3DMarching : MonoBehaviour
     // Use sticky boundary condition, 1 for sticky boundary, 0 for non-sticky boundary
     [SerializeField]
     private int use_sticky_boundary = 1;
-
-    [Header("Mid-air Pinch Gesture")]
-    public bool UsePinchGesture = true;
+    
+    [Header("Mid-Air Pinch Gestures")]
+    public bool UsePinchGestureLeft = true;
+    public bool UsePinchGestureRight = true;
     [SerializeField]
-    private PinchGesture pinchGesture;
+    private PinchGesture leftPinchGesture;
+    [SerializeField]
+    private PinchGesture rightPinchGesture;
     [SerializeField]
     private float pinchratio = 1.0f;
-
+    
     [Header("Tools")]
     public List<MatTool> matTools = new List<MatTool>();
     private int totalPrimitives;
@@ -260,6 +264,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_substep_Kirchhoff_p2g = kernels["substep_kirchhoff_p2g"];
             _Kernel_substep_calculate_signed_distance_field = kernels["substep_calculate_signed_distance_field"];
             _Kernel_substep_apply_force_field = kernels["substep_apply_force_field"];
+            _Kernel_substep_apply_force_field_two_hands = kernels["substep_apply_force_field_two_hands"];
             _Kernel_substep_update_grid_v = kernels["substep_update_grid_v"];
             _Kernel_substep_update_grid_v_lerp = kernels["substep_update_grid_v_lerp"];
             _Kernel_substep_g2p = kernels["substep_g2p"];
@@ -778,9 +783,11 @@ public class Mpm3DMarching : MonoBehaviour
                     _Kernel_substep_update_dg.LaunchAsync(x_gaussian, C_gaussian, dg_gaussian, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
                 // Use mid-air pinch gesture
-                if (UsePinchGesture)
-                    ApplyPinchForce();
-
+                if (UsePinchGestureLeft || UsePinchGestureRight)
+                    ApplyPinchForce(leftPinchGesture, rightPinchGesture);
+                // if (UsePinchGestureRight)
+                //     ApplyPinchForce(rightPinchGesture);
+                
                 if (lerp_tool)
                 {
                     float lerp_factor = 1 - time_left / frame_time;
@@ -1429,7 +1436,25 @@ public class Mpm3DMarching : MonoBehaviour
             writer.WriteLine(string.Join(",", position));
         }
     }
-    void ApplyPinchForce()
+    void ApplyPinchForce(PinchGesture pinchGesture_1, PinchGesture pinchGesture_2)
+    {
+        Vector3 pinchPosition_1 = Vector3.zero;
+        Vector3 pinchDirection_1 = Vector3.zero;
+        Vector3 pinchPosition_2 = Vector3.zero;
+        Vector3 pinchDirection_2 = Vector3.zero;
+        if (pinchGesture_1 != null && pinchGesture_1.isPinching)
+        {
+            pinchPosition_1 = transform.InverseTransformPoint(pinchGesture_1.lastPinchPosition);
+            pinchDirection_1 = pinchratio * transform.InverseTransformDirection(pinchGesture_1.pinchSpeed);
+        }
+        if (pinchGesture_2 != null && pinchGesture_2.isPinching)
+        {
+            pinchPosition_2 = transform.InverseTransformPoint(pinchGesture_2.lastPinchPosition);
+            pinchDirection_2 = pinchratio * transform.InverseTransformDirection(pinchGesture_2.pinchSpeed);
+        }
+        _Kernel_substep_apply_force_field_two_hands.LaunchAsync(grid_v, grid_m, max_dt, pinchPosition_1.x, pinchPosition_1.y, pinchPosition_1.z, pinchGesture_1.pinchRadius / transform.lossyScale.x, pinchDirection_1.x, pinchDirection_1.y, pinchDirection_1.z, pinchPosition_2.x, pinchPosition_2.y, pinchPosition_2.z, pinchGesture_2.pinchRadius / transform.lossyScale.x, pinchDirection_2.x, pinchDirection_2.y, pinchDirection_2.z, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+    }
+    void ApplyPinchForce(PinchGesture pinchGesture)
     {
         Vector3 pinchPosition = Vector3.zero;
         Vector3 pinchDirection = Vector3.zero;

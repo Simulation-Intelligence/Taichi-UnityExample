@@ -364,6 +364,24 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     grid_v[I] += ti.Vector([force_x, force_y, force_z]) * dt
     
     @ti.kernel
+    def substep_apply_force_field_two_hands(grid_v: ti.types.ndarray(ndim=3),
+                                        grid_m: ti.types.ndarray(ndim=3),
+                                        dt: ti.f32,
+                                        center_x1: ti.f32, center_y1: ti.f32, center_z1: ti.f32, radius1: ti.f32, force_x1: ti.f32, force_y1: ti.f32, force_z1: ti.f32,
+                                        center_x2: ti.f32, center_y2: ti.f32, center_z2: ti.f32, radius2: ti.f32, force_x2: ti.f32, force_y2: ti.f32, force_z2: ti.f32,
+                                        min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
+        dx = 1 / grid_v.shape[0]
+        for I in ti.grouped(grid_m):
+            pos = I * dx + dx * 0.5
+            if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
+                if grid_m[I] > 0:
+                    grid_v[I] /= grid_m[I]
+                if (pos - ti.Vector([center_x1, center_y1, center_z1])).norm() < radius1:
+                    grid_v[I] += ti.Vector([force_x1, force_y1, force_z1]) * dt
+                if (pos - ti.Vector([center_x2, center_y2, center_z2])).norm() < radius2:
+                    grid_v[I] += ti.Vector([force_x2, force_y2, force_z2]) * dt
+
+    @ti.kernel
     def substep_update_grid_v_lerp(grid_v: ti.types.ndarray(ndim=3),
                               sdf: ti.types.ndarray(ndim=3),
                               obstacle_normals: ti.types.ndarray(ndim=3),
@@ -1104,6 +1122,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(init_torus, template_args={'x': x, 'dg': dg})
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_apply_force_field, template_args={'grid_v': grid_v, 'grid_m': grid_m})
+        mod.add_kernel(substep_apply_force_field_two_hands, template_args={'grid_v': grid_v, 'grid_m': grid_m})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v,  'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
         mod.add_kernel(substep_update_grid_v_lerp, template_args={'grid_v': grid_v,  'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities,'sdf_last': sdf, 'obstacle_normals_last': obstacle_normals, 'obstacle_velocities_last': obstacle_velocities})
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'x': x,'max_speed': max_speed})

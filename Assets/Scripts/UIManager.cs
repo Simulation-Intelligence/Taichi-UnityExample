@@ -22,8 +22,8 @@ class UIManager : MonoBehaviour
     private List<GameObject> createdObjectLists = new List<GameObject>();
     private GameObject selectedObject;
     private GameObject prevSelectedObject;
-    [SerializeField]
-    private PinchGesture pinchGesture;
+    public PinchGesture pinchGestureLeft;
+    public PinchGesture pinchGestureRight;
 
     // UI Components
     public GameObject UI_canvas;
@@ -253,7 +253,7 @@ class UIManager : MonoBehaviour
                     }
                     else
                     {
-                        // Update data in UI
+                        // Update object-wise data in UI
                         selectedObject = createdObject;
                         if (selectedObject != prevSelectedObject)
                         {
@@ -265,14 +265,9 @@ class UIManager : MonoBehaviour
                 }
             }
 
-            if (selectedObject.GetComponent<Mpm3DMarching>().UsePinchGesture)
-            {
-                pinchGesture.RenderPinchSphere = true;
-            }
-            else
-            {
-                pinchGesture.RenderPinchSphere = false;
-            }
+            // Visualize double handed pinch gesture spheres
+            pinchGestureLeft.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
+            pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
         }
     }
 
@@ -517,7 +512,8 @@ class UIManager : MonoBehaviour
                 {
                     if (parameter.name == "Parameter_Pinch_Selection_Radius")
                     {
-                        pinchGesture.pinchRadius = parameter.GetComponentInChildren<Slider>().value;
+                        pinchGestureLeft.pinchRadius = parameter.GetComponentInChildren<Slider>().value;
+                        pinchGestureRight.pinchRadius = parameter.GetComponentInChildren<Slider>().value;
                     }
                 }
             }
@@ -779,15 +775,22 @@ class UIManager : MonoBehaviour
         Debug.Log("Toggle " + toggle.name + " is " + (isOn ? "On" : "Off"));
 
         // Enable/Disable pinch gesture for mid-air interactions
-        if (toggle.name == "Toggle_EnablePinchGesture")
+        if (toggle.name == "Toggle_EnablePinchGesture_Left")
         {
             if (selectedObject != null)
             {
                 Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-                mpm3DSimulation.UsePinchGesture = toggle.isOn;
+                mpm3DSimulation.UsePinchGestureLeft = toggle.isOn;
             }
         }
-
+        if (toggle.name == "Toggle_EnablePinchGesture_Right")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.UsePinchGestureRight = toggle.isOn;
+            }
+        }
         // Enable/Disable color picker object
         if (toggle.name == "Toggle_ColorPicker")
         {
@@ -865,30 +868,6 @@ class UIManager : MonoBehaviour
             }
         }
     }
-
-    // void CreateOrUpdatePinchSphere(Vector3 pinchPosition, float pinchRadius, GameObject pinchSphere)
-    // {
-    //     if (pinchVisualizationSphere == null)
-    //     {
-    //         pinchVisualizationSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-    //         pinchVisualizationSphere.transform.localScale = Vector3.one * (2 * pinchRadius);
-
-    //         // Create a transparent material
-    //         Material transparentMaterial = new Material(Shader.Find("Standard"));
-    //         transparentMaterial.color = new Color(0, 1, 0, 0.2f); // Semi-transparent green
-    //         transparentMaterial.SetFloat("_Mode", 3); // Enable transparency mode
-    //         transparentMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-    //         transparentMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-    //         transparentMaterial.SetInt("_ZWrite", 0);
-    //         transparentMaterial.DisableKeyword("_ALPHATEST_ON");
-    //         transparentMaterial.EnableKeyword("_ALPHABLEND_ON");
-    //         transparentMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-    //         transparentMaterial.renderQueue = 3000;
-
-    //         pinchVisualizationSphere.GetComponent<Renderer>().material = transparentMaterial;
-    //     }
-    //     pinchVisualizationSphere.transform.position = pinchPosition;
-    // }
 
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
@@ -1135,7 +1114,7 @@ class UIManager : MonoBehaviour
                         }
                         if (toggle.name == "Toggle_EnablePinchGesture")
                         {
-                            toggle.isOn = mpm3DSimulation.UsePinchGesture;
+                            toggle.isOn = mpm3DSimulation.UsePinchGestureLeft;
                         }
                         if (toggle.name == "Toggle_StickyGround")
                         {
@@ -1171,7 +1150,7 @@ class UIManager : MonoBehaviour
                     {
                         if (parameter.name == "Parameter_Pinch_Selection_Radius")
                         {
-                            parameter.GetComponentInChildren<Slider>().value = pinchGesture.pinchRadius;
+                            parameter.GetComponentInChildren<Slider>().value = pinchGestureLeft.pinchRadius;
                         }
                         if (parameter.name == "Parameter_Pinch_Force")
                         {
