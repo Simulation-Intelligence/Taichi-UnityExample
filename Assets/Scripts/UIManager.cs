@@ -264,8 +264,8 @@ class UIManager : MonoBehaviour
                     break;
                 }
             }
-
-            // Visualize double handed pinch gesture spheres
+            
+            // Visualize pinch gesture spheres
             pinchGestureLeft.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
             pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
         }
@@ -1112,9 +1112,13 @@ class UIManager : MonoBehaviour
                         {
                             toggle.isOn = mpm3DSimulation.RunSimulation;
                         }
-                        if (toggle.name == "Toggle_EnablePinchGesture")
+                        if (toggle.name == "Toggle_EnablePinchGesture_Left")
                         {
                             toggle.isOn = mpm3DSimulation.UsePinchGestureLeft;
+                        }
+                        if (toggle.name == "Toggle_EnablePinchGesture_Right")
+                        {
+                            toggle.isOn = mpm3DSimulation.UsePinchGestureRight;
                         }
                         if (toggle.name == "Toggle_StickyGround")
                         {

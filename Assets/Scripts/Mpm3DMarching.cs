@@ -1442,12 +1442,12 @@ public class Mpm3DMarching : MonoBehaviour
         Vector3 pinchDirection_1 = Vector3.zero;
         Vector3 pinchPosition_2 = Vector3.zero;
         Vector3 pinchDirection_2 = Vector3.zero;
-        if (pinchGesture_1 != null && pinchGesture_1.isPinching)
+        if (pinchGesture_1 != null && pinchGesture_1.isPinching && UsePinchGestureLeft)
         {
             pinchPosition_1 = transform.InverseTransformPoint(pinchGesture_1.lastPinchPosition);
             pinchDirection_1 = pinchratio * transform.InverseTransformDirection(pinchGesture_1.pinchSpeed);
         }
-        if (pinchGesture_2 != null && pinchGesture_2.isPinching)
+        if (pinchGesture_2 != null && pinchGesture_2.isPinching && UsePinchGestureRight)
         {
             pinchPosition_2 = transform.InverseTransformPoint(pinchGesture_2.lastPinchPosition);
             pinchDirection_2 = pinchratio * transform.InverseTransformDirection(pinchGesture_2.pinchSpeed);
