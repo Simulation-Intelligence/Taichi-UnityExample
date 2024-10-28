@@ -69,11 +69,6 @@ public class Mpm3DMarching : MonoBehaviour
     {
         Hand
     }
-    public enum PinchOperation
-    {
-        MoveObject,
-        FixObject
-    }
     [Header("Material")]
     [SerializeField]
     public RenderType renderType = RenderType.GaussianSplat;
@@ -161,8 +156,8 @@ public class Mpm3DMarching : MonoBehaviour
     private Vector3 boundary_min, boundary_max;
 
     [Header("Mid-Air Pinch Gestures")]
-    public bool UsePinchGestureLeft = true;
-    public bool UsePinchGestureRight = true;
+    public bool UsePinchGestureLeft = false;
+    public bool UsePinchGestureRight = false;
     [SerializeField]
     private PinchGesture leftPinchGesture;
     [SerializeField]
@@ -790,8 +785,6 @@ public class Mpm3DMarching : MonoBehaviour
                 // Use mid-air pinch gesture
                 if (UsePinchGestureLeft || UsePinchGestureRight)
                     ApplyPinchForce(leftPinchGesture, rightPinchGesture);
-                // if (UsePinchGestureRight)
-                //     ApplyPinchForce(rightPinchGesture);
                 
                 if (lerp_tool)
                 {
@@ -1441,12 +1434,11 @@ public class Mpm3DMarching : MonoBehaviour
     
     public void FixObjectByPinch(PinchGesture pinchGesture_1, PinchGesture pinchGesture_2)
     {
-        if (FixObject == false && pinchGesture_1 != null && pinchGesture_1.isPinching && UsePinchGestureLeft)
+        if (UsePinchGestureLeft && pinchGesture_1 != null && pinchGesture_1.isPinching)
         {
             fix_center = transform.InverseTransformPoint(pinchGesture_1.lastPinchPosition);
             fix_radius = pinchGesture_1.pinchRadius / transform.lossyScale.x;
-            FixObject = true;
-            // _Kernel_substep_fix_object.LaunchAsync(grid_v, fix_center.x, fix_center.y, fix_center.z, fix_radius);
+            _Kernel_substep_fix_object.LaunchAsync(grid_v, fix_center.x, fix_center.y, fix_center.z, fix_radius);
         }
     }
     
@@ -1456,13 +1448,13 @@ public class Mpm3DMarching : MonoBehaviour
         Vector3 pinchDirection_1 = Vector3.zero;
         Vector3 pinchPosition_2 = Vector3.zero;
         Vector3 pinchDirection_2 = Vector3.zero;
-        if (pinchGesture_1 != null && pinchGesture_1.isPinching && UsePinchGestureLeft)
+        if (UsePinchGestureLeft && pinchGesture_1 != null && pinchGesture_1.isPinching)
         {
             pinchPosition_1 = transform.InverseTransformPoint(pinchGesture_1.lastPinchPosition);
             pinchDirection_1 = pinchratio * transform.InverseTransformDirection(pinchGesture_1.pinchSpeed);
             // pinchDirection_1 = transform.InverseTransformDirection(pinchGesture_1.pinchSpeed);
         }
-        if (pinchGesture_2 != null && pinchGesture_2.isPinching && UsePinchGestureRight)
+        if (UsePinchGestureRight && pinchGesture_2 != null && pinchGesture_2.isPinching)
         {
             pinchPosition_2 = transform.InverseTransformPoint(pinchGesture_2.lastPinchPosition);
             pinchDirection_2 = pinchratio * transform.InverseTransformDirection(pinchGesture_2.pinchSpeed);
