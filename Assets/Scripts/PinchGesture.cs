@@ -24,7 +24,7 @@ public class PinchGesture : MonoBehaviour
     [HideInInspector] public Vector3 pinchSpeed;
 
     public float pinchThreshold = 0.02f;
-    public float pinchRadius = 0.05f; // Sphere radius for the control area
+    public float pinchRadius = 0.05f; // Sphere radius for the selection area
     private GameObject pinchSphere;
     public bool RenderPinchSphere = true;
     void Start()
@@ -106,7 +106,8 @@ public class PinchGesture : MonoBehaviour
 
             pinchSphere.GetComponent<Renderer>().material = transparentMaterial;
         }
-        pinchSphere.transform.position = position;
+        if (pinchSphere != null)
+            pinchSphere.transform.position = position;
     }
 
     void DestroySphere()

@@ -69,6 +69,11 @@ public class Mpm3DMarching : MonoBehaviour
     {
         Hand
     }
+    public enum PinchOperation
+    {
+        MoveObject,
+        FixObject
+    }
     [Header("Material")]
     [SerializeField]
     public RenderType renderType = RenderType.GaussianSplat;
@@ -155,16 +160,6 @@ public class Mpm3DMarching : MonoBehaviour
     private float hand_simulation_radius = 0.5f;
     private Vector3 boundary_min, boundary_max;
 
-    // Fix the object in place
-    [SerializeField]
-    private bool is_fixed = false;
-    private Vector3 fix_center = new Vector3(0.5f, 0.5f, 0.5f);
-    [SerializeField]
-    private float fix_radius = 0.2f;
-    // Use sticky boundary condition, 1 for sticky boundary, 0 for non-sticky boundary
-    [SerializeField]
-    private int use_sticky_boundary = 1;
-    
     [Header("Mid-Air Pinch Gestures")]
     public bool UsePinchGestureLeft = true;
     public bool UsePinchGestureRight = true;
@@ -173,7 +168,17 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private PinchGesture rightPinchGesture;
     [SerializeField]
-    private float pinchratio = 1.0f;
+    private float pinchratio = 4.0f;
+
+    [Header("Fix the Object in Place")]
+    [SerializeField]
+    private bool FixObject = false;
+    private Vector3 fix_center = new Vector3(0.5f, 0.5f, 0.5f);
+    [SerializeField]
+    private float fix_radius = 0.2f;
+    // Use sticky boundary condition, 1 for sticky boundary, 0 for non-sticky boundary
+    [SerializeField]
+    private int use_sticky_boundary = 1;
     
     [Header("Tools")]
     public List<MatTool> matTools = new List<MatTool>();
@@ -796,10 +801,10 @@ public class Mpm3DMarching : MonoBehaviour
                 else
                     _Kernel_substep_update_grid_v.LaunchAsync(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
-                if (is_fixed)
-                    // If fix the object in place during the modeling process
-                    _Kernel_substep_fix_object.LaunchAsync(grid_v, fix_center.x, fix_center.y, fix_center.z, fix_radius);
-
+                // Fix the object in place during the modeling process by pinch gesture
+                // if (FixObject)
+                //     FixObjectByPinch(leftPinchGesture, rightPinchGesture);
+                
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_apply_plasticity.LaunchAsync(dg, x, E, nu, material, SigY, alpha, min_clamp, max_clamp, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
@@ -818,6 +823,7 @@ public class Mpm3DMarching : MonoBehaviour
                     dt = Mathf.Min(dt, time_left);
                 }
             }
+            
             if (lerp_tool)
             {
                 _Kernel_copy_array_3dim1.LaunchAsync(hand_sdf, hand_sdf_last);
@@ -1022,20 +1028,7 @@ public class Mpm3DMarching : MonoBehaviour
     {
         object2.transform.SetParent(gameObject.transform);
     }
-    public void FixObject(Vector3 center, float radius)
-    {
-        is_fixed = true;
-        fix_center = center;
-        fix_radius = radius;
-    }
-    public void SetFixed(bool fixed_)
-    {
-        is_fixed = fixed_;
-    }
-    public bool GetIsFixed()
-    {
-        return is_fixed;
-    }
+    
     public void SetStickyBoundary(bool sticky)
     {
         use_sticky_boundary = sticky ? 1 : 0;
@@ -1436,6 +1429,27 @@ public class Mpm3DMarching : MonoBehaviour
             writer.WriteLine(string.Join(",", position));
         }
     }
+    
+    public void SetFixed(bool fixed_)
+    {
+        FixObject = fixed_;
+    }
+    public bool GetIsFixed()
+    {
+        return FixObject;
+    }
+    
+    public void FixObjectByPinch(PinchGesture pinchGesture_1, PinchGesture pinchGesture_2)
+    {
+        if (FixObject == false && pinchGesture_1 != null && pinchGesture_1.isPinching && UsePinchGestureLeft)
+        {
+            fix_center = transform.InverseTransformPoint(pinchGesture_1.lastPinchPosition);
+            fix_radius = pinchGesture_1.pinchRadius / transform.lossyScale.x;
+            FixObject = true;
+            // _Kernel_substep_fix_object.LaunchAsync(grid_v, fix_center.x, fix_center.y, fix_center.z, fix_radius);
+        }
+    }
+    
     void ApplyPinchForce(PinchGesture pinchGesture_1, PinchGesture pinchGesture_2)
     {
         Vector3 pinchPosition_1 = Vector3.zero;
@@ -1446,14 +1460,17 @@ public class Mpm3DMarching : MonoBehaviour
         {
             pinchPosition_1 = transform.InverseTransformPoint(pinchGesture_1.lastPinchPosition);
             pinchDirection_1 = pinchratio * transform.InverseTransformDirection(pinchGesture_1.pinchSpeed);
+            // pinchDirection_1 = transform.InverseTransformDirection(pinchGesture_1.pinchSpeed);
         }
         if (pinchGesture_2 != null && pinchGesture_2.isPinching && UsePinchGestureRight)
         {
             pinchPosition_2 = transform.InverseTransformPoint(pinchGesture_2.lastPinchPosition);
             pinchDirection_2 = pinchratio * transform.InverseTransformDirection(pinchGesture_2.pinchSpeed);
+            // pinchDirection_2 = transform.InverseTransformDirection(pinchGesture_2.pinchSpeed);
         }
         _Kernel_substep_apply_force_field_two_hands.LaunchAsync(grid_v, grid_m, max_dt, pinchPosition_1.x, pinchPosition_1.y, pinchPosition_1.z, pinchGesture_1.pinchRadius / transform.lossyScale.x, pinchDirection_1.x, pinchDirection_1.y, pinchDirection_1.z, pinchPosition_2.x, pinchPosition_2.y, pinchPosition_2.z, pinchGesture_2.pinchRadius / transform.lossyScale.x, pinchDirection_2.x, pinchDirection_2.y, pinchDirection_2.z, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
     }
+    
     void ApplyPinchForce(PinchGesture pinchGesture)
     {
         Vector3 pinchPosition = Vector3.zero;
@@ -1467,6 +1484,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         _Kernel_substep_apply_force_field.LaunchAsync(grid_v, grid_m, pinchPosition.x, pinchPosition.y, pinchPosition.z, pinchGesture.pinchRadius / transform.lossyScale.x, pinchDirection.x, pinchDirection.y, pinchDirection.z, max_dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
     }
+    
     public float GetPinchForceRatio()
     {
         return pinchratio;

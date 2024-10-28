@@ -378,9 +378,11 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 if grid_m[I] > 0:
                     grid_v[I] /= grid_m[I]
                 if (pos - ti.Vector([center_x1, center_y1, center_z1])).norm() < radius1:
-                    grid_v[I] += ti.Vector([force_x1, force_y1, force_z1]) * dt
+                    # grid_v[I] += ti.Vector([force_x1, force_y1, force_z1]) * dt
+                    grid_v[I] += ti.Vector([force_x1, force_y1, force_z1])
                 if (pos - ti.Vector([center_x2, center_y2, center_z2])).norm() < radius2:
-                    grid_v[I] += ti.Vector([force_x2, force_y2, force_z2]) * dt
+                    # grid_v[I] += ti.Vector([force_x2, force_y2, force_z2]) * dt
+                    grid_v[I] += ti.Vector([force_x2, force_y2, force_z2])
 
     @ti.kernel
     def substep_update_grid_v_lerp(grid_v: ti.types.ndarray(ndim=3),
@@ -711,7 +713,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def substep_fix_object(grid_v: ti.types.ndarray(ndim=3),
                            fix_center_x: ti.f32, fix_center_y: ti.f32, fix_center_z: ti.f32, 
                            fix_range: ti.f32):
-        # Fix the object in place by setting the velocity to zero within the specified range
+        # Fix the object in place by setting the velocity to zero within the specified sphere range
         dx = 1 / grid_v.shape[0]
         for I in ti.grouped(grid_v):
             pos = I * dx + dx * 0.5

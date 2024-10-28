@@ -15656,9 +15656,9 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1116944949}
   m_Direction: 0
   m_MinValue: 0
-  m_MaxValue: 50000
+  m_MaxValue: 10
   m_WholeNumbers: 0
-  m_Value: 8000
+  m_Value: 4
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -79126,7 +79126,7 @@ MonoBehaviour:
   onValueChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_IsOn: 1
+  m_IsOn: 0
 --- !u!4 &1565787587 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6112363068928044222, guid: f54012181eacade4ea242c65f804720f, type: 3}
@@ -87665,7 +87665,7 @@ MonoBehaviour:
   onValueChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_IsOn: 1
+  m_IsOn: 0
 --- !u!1 &1759020600
 GameObject:
   m_ObjectHideFlags: 0
@@ -97710,7 +97710,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: pinchratio
-      value: 8000
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: renderType
