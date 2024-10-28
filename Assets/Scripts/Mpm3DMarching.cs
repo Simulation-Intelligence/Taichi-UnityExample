@@ -783,8 +783,7 @@ public class Mpm3DMarching : MonoBehaviour
                     _Kernel_substep_update_dg.LaunchAsync(x_gaussian, C_gaussian, dg_gaussian, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
                 // Use mid-air pinch gesture
-                if (UsePinchGestureLeft || UsePinchGestureRight)
-                    ApplyPinchForce(leftPinchGesture, rightPinchGesture);
+                ApplyPinchForce(leftPinchGesture, rightPinchGesture);
                 
                 if (lerp_tool)
                 {
