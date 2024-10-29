@@ -420,12 +420,12 @@ MonoBehaviour:
   smooth_iter: 5
   bounding_eps: 0.1
   max_dt: 0.0001
-  frame_time: 0.0005
+  frame_time: 0.002
   particle_per_grid: 8
   allowed_cfl: 0.5
-  damping: 10
-  cube_size: 0.6
-  cylinder_length: 0.9
+  damping: 200
+  cube_size: 0.5
+  cylinder_length: 0.8
   cylinder_radius: 0.05
   torus_radius: 0.3
   torus_tube_radius: 0.05
@@ -442,11 +442,11 @@ MonoBehaviour:
   use_sticky_boundary: 1
   matTools: []
   tools: []
-  _E: 8000000
-  _SigY: 800000
+  _E: 10000000
+  _SigY: 1000000
   _nu: 0.1
-  colide_factor: 0.01
-  friction_k: 0
+  colide_factor: 0.005
+  friction_k: 0.2
   p_rho: 1000
   _min_clamp: 0.1
   _max_clamp: 0.1
