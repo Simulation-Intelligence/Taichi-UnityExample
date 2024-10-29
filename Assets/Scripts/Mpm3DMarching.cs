@@ -142,7 +142,7 @@ public class Mpm3DMarching : MonoBehaviour
     private float bounding_eps = 0.1f;
     [SerializeField]
     public float max_dt = 1e-4f, frame_time = 0.005f, particle_per_grid = 8, allowed_cfl = 0.5f, damping = 1f;
-    public float cube_size = 0.2f, cylinder_height = 0.9f, cylinder_radius = 0.05f, torus_radius = 0.3f, torus_tube_radius = 0.05f;
+    public float cube_size = 0.2f, cylinder_length = 0.9f, cylinder_radius = 0.05f, torus_radius = 0.3f, torus_tube_radius = 0.05f;
     [SerializeField]
     public bool use_correct_cfl = false;
 
@@ -158,10 +158,8 @@ public class Mpm3DMarching : MonoBehaviour
     [Header("Mid-Air Pinch Gestures")]
     public bool UsePinchGestureLeft = false;
     public bool UsePinchGestureRight = false;
-    [SerializeField]
-    private PinchGesture leftPinchGesture;
-    [SerializeField]
-    private PinchGesture rightPinchGesture;
+    public PinchGesture leftPinchGesture;
+    public PinchGesture rightPinchGesture;
     [SerializeField]
     private float pinchratio = 4.0f;
 
@@ -410,7 +408,7 @@ public class Mpm3DMarching : MonoBehaviour
                 volume = 4.0f / 3.0f * Mathf.PI * Mathf.Pow(cube_size / 2, 3);
                 break;
             case InitShape.Cylinder:
-                volume = Mathf.PI * Mathf.Pow(cylinder_radius, 2) * cylinder_height;
+                volume = Mathf.PI * Mathf.Pow(cylinder_radius, 2) * cylinder_length;
                 break;
             case InitShape.Torus:
                 volume = 2 * Mathf.PI * Mathf.PI * Mathf.Pow(torus_tube_radius, 2) * torus_radius;
@@ -437,7 +435,7 @@ public class Mpm3DMarching : MonoBehaviour
         else if (initShape == InitShape.Sphere)
             _Kernel_init_sphere.LaunchAsync(x, dg, cube_size / 2);
         else if (initShape == InitShape.Cylinder)
-            _Kernel_init_cylinder.LaunchAsync(x, dg, cylinder_height, cylinder_radius);
+            _Kernel_init_cylinder.LaunchAsync(x, dg, cylinder_length, cylinder_radius);
         else if (initShape == InitShape.Torus)
             _Kernel_init_torus.LaunchAsync(x, dg, torus_radius, torus_tube_radius);
     }

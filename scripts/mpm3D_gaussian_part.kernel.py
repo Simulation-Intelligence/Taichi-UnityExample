@@ -669,16 +669,16 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     x[i] = rand_pos * cube_size + 0.5
                     dg[i] = ti.Matrix.identity(float, dim)
                     break
-                    
+    
     @ti.kernel
-    def init_cylinder(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cylinder_height: ti.f32, cylinder_radius: ti.f32):
+    def init_cylinder(x: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cylinder_length: ti.f32, cylinder_radius: ti.f32):
         # Init a cylinder
         for i in range(x.shape[0]):
             while True:
                 rand_y = (ti.random() * 2 - 1) * cylinder_radius
                 rand_z = (ti.random() * 2 - 1) * cylinder_radius
                 if rand_y ** 2 + rand_z ** 2 <= cylinder_radius ** 2:
-                    x[i] = ti.Vector([ti.random() * cylinder_height, rand_y + 0.5, rand_z + 0.5])
+                    x[i] = ti.Vector([0.5 + (ti.random() - 0.5) * cylinder_length, rand_y + 0.5, rand_z + 0.5])
                     dg[i] = ti.Matrix.identity(float, dim)
                     break
     

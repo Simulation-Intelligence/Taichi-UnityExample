@@ -19,11 +19,14 @@ class UIManager : MonoBehaviour
     [SerializeField]
     private GameObject colorPickerObject;
     private ColorPicker colorPicker;
+    public GameObject ShapeParameterObject_1;
+    public GameObject ShapeParameterObject_2;
     private List<GameObject> createdObjectLists = new List<GameObject>();
     private GameObject selectedObject;
     private GameObject prevSelectedObject;
     public PinchGesture pinchGestureLeft;
     public PinchGesture pinchGestureRight;
+    private string prefabName;
 
     // UI Components
     public GameObject UI_canvas;
@@ -220,7 +223,7 @@ class UIManager : MonoBehaviour
     void Update()
     {
         // Find the last grabbed object as the selected object for further manipulations
-        if (createdObjectLists != null)
+        if (createdObjectLists.Count > 0)
         {
             foreach (var createdObject in createdObjectLists)
             {
@@ -420,6 +423,13 @@ class UIManager : MonoBehaviour
         {
             // May need to have a file brower
             // CreateNewMpm3DObject();
+        }
+        // Create object based on shape parameters
+        if (button.name == "Button_Confirm")
+        {
+            ShapeParameterObject_1.SetActive(false);
+            ShapeParameterObject_2.SetActive(false);
+            CreateMpm3DObjectFromPrefab();
         }
         // Adjust materials during the modeling process
         if (button.name == "Button_ApplyMaterials")
@@ -872,23 +882,57 @@ class UIManager : MonoBehaviour
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
         Debug.Log(dropdown.name + " selected: " + dropdown.options[value].text);
-
+        
         if (dropdown.name == "Dropdown_PrimitiveShape")
         {
-            // Select a primitive shape
-            string prefabName = dropdown.options[value].text;
+            // Select a primitive shape and adjust the parameters
+            if (dropdown.options[value].text != "Create a Primitive Shape")
+            {
+                prefabName = dropdown.options[value].text;
+            }
+            // Only adjust parameters here
+            if (prefabName != null)
+            {
+                if (prefabName == "Sphere")
+                {
+                    ShapeParameterObject_1.SetActive(true);
+                    TMP_Text parameter_text = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
+                    parameter_text.text = "Radius";
+                    ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.5f;
+                }
+                if (prefabName == "Cube")
+                {
+                    ShapeParameterObject_1.SetActive(true);
+                    TMP_Text parameter_text = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
+                    parameter_text.text = "Size";
+                    ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.5f;
+                }
+                if (prefabName == "Cylinder")
+                {
+                    ShapeParameterObject_1.SetActive(true);
+                    TMP_Text parameter_text_1 = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
+                    parameter_text_1.text = "Cylinder Length";
+                    ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.8f;
+                    ShapeParameterObject_2.SetActive(true);
+                    TMP_Text parameter_text_2 = ShapeParameterObject_2.transform.Find("Name").GetComponent<TMP_Text>();
+                    parameter_text_2.text = "Cylinder Radius";
+                    ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.05f;
+                }
+                if (prefabName == "Torus")
+                {
+                    ShapeParameterObject_1.SetActive(true);
+                    TMP_Text parameter_text_1 = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
+                    parameter_text_1.text = "Torus Radius";
+                    ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.3f;
+                    ShapeParameterObject_2.SetActive(true);
+                    TMP_Text parameter_text_2 = ShapeParameterObject_2.transform.Find("Name").GetComponent<TMP_Text>();
+                    parameter_text_2.text = "Torus Tube Radius";
+                    ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.05f;
+                }
+            }
+            // CreateMpm3DObjectFromPrefab(); 
             dropdown.value = 0;
             dropdown.Hide();
-            CreateMpm3DObjectFromPrefab(prefabName);
-        }
-        if (dropdown.name == "Dropdown_RenderingType")
-        {
-            // Select a rendering type
-            if (selectedObject != null)
-            {
-                // Use marching cubes to render primitive shapes
-                // Use 3D Gaussian to render loaded gaussian assets
-            }
         }
         if (dropdown.name == "Dropdown_Color")
         {
@@ -1007,10 +1051,10 @@ class UIManager : MonoBehaviour
         {
         }
     }
-
-    void CreateMpm3DObjectFromPrefab(string prefabName)
+    
+    void CreateMpm3DObjectFromPrefab()
     {
-        GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/PrimitiveShapes/Mpm3DExample_" + prefabName);
+        GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/PrimitiveShapes/Mpm3DExample");
 
         if (Mpm3DObject != null)
         {
@@ -1023,18 +1067,42 @@ class UIManager : MonoBehaviour
 
             GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
             createdObjectLists.Add(newMpm3DObject);
-
+            
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-
+            
             // Initialize the object
-            newMpm3DObject.GetComponent<Mpm3DMarching>().Initiate();
+            Mpm3DMarching mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DMarching>();
+            if (prefabName == "Sphere")
+            {
+                mpm3DSimulation.initShape = Mpm3DMarching.InitShape.Sphere;
+                mpm3DSimulation.cube_size = ShapeParameterObject_1.GetComponentInChildren<Slider>().value;
+            } 
+            if (prefabName == "Cube")
+            {
+                mpm3DSimulation.initShape = Mpm3DMarching.InitShape.Cube;
+                mpm3DSimulation.cube_size = ShapeParameterObject_1.GetComponentInChildren<Slider>().value;
+            } 
+            if (prefabName == "Cylinder")
+            {
+                mpm3DSimulation.initShape = Mpm3DMarching.InitShape.Cylinder;
+                mpm3DSimulation.cylinder_length = ShapeParameterObject_1.GetComponentInChildren<Slider>().value;
+                mpm3DSimulation.cylinder_radius = ShapeParameterObject_2.GetComponentInChildren<Slider>().value;
+            } 
+            if (prefabName == "Torus")
+            {
+                mpm3DSimulation.initShape = Mpm3DMarching.InitShape.Torus;
+                mpm3DSimulation.torus_radius = ShapeParameterObject_1.GetComponentInChildren<Slider>().value;
+                mpm3DSimulation.torus_tube_radius = ShapeParameterObject_2.GetComponentInChildren<Slider>().value;
+            }
+            
+            mpm3DSimulation.Initiate(); // Initialization
+            SelectTools(selectedObject, prevLeftHandTool, prevRightHandTool); // Select tools for modeling
+            mpm3DSimulation.leftPinchGesture = pinchGestureLeft; // Assign pinch gestures
+            mpm3DSimulation.rightPinchGesture = pinchGestureRight; // Assign pinch gestures
 
-            // Select tools for modeling
-            SelectTools(selectedObject, prevLeftHandTool, prevRightHandTool);
-            // Apply materials specified from UI
-            // ApplyMaterial(newMpm3DObject);
+            // ApplyMaterial(newMpm3DObject); // Apply materials specified from UI
         }
     }
 
