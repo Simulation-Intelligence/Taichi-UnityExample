@@ -13,7 +13,7 @@ namespace MarchingCubes
         #endregion
 
         #region Project asset references
-        [SerializeField] ComputeShader _builderCompute = null;
+        public ComputeShader _builderCompute = null;
 
         #endregion
 

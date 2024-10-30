@@ -103,6 +103,9 @@ public class Mpm3DMarching : MonoBehaviour
     private ComputeGraph _Compute_Graph_g_substep;
 
     [Header("Scene Settings")]
+
+    public bool loadfromfile = false;
+    public string file_path = "particle_data.txt";
     public bool RunSimulation = true;
     private bool updated = false;
     private Grabbable _grabbable;
@@ -111,6 +114,8 @@ public class Mpm3DMarching : MonoBehaviour
 
     [SerializeField]
     MarchingCubeVisualizer[] marchingCubeVisualizers;
+
+    [SerializeField] ComputeShader _builderCompute = null;
 
     public ComputeShader copyShader;
 
@@ -172,7 +177,7 @@ public class Mpm3DMarching : MonoBehaviour
     // Use sticky boundary condition, 1 for sticky boundary, 0 for non-sticky boundary
     [SerializeField]
     private int use_sticky_boundary = 1;
-    
+
     [Header("Tools")]
     public List<MatTool> matTools = new List<MatTool>();
     private int totalPrimitives;
@@ -227,7 +232,7 @@ public class Mpm3DMarching : MonoBehaviour
         Init_MatTools();
         Init_Tools();
 
-        InitGrid();
+
 
         _MeshRenderer = GetComponent<MeshRenderer>();
         _MeshFilter = GetComponent<MeshFilter>();
@@ -241,8 +246,12 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else
         {
-            Init_Particles();
+            if (!loadfromfile)
+                Init_Particles();
+            else
+                ImportData(file_path);
         }
+        InitGrid();
 
         Init_PointMesh();
 
@@ -782,7 +791,7 @@ public class Mpm3DMarching : MonoBehaviour
 
                 // Use mid-air pinch gesture
                 ApplyPinchForce(leftPinchGesture, rightPinchGesture);
-                
+                //ApplyPinchForce(rightPinchGesture);
                 if (lerp_tool)
                 {
                     float lerp_factor = 1 - time_left / frame_time;
@@ -794,7 +803,7 @@ public class Mpm3DMarching : MonoBehaviour
                 // Fix the object in place during the modeling process by pinch gesture
                 // if (FixObject)
                 //     FixObjectByPinch(leftPinchGesture, rightPinchGesture);
-                
+
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_apply_plasticity.LaunchAsync(dg, x, E, nu, material, SigY, alpha, min_clamp, max_clamp, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
@@ -813,7 +822,7 @@ public class Mpm3DMarching : MonoBehaviour
                     dt = Mathf.Min(dt, time_left);
                 }
             }
-            
+
             if (lerp_tool)
             {
                 _Kernel_copy_array_3dim1.LaunchAsync(hand_sdf, hand_sdf_last);
@@ -945,7 +954,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         foreach (Transform child in allChildren)
         {
-            if (child.name == childName)
+            if (child.name.Contains(childName))
             {
                 if (child.TryGetComponent<MarchingCubeVisualizer>(out var m))
                 {
@@ -964,6 +973,99 @@ public class Mpm3DMarching : MonoBehaviour
     {
         _grabbable.MaxGrabPoints = grabbable ? -1 : 0;
     }
+
+    public void ExportData(string path)
+    {
+        // 创建一个与 x 大小相同的 NdArray，并启用 HostRead
+        var _x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostRead(true).Build();
+        var _pointColor = new NdArrayBuilder<int>().Shape(NParticles).HostRead(true).Build();
+
+        // 复制数据到 _x 和 _pointColor
+        _Kernel_copy_array_1dim3.LaunchAsync(x, _x);
+        _Kernel_copy_array_1dim1I.LaunchAsync(point_color, _pointColor);
+        Runtime.Submit();
+        // 创建数组来存储数据
+        float[] hostx = new float[NParticles * 3];
+        int[] hostPointColor = new int[NParticles];
+
+        // 将 NdArray 数据复制到数组
+        _x.CopyToArray(hostx);
+        _pointColor.CopyToArray(hostPointColor);
+
+        // 将数据写入文件
+        using (StreamWriter writer = new StreamWriter(path))
+        {
+            for (int i = 0; i < NParticles; i++)
+            {
+                writer.WriteLine($"{hostx[i * 3]}, {hostx[i * 3 + 1]}, {hostx[i * 3 + 2]}, {hostPointColor[i]}");
+            }
+        }
+    }
+
+    public void ImportData(string path)
+    {
+        List<float[]> importedX = new List<float[]>();
+        List<int> importedPointColor = new List<int>();
+
+        // 从文件读取数据
+        using (StreamReader reader = new StreamReader(path))
+        {
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                var values = line.Split(',').Select(float.Parse).ToArray();
+                importedX.Add(new float[] { values[0], values[1], values[2] });
+                importedPointColor.Add((int)values[3]);
+            }
+        }
+
+        // 更新 NParticles
+        NParticles = importedX.Count;
+
+        // 初始化新的 NdArray
+        Init_Particle_Data();
+        point_color = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
+
+        _Kernel_init_dg.LaunchAsync(dg);
+        // 将数据复制到 NdArray
+        float[] hostx = importedX.SelectMany(arr => arr).ToArray();
+        point_color_host = importedPointColor.ToArray();
+
+        x.CopyFromArray(hostx);
+
+
+        // 根据 point_color 的最大值决定 MarchingCubeVisualizers 的数量
+        int maxColor = point_color_host.Max() + 1;
+        marchingCubeVisualizers = new MarchingCubeVisualizer[maxColor];
+        // 查找现有的子对象 "MarchingCubeVisualizer"
+        Transform originalVisualizerTransform = transform.Find("MarchingCubeVisualizer");
+        if (originalVisualizerTransform != null)
+        {
+            for (int i = 0; i < maxColor; i++)
+            {
+
+
+                // 复制该对象
+                GameObject clonedVisualizer = Instantiate(originalVisualizerTransform.gameObject, transform);
+
+                // 重命名新克隆的对象
+                clonedVisualizer.name = $"MarchingCubeVisualizer_{i}";
+
+                // 获取 MarchingCubeVisualizer 组件
+                var visualizer = clonedVisualizer.GetComponent<MarchingCubeVisualizer>();
+
+                // 初始化属性
+                visualizer._dimensions = new Vector3Int(render_n_grid, render_n_grid, render_n_grid);
+                visualizer._gridScale = 1.0f / render_n_grid;
+                visualizer.Init();
+
+                // 存储到数组中
+                marchingCubeVisualizers[i] = visualizer;
+            }
+        }
+        Destroy(originalVisualizerTransform.gameObject);
+    }
+
     private void MergeParticles(Mpm3DMarching other)
     {
         int totalParticles = NParticles + other.NParticles;
@@ -1018,7 +1120,7 @@ public class Mpm3DMarching : MonoBehaviour
     {
         object2.transform.SetParent(gameObject.transform);
     }
-    
+
     public void SetStickyBoundary(bool sticky)
     {
         use_sticky_boundary = sticky ? 1 : 0;
@@ -1419,7 +1521,7 @@ public class Mpm3DMarching : MonoBehaviour
             writer.WriteLine(string.Join(",", position));
         }
     }
-    
+
     public void SetFixed(bool fixed_)
     {
         FixObject = fixed_;
@@ -1428,7 +1530,7 @@ public class Mpm3DMarching : MonoBehaviour
     {
         return FixObject;
     }
-    
+
     public void FixObjectByPinch(PinchGesture pinchGesture_1, PinchGesture pinchGesture_2)
     {
         if (UsePinchGestureLeft && pinchGesture_1 != null && pinchGesture_1.isPinching)
@@ -1438,28 +1540,36 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_substep_fix_object.LaunchAsync(grid_v, fix_center.x, fix_center.y, fix_center.z, fix_radius);
         }
     }
-    
+
     void ApplyPinchForce(PinchGesture pinchGesture_1, PinchGesture pinchGesture_2)
     {
         Vector3 pinchPosition_1 = Vector3.zero;
         Vector3 pinchDirection_1 = Vector3.zero;
         Vector3 pinchPosition_2 = Vector3.zero;
         Vector3 pinchDirection_2 = Vector3.zero;
+        float radius_1 = 0.0f;
+        float radius_2 = 0.0f;
         if (UsePinchGestureLeft && pinchGesture_1 != null && pinchGesture_1.isPinching)
         {
             pinchPosition_1 = transform.InverseTransformPoint(pinchGesture_1.lastPinchPosition);
             pinchDirection_1 = pinchratio * transform.InverseTransformDirection(pinchGesture_1.pinchSpeed);
+            radius_1 = pinchGesture_1.pinchRadius / transform.lossyScale.x;
             // pinchDirection_1 = transform.InverseTransformDirection(pinchGesture_1.pinchSpeed);
         }
         if (UsePinchGestureRight && pinchGesture_2 != null && pinchGesture_2.isPinching)
         {
             pinchPosition_2 = transform.InverseTransformPoint(pinchGesture_2.lastPinchPosition);
             pinchDirection_2 = pinchratio * transform.InverseTransformDirection(pinchGesture_2.pinchSpeed);
+            radius_2 = pinchGesture_2.pinchRadius / transform.lossyScale.x;
             // pinchDirection_2 = transform.InverseTransformDirection(pinchGesture_2.pinchSpeed);
         }
-        _Kernel_substep_apply_force_field_two_hands.LaunchAsync(grid_v, grid_m, max_dt, pinchPosition_1.x, pinchPosition_1.y, pinchPosition_1.z, pinchGesture_1.pinchRadius / transform.lossyScale.x, pinchDirection_1.x, pinchDirection_1.y, pinchDirection_1.z, pinchPosition_2.x, pinchPosition_2.y, pinchPosition_2.z, pinchGesture_2.pinchRadius / transform.lossyScale.x, pinchDirection_2.x, pinchDirection_2.y, pinchDirection_2.z, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+        _Kernel_substep_apply_force_field_two_hands.LaunchAsync(grid_v, grid_m,
+         pinchPosition_1.x, pinchPosition_1.y, pinchPosition_1.z, radius_1, pinchDirection_1.x, pinchDirection_1.y, pinchDirection_1.z,
+         pinchPosition_2.x, pinchPosition_2.y, pinchPosition_2.z, radius_2, pinchDirection_2.x, pinchDirection_2.y, pinchDirection_2.z,
+         boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+
     }
-    
+
     void ApplyPinchForce(PinchGesture pinchGesture)
     {
         Vector3 pinchPosition = Vector3.zero;
@@ -1471,9 +1581,9 @@ public class Mpm3DMarching : MonoBehaviour
             pinchDirection = pinchratio * transform.InverseTransformDirection(pinchGesture.pinchSpeed);
             radius = pinchGesture.pinchRadius / transform.lossyScale.x;
         }
-        _Kernel_substep_apply_force_field.LaunchAsync(grid_v, grid_m, pinchPosition.x, pinchPosition.y, pinchPosition.z, pinchGesture.pinchRadius / transform.lossyScale.x, pinchDirection.x, pinchDirection.y, pinchDirection.z, max_dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+        _Kernel_substep_apply_force_field.LaunchAsync(grid_v, grid_m, pinchPosition.x, pinchPosition.y, pinchPosition.z, radius, pinchDirection.x, pinchDirection.y, pinchDirection.z, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
     }
-    
+
     public float GetPinchForceRatio()
     {
         return pinchratio;
