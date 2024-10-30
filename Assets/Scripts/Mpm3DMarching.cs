@@ -973,10 +973,9 @@ public class Mpm3DMarching : MonoBehaviour
     {
         _grabbable.MaxGrabPoints = grabbable ? -1 : 0;
     }
-
     public void ExportData(string path)
     {
-        // 创建一个与 x 大小相同的 NdArray，并启用 HostRead
+        // 创建与 x 大小相同的 NdArray，并启用 HostRead
         var _x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostRead(true).Build();
         var _pointColor = new NdArrayBuilder<int>().Shape(NParticles).HostRead(true).Build();
 
@@ -984,20 +983,43 @@ public class Mpm3DMarching : MonoBehaviour
         _Kernel_copy_array_1dim3.LaunchAsync(x, _x);
         _Kernel_copy_array_1dim1I.LaunchAsync(point_color, _pointColor);
         Runtime.Submit();
-        // 创建数组来存储数据
+
+        // 创建数组存储数据
         float[] hostx = new float[NParticles * 3];
         int[] hostPointColor = new int[NParticles];
 
-        // 将 NdArray 数据复制到数组
+        // 复制 NdArray 数据到数组
         _x.CopyToArray(hostx);
         _pointColor.CopyToArray(hostPointColor);
+
+        // 查找并记录每个 MarchingCubeVisualizer 的颜色信息
+        List<Color> visualizerColors = new List<Color>();
+        foreach (Transform child in transform)
+        {
+            if (child.name.Contains("MarchingCubeVisualizer"))
+            {
+                var renderer = child.GetComponent<MeshRenderer>();
+                if (renderer != null)
+                {
+                    visualizerColors.Add(renderer.material.color);
+                }
+            }
+        }
 
         // 将数据写入文件
         using (StreamWriter writer = new StreamWriter(path))
         {
+            // 写入粒子数据
             for (int i = 0; i < NParticles; i++)
             {
                 writer.WriteLine($"{hostx[i * 3]}, {hostx[i * 3 + 1]}, {hostx[i * 3 + 2]}, {hostPointColor[i]}");
+            }
+
+            // 写入颜色数据
+            writer.WriteLine("--COLORS--");
+            foreach (var color in visualizerColors)
+            {
+                writer.WriteLine($"{color.r}, {color.g}, {color.b}, {color.a}");
             }
         }
     }
@@ -1006,6 +1028,9 @@ public class Mpm3DMarching : MonoBehaviour
     {
         List<float[]> importedX = new List<float[]>();
         List<int> importedPointColor = new List<int>();
+        List<Color> importedColors = new List<Color>();
+
+        bool readingColors = false; // 标记是否开始读取颜色数据
 
         // 从文件读取数据
         using (StreamReader reader = new StreamReader(path))
@@ -1013,9 +1038,26 @@ public class Mpm3DMarching : MonoBehaviour
             string line;
             while ((line = reader.ReadLine()) != null)
             {
-                var values = line.Split(',').Select(float.Parse).ToArray();
-                importedX.Add(new float[] { values[0], values[1], values[2] });
-                importedPointColor.Add((int)values[3]);
+                if (line == "--COLORS--")
+                {
+                    readingColors = true;
+                    continue;
+                }
+
+                if (readingColors)
+                {
+                    // 读取颜色数据
+                    var colorValues = line.Split(',').Select(float.Parse).ToArray();
+                    Color color = new Color(colorValues[0], colorValues[1], colorValues[2], colorValues[3]);
+                    importedColors.Add(color);
+                }
+                else
+                {
+                    // 读取粒子数据
+                    var values = line.Split(',').Select(float.Parse).ToArray();
+                    importedX.Add(new float[] { values[0], values[1], values[2] });
+                    importedPointColor.Add((int)values[3]);
+                }
             }
         }
 
@@ -1027,24 +1069,23 @@ public class Mpm3DMarching : MonoBehaviour
         point_color = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
 
         _Kernel_init_dg.LaunchAsync(dg);
+
         // 将数据复制到 NdArray
         float[] hostx = importedX.SelectMany(arr => arr).ToArray();
         point_color_host = importedPointColor.ToArray();
 
         x.CopyFromArray(hostx);
 
-
         // 根据 point_color 的最大值决定 MarchingCubeVisualizers 的数量
         int maxColor = point_color_host.Max() + 1;
         marchingCubeVisualizers = new MarchingCubeVisualizer[maxColor];
-        // 查找现有的子对象 "MarchingCubeVisualizer"
+
+        // 查找原有的 MarchingCubeVisualizer 子对象
         Transform originalVisualizerTransform = transform.Find("MarchingCubeVisualizer");
         if (originalVisualizerTransform != null)
         {
             for (int i = 0; i < maxColor; i++)
             {
-
-
                 // 复制该对象
                 GameObject clonedVisualizer = Instantiate(originalVisualizerTransform.gameObject, transform);
 
@@ -1059,12 +1100,25 @@ public class Mpm3DMarching : MonoBehaviour
                 visualizer._gridScale = 1.0f / render_n_grid;
                 visualizer.Init();
 
+                // 还原颜色
+                if (i < importedColors.Count)
+                {
+                    var renderer = clonedVisualizer.GetComponent<MeshRenderer>();
+                    if (renderer != null)
+                    {
+                        renderer.material.color = importedColors[i];
+                    }
+                }
+
                 // 存储到数组中
                 marchingCubeVisualizers[i] = visualizer;
             }
+
+            // 销毁原始对象
+            Destroy(originalVisualizerTransform.gameObject);
         }
-        Destroy(originalVisualizerTransform.gameObject);
     }
+
 
     private void MergeParticles(Mpm3DMarching other)
     {
