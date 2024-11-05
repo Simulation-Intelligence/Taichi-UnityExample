@@ -24,7 +24,7 @@ public class NeRFDataGenerator : MonoBehaviour
 
         for (int i = 0; i < numberOfSamples; i++)
         {
-            Vector3 randomPosition = Random.onUnitSphere * sphereRadius;
+            Vector3 randomPosition = Random.onUnitSphere * sphereRadius + model.transform.position;
             captureCamera.transform.position = randomPosition;
             captureCamera.transform.LookAt(model.transform);
 

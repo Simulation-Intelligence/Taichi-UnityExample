@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: watermelonfilled_particles
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 142808
+  m_BoundsMin: {x: 0.5, y: 0.7204628, z: 0.59998167}
+  m_BoundsMax: {x: 1.5, y: 1.2795372, z: 1.4000183}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: f0f842a3f89849d60a40e4442ea3de82
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 08aa3eca61b5bd94f8d6c55fb7d4ace3, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 50a3c4c27c5d36546bea0b688bba0d44, type: 3}
+  m_OtherData: {fileID: 4900000, guid: fb321ad14db8b3f46ba4e0ed43f80b37, type: 3}
+  m_SHData: {fileID: 4900000, guid: 23b8663a479effa43812db6b81bd685b, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

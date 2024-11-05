@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: manbo-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 230787
+  m_BoundsMin: {x: -0.15519455, y: -1.7963465, z: 0.27381507}
+  m_BoundsMax: {x: 2.6111197, y: 1.9010135, z: 2.4116914}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: b55432e9db8b8c017e9fba6b0da25d06
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: a55061e75447c114783d7575047f845a, type: 3}
+  m_ColorData: {fileID: 4900000, guid: e9e56d4cd9af48b4cad42fe26617e61f, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 76774a2345eb8ba4c96b5eb5f91361ae, type: 3}
+  m_SHData: {fileID: 4900000, guid: 72f785cd8e087544fa6c928c134c45c7, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

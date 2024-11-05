@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: three_rose_plot-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 446341
+  m_BoundsMin: {x: 0.36076316, y: 0.100309595, z: 0.2610067}
+  m_BoundsMax: {x: 0.7927368, y: 0.8999987, z: 0.7390091}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 9c7734eb861508c5d9712ce9a54968ba
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: d15a21429888b104582fa39e138e7a8e, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 94e450748e8a7fb45b4cd8f47c459709, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 245f0ecedd8764946bc46a4428b7ba8c, type: 3}
+  m_SHData: {fileID: 4900000, guid: d71de0349bc8d5740bba2243c73168d4, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
