@@ -11197,7 +11197,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3850581632024454784, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.169
+      value: 0.104
       objectReference: {fileID: 0}
     - target: {fileID: 3850581632024454784, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: m_LocalPosition.y
@@ -11281,7 +11281,7 @@ PrefabInstance:
       objectReference: {fileID: 887910930}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: RunSimulation
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: colide_factor
@@ -37819,7 +37819,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1308754029}
-  - {fileID: 1164805931}
   - {fileID: 734145638}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -61736,84 +61735,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1164590827}
   m_CullTransparentMesh: 1
---- !u!1 &1164805929
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1164805931}
-  - component: {fileID: 1164805930}
-  m_Layer: 0
-  m_Name: Smooth_Hand_Left (1)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &1164805930
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1164805929}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cef763f79f1a07545be479fcaa76bf6d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  handType: 0
-  oculus_hand: {fileID: 0}
-  oculus_skeleton: {fileID: 0}
-  _skinnedMeshRenderer: {fileID: 388771604}
-  _newMaterial: {fileID: 0}
-  leftHandJoints:
-  - {fileID: 705644625}
-  - {fileID: 1622393635}
-  - {fileID: 605696810}
-  - {fileID: 674003949}
-  - {fileID: 1869519303}
-  - {fileID: 91819127}
-  - {fileID: 1596651502}
-  - {fileID: 1446566270}
-  - {fileID: 414865814}
-  - {fileID: 1153834834}
-  - {fileID: 148020202}
-  - {fileID: 1272047405}
-  - {fileID: 1582380741}
-  - {fileID: 1294828210}
-  - {fileID: 1165687239}
-  - {fileID: 284567566}
-  - {fileID: 354888819}
-  - {fileID: 1428009460}
-  - {fileID: 216147823}
-  - {fileID: 955928824}
-  - {fileID: 1085394865}
-  - {fileID: 543974795}
-  - {fileID: 1278774517}
-  - {fileID: 607105329}
-  rightHandJoints: []
-  movingAverage: 0
-  windowSize: 5
-  timeWindow: 0.1
---- !u!4 &1164805931
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1164805929}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 733689626}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1165687238
 GameObject:
   m_ObjectHideFlags: 0
@@ -102063,7 +101984,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3850581632024454784, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.702
+      value: -0.218
       objectReference: {fileID: 0}
     - target: {fileID: 3850581632024454784, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: m_LocalPosition.y
@@ -102103,7 +102024,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4073737494444771892, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: _E
@@ -112168,7 +112089,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7362496456006682230, guid: acd7d3f17a7df1d4ab8cdffe5929e4ef, type: 3}
       propertyPath: movingAverage
-      value: 0
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7362496456006682230, guid: acd7d3f17a7df1d4ab8cdffe5929e4ef, type: 3}
       propertyPath: _skinnedMeshRenderer
