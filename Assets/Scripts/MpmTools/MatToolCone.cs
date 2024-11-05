@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using System.Collections.Generic;
 using Oculus.Interaction;
 using Oculus.Interaction.Input;
 
@@ -22,6 +23,9 @@ public class MatToolCone : MatTool
     public HandType handType;
     [SerializeField]
     private HandJointId _handJointId;
+    [SerializeField]
+    private SmoothHand smoothHand;
+    private List<Transform> _handJointsData;
     private OVRHand oculus_hand;
     private OVRSkeleton oculus_skeleton;
 
@@ -43,11 +47,13 @@ public class MatToolCone : MatTool
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>();
+            // _handJointsData = smoothHand.SmoothLeftHandJoints;
         }
         else if (handType == HandType.RightHand)
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
+            // _handJointsData = smoothHand.SmoothRightHandJoints;
         }
     }
 
@@ -57,6 +63,8 @@ public class MatToolCone : MatTool
         if (oculus_hand.IsTracked)
         {
             var jointId = _handJointId.ToString().Replace("Hand", "Hand_");
+            
+            // (1) Use the OVRSkeleton to update the primitive position (Unsmoothed)
             foreach (var bone in oculus_skeleton.Bones)
             {
 
@@ -74,6 +82,25 @@ public class MatToolCone : MatTool
                     break;
                 }
             }
+
+            // (2) Use the SmoothHand to update the primitive position
+            // for (int i = 0; i <oculus_skeleton.Bones.Count; i++)
+            // {
+            //     OVRBone bone = oculus_skeleton.Bones[i];
+            //     if (bone.Id == (OVRSkeleton.BoneId)Enum.Parse(typeof(OVRSkeleton.BoneId), jointId))
+            //     {
+            //         // Rotate 90 degrees around the x-axis to align with the hand joint
+            //         transform.position = _handJointsData[i].position;
+            //         transform.rotation = _handJointsData[i].rotation * _rotationOffset;
+                    
+            //         for (int j = 0; j < numPrimitives; j++)
+            //         {
+            //             // Update primitive position using the SmoothHand Component
+            //             UpdatePrimitive(ref primitives[j], init_primitives[j], transform);
+            //         }
+            //         break;
+            //     }
+            // }
         }
     }
 }

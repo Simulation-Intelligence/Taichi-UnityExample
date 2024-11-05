@@ -17,7 +17,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5548273854214964881
 Transform:
   m_ObjectHideFlags: 0
@@ -26,7 +26,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5675297780420929959}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.029564494, y: 1.0880535, z: 0.26585627}
   m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
   m_ConstrainProportionsScale: 1
@@ -54,7 +54,7 @@ MonoBehaviour:
   _handJointId2: 21
   _scissorMesh1: {fileID: 1485877941119950908}
   _scissorMesh2: {fileID: 6655292476862991516}
-  _scissor_joint_ratio: 1.4
+  _scissor_joint_ratio: 1.203
   _scissor_rotation_ratio: 1
 --- !u!114 &435671018675660965
 MonoBehaviour:
@@ -138,15 +138,15 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: 30256115fe22d7541ba62642ff8a1c99, type: 2}
+      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[1]
       value: 
-      objectReference: {fileID: 2100000, guid: 30256115fe22d7541ba62642ff8a1c99, type: 2}
+      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[2]
       value: 
-      objectReference: {fileID: 2100000, guid: 30256115fe22d7541ba62642ff8a1c99, type: 2}
+      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
     - target: {fileID: 919132149155446097, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Name
       value: scissor_p1
@@ -233,15 +233,15 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: 30256115fe22d7541ba62642ff8a1c99, type: 2}
+      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[1]
       value: 
-      objectReference: {fileID: 2100000, guid: 30256115fe22d7541ba62642ff8a1c99, type: 2}
+      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[2]
       value: 
-      objectReference: {fileID: 2100000, guid: 30256115fe22d7541ba62642ff8a1c99, type: 2}
+      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
     - target: {fileID: 919132149155446097, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Name
       value: scissor_p2

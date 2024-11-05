@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< Updated upstream:Assets/GaussianAssets/PLYFiles/garden-edit-add-vase.ply.meta
 guid: 10af696ea31f1a54c951208f04b41f9b
+========
+guid: e2679f775db4de141b559e58932ea551
+>>>>>>>> Stashed changes:Assets/GaussianAssets/PLYFiles/red-pig-edit.ply.meta
 DefaultImporter:
   externalObjects: {}
   userData: 
