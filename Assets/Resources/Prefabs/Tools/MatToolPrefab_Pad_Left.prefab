@@ -106,6 +106,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numPrimitives: 0
   _rotationOffset: {x: 0, y: 0, z: 0, w: 1}
+  smoothHand: {fileID: 7362496456006682230, guid: acd7d3f17a7df1d4ab8cdffe5929e4ef, type: 3}
   handType: 0
   _handJointId: 6
 --- !u!114 &6409630632033866753

@@ -37,6 +37,11 @@ public class MatTool : MonoBehaviour
         public List<PrimitiveData> primitives;
     }
 
+    // Smoothed hand tracking data
+    [SerializeField]
+    protected SmoothHand smoothHand;
+    protected List<Transform> _handJointsData;
+
     void Start()
     {
         primitives = new Primitive[numPrimitives];

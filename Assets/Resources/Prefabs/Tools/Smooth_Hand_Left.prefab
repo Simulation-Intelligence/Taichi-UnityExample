@@ -75,5 +75,6 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   rightHandJoints: []
-  movingAverage: 2
-  windowSize: 20
+  movingAverage: 3
+  windowSize: 10
+  timeWindow: 0.2
