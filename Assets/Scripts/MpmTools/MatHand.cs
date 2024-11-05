@@ -7,15 +7,14 @@ using Oculus.Interaction.Input;
 
 public class MatHand : MatTool
 {
-    public enum HandType
-    {
-        LeftHand,
-        RightHand
-    }
+    public enum HandType { LeftHand, RightHand }
     public HandType handType;
     private HandJoint handJoint;
     [SerializeField]
     private HandJointId _handJointId;
+    [SerializeField]
+    private SmoothHand smoothHand;
+    private List<Transform> _handJointsData;
     private OVRHand oculus_hand;
     private OVRSkeleton oculus_skeleton;
 
@@ -44,11 +43,13 @@ public class MatHand : MatTool
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>();
+            _handJointsData = smoothHand.SmoothLeftHandJoints;
         }
         else if (handType == HandType.RightHand)
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
+            _handJointsData = smoothHand.SmoothRightHandJoints;
         }
 
         // Initialization with hand_mat.json
@@ -120,15 +121,20 @@ public class MatHand : MatTool
         // Update mat hand without hand tracking
         //if (oculus_hand.IsTracked)
         {
-            int numBones = oculus_skeleton.Bones.Count;
+            // int numBones = oculus_skeleton.Bones.Count;
+            int numBones = _handJointsData.Count;
             if (numBones > 0)
             {
                 foreach (var entry in primitivesJointBindings)
                 {
                     int primitiveIndex = entry.Key;
                     PrimitiveBinding binding = entry.Value;
-                    Transform jointStart = oculus_skeleton.Bones[binding.jointStartIndex].Transform;
-                    Transform jointEnd = (binding.jointEndIndex >= 0) ? oculus_skeleton.Bones[binding.jointEndIndex].Transform : jointStart;
+                    // Transform jointStart = oculus_skeleton.Bones[binding.jointStartIndex].Transform;
+                    Transform jointStart = _handJointsData[binding.jointStartIndex];
+                    // Transform jointEnd = (binding.jointEndIndex >= 0) ? oculus_skeleton.Bones[binding.jointEndIndex].Transform : jointStart;
+                    Transform jointEnd = (binding.jointEndIndex >= 0) ? _handJointsData[binding.jointEndIndex] : jointStart;
+                    
+                    // Lerp between jointStart and jointEnd
                     Vector3 primitiveLerpPosition = Vector3.Lerp(jointStart.position, jointEnd.position, binding.interpolation);
                     Vector3[] offsets = primitiveOffsets[primitiveIndex];
                     primitives[primitiveIndex].sphere1 = jointEnd.rotation * offsets[0] + primitiveLerpPosition;
@@ -368,7 +374,7 @@ public class MatHand : MatTool
             primitiveOffsets[primitiveIndex] = offsets;
         }
     }
-
+    
     void CalculateInteractionForLerp(bool isLeftHand)
     {
         Dictionary<int, float> minDistances = new Dictionary<int, float>();

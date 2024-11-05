@@ -67,11 +67,11 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: 30256115fe22d7541ba62642ff8a1c99, type: 2}
+      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
     - target: {fileID: -7511558181221131132, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
       propertyPath: m_Materials.Array.data[1]
       value: 
-      objectReference: {fileID: 2100000, guid: 30256115fe22d7541ba62642ff8a1c99, type: 2}
+      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
     - target: {fileID: 919132149155446097, guid: 43a3d463ab63be14da36a2a10848546c, type: 3}
       propertyPath: m_Name
       value: MatToolPrefab_Cone_Left
@@ -112,6 +112,7 @@ MonoBehaviour:
   _rotationOffset: {x: 0, y: 0.70710677, z: 0, w: 0.70710677}
   handType: 0
   _handJointId: 20
+  smoothHand: {fileID: 7362496456006682230, guid: acd7d3f17a7df1d4ab8cdffe5929e4ef, type: 3}
 --- !u!114 &6065776040788315018
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -126,3 +127,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   matTool: {fileID: 3141846977109010323}
   material: {fileID: 2100000, guid: f629c6e43dba4bf38cb74d8860150664, type: 2}
+  render_cylinder: 0
