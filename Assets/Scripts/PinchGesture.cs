@@ -4,18 +4,20 @@ using UnityEngine;
 
 public class PinchGesture : MonoBehaviour
 {
+    public enum HandType { LeftHand, RightHand }
     public enum FingerType { Thumb, Index, Middle, Ring, Pinky }
-    public enum HandType
-    {
-        LeftHand,
-        RightHand
-    }
 
     public HandType handType = HandType.RightHand;
     private OVRHand hand;
-    private OVRSkeleton handSkeleton;
+    private OVRSkeleton oculus_skeleton;
     public FingerType firstFinger = FingerType.Thumb;
     public FingerType secondFinger = FingerType.Middle;
+    
+    // Smoothed hand-tracking data
+    [SerializeField]
+    private SmoothHand smoothHand;
+    private List<Transform> _handJointsData;
+    public bool UseSmoothHand;
 
     [HideInInspector] public bool isPinching = false;
     [HideInInspector] public Vector3 initialPinchPosition;
@@ -32,27 +34,29 @@ public class PinchGesture : MonoBehaviour
         if (handType == HandType.LeftHand)
         {
             hand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>();
-            handSkeleton = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>();
+            oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>();
+            _handJointsData = smoothHand.SmoothLeftHandJoints;
         }
         else if (handType == HandType.RightHand)
         {
             hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
-            handSkeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
+            oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
+            _handJointsData = smoothHand.SmoothRightHandJoints;
         }
     }
 
     void Update()
     {
-        if (hand.IsTracked && handSkeleton != null)
+        if (hand.IsTracked && oculus_skeleton != null)
         {
-            DetectPinch(handSkeleton);
+            DetectPinch(oculus_skeleton);
         }
     }
 
-    void DetectPinch(OVRSkeleton handSkeleton)
+    void DetectPinch(OVRSkeleton oculus_skeleton)
     {
-        Transform firstFingerTip = GetFingerTransform(handSkeleton, firstFinger);
-        Transform secondFingerTip = GetFingerTransform(handSkeleton, secondFinger);
+        Transform firstFingerTip = GetFingerTransform(oculus_skeleton, firstFinger);
+        Transform secondFingerTip = GetFingerTransform(oculus_skeleton, secondFinger);
         if (firstFingerTip == null || secondFingerTip == null) return;
 
         float distance = Vector3.Distance(firstFingerTip.position, secondFingerTip.position);
@@ -119,12 +123,27 @@ public class PinchGesture : MonoBehaviour
         }
     }
 
-    Transform GetFingerTransform(OVRSkeleton handSkeleton, FingerType fingerType)
+    Transform GetFingerTransform(OVRSkeleton oculus_skeleton, FingerType fingerType)
     {
-        foreach (var bone in handSkeleton.Bones)
+        if (!UseSmoothHand)
         {
-            if (bone.Id == GetBoneId(fingerType)) return bone.Transform;
+            foreach (var bone in oculus_skeleton.Bones)
+            {
+                if (bone.Id == GetBoneId(fingerType)) return bone.Transform;
+            }
+        } 
+        else
+        {
+            for (int i = 0; i < oculus_skeleton.Bones.Count; i++)
+            {
+                OVRBone bone = oculus_skeleton.Bones[i];
+                if (bone.Id == GetBoneId(fingerType))
+                {
+                    return _handJointsData[i];
+                }
+            }
         }
+        
         return null;
     }
 

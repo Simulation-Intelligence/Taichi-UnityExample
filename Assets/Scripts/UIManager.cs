@@ -1099,8 +1099,8 @@ class UIManager : MonoBehaviour
             
             mpm3DSimulation.Initiate(); // Initialization
             SelectTools(selectedObject, prevLeftHandTool, prevRightHandTool); // Select tools for modeling
-            mpm3DSimulation.leftPinchGesture = pinchGestureLeft; // Assign pinch gestures
-            mpm3DSimulation.rightPinchGesture = pinchGestureRight; // Assign pinch gestures
+            mpm3DSimulation.leftPinchGesture = pinchGestureLeft; // Assign pinch gesture
+            mpm3DSimulation.rightPinchGesture = pinchGestureRight; // Assign pinch gesture 
 
             // ApplyMaterial(newMpm3DObject); // Apply materials specified from UI
         }
