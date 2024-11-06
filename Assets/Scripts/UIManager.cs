@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -27,7 +28,9 @@ class UIManager : MonoBehaviour
     public PinchGesture pinchGestureLeft;
     public PinchGesture pinchGestureRight;
     private string prefabName;
-
+    public string export_folder_path;
+    private string export_file_path;
+    
     // UI Components
     public GameObject UI_canvas;
     public Transform UI_anchor;
@@ -552,6 +555,42 @@ class UIManager : MonoBehaviour
                 selectedObject = null;
             }
         }
+        // Export data to a file
+        if (button.name == "Button_ExportObject")
+        {
+            if (export_folder_path != null)
+            {
+                if (selectedObject != null)
+                {
+                    Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                    export_file_path = export_folder_path + "/" + selectedObject.name + ".txt";
+                    mpm3DSimulation.ExportData(export_file_path);
+                    
+                    // Show file name in UI
+                    foreach (Button _button in buttons)
+                    {
+                        if (_button.name == "Button_ExportObject")
+                        {
+                            string initialText = _button.GetComponentInChildren<TMP_Text>().text;
+                            _button.GetComponentInChildren<TMP_Text>().text = initialText + "(" + selectedObject.name + ".txt)";
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Inform no export folder in UI
+                foreach (Button _button in buttons)
+                {
+                    if (_button.name == "Button_ExportObject")
+                    {
+                        string initialText = _button.GetComponentInChildren<TMP_Text>().text;
+                        _button.GetComponentInChildren<TMP_Text>().text = initialText + "(No Export Folder)";
+                    }
+                }
+            }
+        }
+        // Adjust the smoothness of the marching cubes
         if (button.name == "Button_MoreSmooth")
         {
             if (selectedObject != null)

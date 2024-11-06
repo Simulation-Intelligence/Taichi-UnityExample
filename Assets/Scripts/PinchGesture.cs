@@ -74,7 +74,7 @@ public class PinchGesture : MonoBehaviour
             isPinching = false;
             DestroySphere();
             pinchSpeed = Vector3.zero;
-            Debug.Log("Pinch ended");
+            // Debug.Log("Pinch ended");
         }
 
         if (isPinching)

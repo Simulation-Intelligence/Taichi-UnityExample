@@ -34110,6 +34110,7 @@ MonoBehaviour:
   ShapeParameterObject_2: {fileID: 0}
   pinchGestureLeft: {fileID: 0}
   pinchGestureRight: {fileID: 0}
+  export_folder_path: 
   UI_canvas: {fileID: 786307749}
   UI_anchor: {fileID: 848945550}
   sceneCamera: {fileID: 588067681}
@@ -52990,6 +52991,7 @@ MonoBehaviour:
   ShapeParameterObject_2: {fileID: 210491287}
   pinchGestureLeft: {fileID: 887910930}
   pinchGestureRight: {fileID: 1825029097}
+  export_folder_path: .\Exported3DModels
   UI_canvas: {fileID: 705917118}
   UI_anchor: {fileID: 1777649450}
   sceneCamera: {fileID: 588067681}
@@ -102087,6 +102089,10 @@ PrefabInstance:
       value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
+      propertyPath: file_path
+      value: E:\VR Project\Tachi_mpm\Exported3DModels\data.txt
+      objectReference: {fileID: 0}
+    - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: initShape
       value: 2
       objectReference: {fileID: 0}
@@ -102109,6 +102115,10 @@ PrefabInstance:
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: smooth_iter
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
+      propertyPath: loadfromfile
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: pinchGesture
