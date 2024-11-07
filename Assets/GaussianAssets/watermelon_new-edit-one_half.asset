@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: watermelon_new-edit-one_half
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 53177
+  m_BoundsMin: {x: -0.97395754, y: -0.44721302, z: -1.2074813}
+  m_BoundsMax: {x: 0.12320696, y: 0.7326598, z: 0.46040508}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 50cfb539820b59b7c7844aa37e0bb6c7
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: d297043499794964187065c099933bad, type: 3}
+  m_ColorData: {fileID: 4900000, guid: d16141f4a3d025a48a2fe6fca9fb8420, type: 3}
+  m_OtherData: {fileID: 4900000, guid: f53153d6d4709854693306390d8199dc, type: 3}
+  m_SHData: {fileID: 4900000, guid: 2c7e388d879073040ade0e8055d45290, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

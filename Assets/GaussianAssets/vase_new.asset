@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: vase_new
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 261115
+  m_BoundsMin: {x: -7.0196934, y: -3.1123474, z: -5.862585}
+  m_BoundsMax: {x: 4.242907, y: 13.542447, z: 5.6900563}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 0ddaa5378b980970ac26304095fabdbc
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 233a10653fb83d44eb42d32ace253584, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 129b725b32115ba4582fb3eda9373929, type: 3}
+  m_OtherData: {fileID: 4900000, guid: fe5251c54dab3b543b9a8084c8a7e419, type: 3}
+  m_SHData: {fileID: 4900000, guid: 69ef2c94140d71942a11f40e888b70f7, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

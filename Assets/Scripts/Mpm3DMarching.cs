@@ -1286,10 +1286,10 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void DecreaseGridSize(int num)
     {
-        if (n_grid - num <= 40)
+        if (n_grid - num <= 20)
         {
             UnityEngine.Debug.LogWarning("Cannot decrease grid size anymore.");
-            SetSimulateGridSize(40);
+            SetSimulateGridSize(20);
             return;
         }
         SetSimulateGridSize(n_grid - num);

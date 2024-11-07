@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: watermelon_refill_one_fourth1
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 74614
+  m_BoundsMin: {x: 0.91561854, y: 0.646297, z: 0.5291884}
+  m_BoundsMax: {x: 1.3289087, y: 1.2498012, z: 1.5}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 601d4992587e2abbb7c21470debf7491
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: e3f286fe027834247b0fe0aa0b232bd3, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 68250870ad3824748aac29f1727f7a40, type: 3}
+  m_OtherData: {fileID: 4900000, guid: bc3c3ee03e79e794a92503b8b995be40, type: 3}
+  m_SHData: {fileID: 4900000, guid: c9c7eefe13fe46a48a503b78c9ca1f55, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

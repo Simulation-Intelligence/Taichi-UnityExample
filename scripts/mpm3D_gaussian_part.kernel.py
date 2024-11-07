@@ -193,10 +193,14 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 mu = E[p] / (2 * (1 + nu[p]))
                 la = E[p] * nu[p] / ((1 + nu[p]) * (1 - 2 * nu[p]))
                 stress = ti.Matrix([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+                plasticity_type = (material[p] >> 16) & 0xFFFF
                 # Calculate stress based on material type
                 if material[p] & 0xFFFF == 1:  # kirchhoff
                     U, sig, V = ti.svd(dg[p])
                     J_new = sig[0, 0] * sig[1, 1] * sig[2, 2]
+                    if(plasticity_type==2):
+                        h = ti.exp(50 * (1.0 - J_new))
+                        mu ,la = mu * h, la * h
                     stress = 2 * mu * (dg[p] - U @ V.transpose()) @ dg[p].transpose() + \
                              ti.Matrix.identity(float, dim) * la * J_new * (J_new - 1)
                     stress = (-dt * p_vol[p] * 4) * stress / dx**2
