@@ -66,11 +66,13 @@ public class MatToolScissor : MatTool
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>();
+            _handJointsData = smoothHand.SmoothLeftHandJoints; // Inherited from the parent class
         }
         else if (handType == HandType.RightHand)
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
+            _handJointsData = smoothHand.SmoothRightHandJoints; // Inherited from the parent class
         }
     }
 
@@ -83,18 +85,38 @@ public class MatToolScissor : MatTool
             Transform transform2 = new GameObject().transform;
             var jointId1 = _handJointId1.ToString().Replace("Hand", "Hand_");
             var jointId2 = _handJointId2.ToString().Replace("Hand", "Hand_");
-            foreach (var bone in oculus_skeleton.Bones)
+            
+            // (1) Use the OVRSkeleton to update the primitive position (Unsmoothed)
+            // foreach (var bone in oculus_skeleton.Bones)
+            // {
+            //     if (bone.Id == (OVRSkeleton.BoneId)Enum.Parse(typeof(OVRSkeleton.BoneId), jointId1))
+            //     {
+            //         transform1.position = bone.Transform.position;
+            //         transform1.rotation = bone.Transform.rotation * _rotationOffset;
+            //         transform1.localScale = transform.localScale;
+            //     }
+            //     if (bone.Id == (OVRSkeleton.BoneId)Enum.Parse(typeof(OVRSkeleton.BoneId), jointId2))
+            //     {
+            //         transform2.position = bone.Transform.position;
+            //         transform2.rotation = bone.Transform.rotation * _rotationOffset;
+            //         transform2.localScale = transform.localScale;
+            //     }
+            // }
+
+            // (2) Use the SmoothHand to update the primitive position
+            for (int i = 0; i < oculus_skeleton.Bones.Count; i++)
             {
+                OVRBone bone = oculus_skeleton.Bones[i];
                 if (bone.Id == (OVRSkeleton.BoneId)Enum.Parse(typeof(OVRSkeleton.BoneId), jointId1))
                 {
-                    transform1.position = bone.Transform.position;
-                    transform1.rotation = bone.Transform.rotation * _rotationOffset;
+                    transform1.position = _handJointsData[i].position;
+                    transform1.rotation = _handJointsData[i].rotation * _rotationOffset;
                     transform1.localScale = transform.localScale;
                 }
                 if (bone.Id == (OVRSkeleton.BoneId)Enum.Parse(typeof(OVRSkeleton.BoneId), jointId2))
                 {
-                    transform2.position = bone.Transform.position;
-                    transform2.rotation = bone.Transform.rotation * _rotationOffset;
+                    transform2.position = _handJointsData[i].position;
+                    transform2.rotation = _handJointsData[i].rotation * _rotationOffset;
                     transform2.localScale = transform.localScale;
                 }
             }

@@ -792,6 +792,7 @@ public class Mpm3DMarching : MonoBehaviour
                 // Use mid-air pinch gesture
                 ApplyPinchForce(leftPinchGesture, rightPinchGesture);
                 //ApplyPinchForce(rightPinchGesture);
+                
                 if (lerp_tool)
                 {
                     float lerp_factor = 1 - time_left / frame_time;
@@ -1621,7 +1622,6 @@ public class Mpm3DMarching : MonoBehaviour
          pinchPosition_1.x, pinchPosition_1.y, pinchPosition_1.z, radius_1, pinchDirection_1.x, pinchDirection_1.y, pinchDirection_1.z,
          pinchPosition_2.x, pinchPosition_2.y, pinchPosition_2.z, radius_2, pinchDirection_2.x, pinchDirection_2.y, pinchDirection_2.z,
          boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-
     }
 
     void ApplyPinchForce(PinchGesture pinchGesture)

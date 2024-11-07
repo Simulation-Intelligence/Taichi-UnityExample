@@ -12,9 +12,6 @@ public class MatHand : MatTool
     private HandJoint handJoint;
     [SerializeField]
     private HandJointId _handJointId;
-    [SerializeField]
-    private SmoothHand smoothHand;
-    private List<Transform> _handJointsData;
     private OVRHand oculus_hand;
     private OVRSkeleton oculus_skeleton;
 
@@ -43,13 +40,13 @@ public class MatHand : MatTool
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftOVRHand").GetComponent<OVRSkeleton>();
-            _handJointsData = smoothHand.SmoothLeftHandJoints;
+            _handJointsData = smoothHand.SmoothLeftHandJoints; // Inherited from the parent class
         }
         else if (handType == HandType.RightHand)
         {
             oculus_hand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRHand>();
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
-            _handJointsData = smoothHand.SmoothRightHandJoints;
+            _handJointsData = smoothHand.SmoothRightHandJoints; // Inherited from the parent class
         }
 
         // Initialization with hand_mat.json

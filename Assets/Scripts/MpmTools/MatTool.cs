@@ -37,6 +37,11 @@ public class MatTool : MonoBehaviour
         public List<PrimitiveData> primitives;
     }
 
+    // Smoothed hand-tracking data
+    [SerializeField]
+    protected SmoothHand smoothHand;
+    protected List<Transform> _handJointsData;
+
     void Start()
     {
         primitives = new Primitive[numPrimitives];
@@ -45,15 +50,18 @@ public class MatTool : MonoBehaviour
             primitives[i] = init_primitives[i];
         }
     }
+    
     void Update()
     {
         UpdatePrimitives();
     }
     // Virutal method to be overriden by child classes
+    
     protected virtual void UpdatePrimitives()
     {
         TransformFixedPrimitives();
     }
+    
     void TransformFixedPrimitives()
     {
         for (int i = 0; i < numPrimitives; i++)
@@ -64,6 +72,7 @@ public class MatTool : MonoBehaviour
             primitives[i].sphere3 = transform.TransformPoint(init_primitives[i].sphere3);
         }
     }
+    
     // 定义一个函数来更新 primitive
     protected void UpdatePrimitive(ref Primitive primitive, Primitive init_primitive, Transform transform)
     {

@@ -144,32 +144,47 @@ public class SmoothHand : MonoBehaviour
     {
         Vector3 weightedSum = Vector3.zero;
         float totalWeight = 0.0f;
+        List<float> weights = new List<float>();
         for (int i = 0; i < posQueue.Count; i++)
         {
             float timeDiff = currentTime - timeQueue[i];
             float w = Mathf.Exp(-timeDiff / timeWindow);
-            weightedSum += posQueue[i] * w;
+            // weightedSum += posQueue[i] * w;
+            weights.Add(w);
             totalWeight += w;
         }
-        return weightedSum / totalWeight;
+        for (int i = 0; i < posQueue.Count; i++)
+        {
+            float norm_w = weights[i] / totalWeight;
+            weightedSum += posQueue[i] * norm_w;
+        }
+        return weightedSum;
     }
-
+    
     private Quaternion TimeWeightedMovingAverage(List<Quaternion> rotQueue, List<float> timeQueue, float currentTime)
     {
         Vector3 averageForward = Vector3.zero;
         Vector3 averageUpwards = Vector3.zero;
         float totalWeight = 0.0f;
+        List<float> weights = new List<float>();
         for (int i = 0; i < rotQueue.Count; i++)
         {
             float timeDiff = currentTime - timeQueue[i];
             float w = Mathf.Exp(-timeDiff / timeWindow);
-            averageForward += (rotQueue[i] * Vector3.forward) * w;
-            averageUpwards += (rotQueue[i] * Vector3.up) * w;
+            // averageForward += (rotQueue[i] * Vector3.forward) * w;
+            // averageUpwards += (rotQueue[i] * Vector3.up) * w;
+            weights.Add(w);
             totalWeight += w;
         }
-        return Quaternion.LookRotation(averageForward / totalWeight, averageUpwards / totalWeight);
+        for (int i = 0; i < rotQueue.Count; i++)
+        {
+            float norm_w = weights[i] / totalWeight;
+            averageForward += (rotQueue[i] * Vector3.forward) * norm_w;
+            averageUpwards += (rotQueue[i] * Vector3.up) * norm_w;
+        }
+        return Quaternion.LookRotation(averageForward, averageUpwards);
     }
-
+    
     private void UpdateQueue(List<Vector3> posQueue, List<Quaternion> rotQueue, List<float> timeQueue, Vector3 newPosition, Quaternion newRotation, float currentTime)
     {
         // Update the queue based on a time duration

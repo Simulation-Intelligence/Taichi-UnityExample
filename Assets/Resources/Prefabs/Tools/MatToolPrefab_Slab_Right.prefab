@@ -28,7 +28,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9034238884356655113}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.945, y: -0.137, z: -0.046}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 1
@@ -99,9 +99,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numPrimitives: 0
   _rotationOffset: {x: 0, y: 0, z: 0, w: 1}
+  smoothHand: {fileID: 0}
   handType: 1
-  _handJointId: 20
-  smoothHand: {fileID: 564368888581146692, guid: b6961c79864eac8458df878ef6e40a4d, type: 3}
+  _handJointId: 8
 --- !u!114 &7417731019515412974
 MonoBehaviour:
   m_ObjectHideFlags: 0
