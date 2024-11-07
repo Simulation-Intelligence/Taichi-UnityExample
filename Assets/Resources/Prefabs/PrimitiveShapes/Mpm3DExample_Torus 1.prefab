@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &844904797227848386
+--- !u!1001 &56707441139733516
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -61,8 +61,8 @@ PrefabInstance:
       value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
-      propertyPath: cube_size
-      value: 0.5
+      propertyPath: initShape
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: frame_time
@@ -75,10 +75,6 @@ PrefabInstance:
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: colide_factor
       value: 0.005
-      objectReference: {fileID: 0}
-    - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
-      propertyPath: cylinder_length
-      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: matTools.Array.size
@@ -98,15 +94,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6346840257427048670, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: m_Name
-      value: Mpm3DExample_Sphere
+      value: Mpm3DExample_Torus
       objectReference: {fileID: 0}
     - target: {fileID: 6346840257427048670, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: m_IsActive
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6652588665450643096, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
-      propertyPath: TargetValue
-      value: 0.01
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

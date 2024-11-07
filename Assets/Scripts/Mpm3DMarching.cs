@@ -792,7 +792,7 @@ public class Mpm3DMarching : MonoBehaviour
                 // Use mid-air pinch gesture
                 ApplyPinchForce(leftPinchGesture, rightPinchGesture);
                 //ApplyPinchForce(rightPinchGesture);
-                
+
                 if (lerp_tool)
                 {
                     float lerp_factor = 1 - time_left / frame_time;
@@ -1287,10 +1287,10 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void DecreaseGridSize(int num)
     {
-        if (n_grid - num <= 20)
+        if (n_grid - num <= 16)
         {
             UnityEngine.Debug.LogWarning("Cannot decrease grid size anymore.");
-            SetSimulateGridSize(20);
+            SetSimulateGridSize(16);
             return;
         }
         SetSimulateGridSize(n_grid - num);
