@@ -289,7 +289,8 @@ class UIManager : MonoBehaviour
             // Visualize pinch gesture spheres
             pinchGestureLeft.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
             pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
-            // Disable object grab when pinch gesture is enabled
+            
+            // Disable object grab when pinch gesture is enabled, avoiding misoperation
             if ((pinchGestureLeft.RenderPinchSphere && pinchGestureLeft.isPinching) || (pinchGestureRight.RenderPinchSphere && pinchGestureRight.isPinching))
             {
                 var _grabbable = selectedObject.GetComponent<Grabbable>();
@@ -903,6 +904,18 @@ class UIManager : MonoBehaviour
                 Text toggle_label = toggle.GetComponentInChildren<Text>();
                 toggle_label.text = isOn ? "Object is Interactable" : "Object is not Interactable";
                 selectedObject.GetComponent<Mpm3DMarching>().RunSimulation = isOn;
+            }
+        }
+        if (toggle.name == "Toggle_VisualBox")
+        {
+            if (selectedObject != null)
+            {
+                if (selectedObject.transform.Find("Visuals") != null)
+                {
+                    Transform VisualObject = selectedObject.transform.Find("Visuals");
+                    MeshRenderer meshRenderer = VisualObject.Find("Mesh").GetComponent<MeshRenderer>();
+                    meshRenderer.enabled = isOn;
+                }
             }
         }
         // Enable/Disable fix object in place
