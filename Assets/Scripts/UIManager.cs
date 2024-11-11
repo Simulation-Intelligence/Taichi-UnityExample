@@ -157,11 +157,6 @@ class UIManager : MonoBehaviour
     void InstantiateTools()
     {
         // Instantiate all mat tools at the beginning, either hands gameobject or prefabs
-        matToolDict.Add("MatTool_Slab_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Left")).GetComponent<MatTool>());
-        matToolDict.Add("MatTool_Slab_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Right")).GetComponent<MatTool>());
-        matToolDict.Add("MatTool_Scissor_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Left")).GetComponent<MatTool>());
-        matToolDict.Add("MatTool_Scissor_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Right")).GetComponent<MatTool>());
-
         matToolDict.Add("MatTool_Hand_Left", MatTool_Hand_Left.GetComponent<MatTool>());
         matToolDict.Add("MatTool_Hand_Right", MatTool_Hand_Right.GetComponent<MatTool>());
         matToolDict.Add("MatTool_Pad_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Pad_Left")).GetComponent<MatTool>());
@@ -170,7 +165,10 @@ class UIManager : MonoBehaviour
         matToolDict.Add("MatTool_Rod_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Rod_Right")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Cone_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Cone_Left")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Cone_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Cone_Right")).GetComponent<MatTool>());
-        
+        matToolDict.Add("MatTool_Slab_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Left")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Slab_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Right")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Scissor_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Left")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Scissor_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Right")).GetComponent<MatTool>());
         
         foreach (var matTool in matToolDict.Values)
         {
@@ -291,9 +289,20 @@ class UIManager : MonoBehaviour
             // Visualize pinch gesture spheres
             pinchGestureLeft.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
             pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
+            // Disable object grab when pinch gesture is enabled
+            if ((pinchGestureLeft.RenderPinchSphere && pinchGestureLeft.isPinching) || (pinchGestureRight.RenderPinchSphere && pinchGestureRight.isPinching))
+            {
+                var _grabbable = selectedObject.GetComponent<Grabbable>();
+                _grabbable.MaxGrabPoints = 0;
+            } 
+            else
+            {
+                var _grabbable = selectedObject.GetComponent<Grabbable>();
+                _grabbable.MaxGrabPoints = -1;
+            }
         }
     }
-
+    
     void CreateNewMpm3DObject()
     {
         if (Mpm3DObject != null)
