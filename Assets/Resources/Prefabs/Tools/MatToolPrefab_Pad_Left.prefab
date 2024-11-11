@@ -22,11 +22,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.938
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.227
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
       propertyPath: m_LocalPosition.z
@@ -106,8 +106,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numPrimitives: 0
   _rotationOffset: {x: 0, y: 0, z: 0, w: 1}
-  smoothHand: {fileID: 7362496456006682230, guid: acd7d3f17a7df1d4ab8cdffe5929e4ef, type: 3}
   handType: 0
+  smoothHand: {fileID: 7362496456006682230, guid: acd7d3f17a7df1d4ab8cdffe5929e4ef, type: 3}
   _handJointId: 6
 --- !u!114 &6409630632033866753
 MonoBehaviour:

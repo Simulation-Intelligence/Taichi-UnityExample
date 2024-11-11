@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: taoyong-edit
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 103369
-  m_BoundsMin: {x: 0.66463816, y: 0.52560735, z: 0.55430967}
-  m_BoundsMax: {x: 1.1270878, y: 1.4364455, z: 1.226722}
+  m_SplatCount: 67822
+  m_BoundsMin: {x: -0.91447806, y: -1.1781169, z: -0.36934468}
+  m_BoundsMax: {x: 0.79146075, y: 1.27879, z: 0.8579532}
   m_DataHash:
     serializedVersion: 2
-    Hash: 214912907994abeb0a9fb75b7f604de7
+    Hash: d13f531da63dd9890174d6c2a9980bc6
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0

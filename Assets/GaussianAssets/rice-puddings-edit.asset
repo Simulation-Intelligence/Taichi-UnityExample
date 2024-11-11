@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: rice-puddings-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 86920
+  m_BoundsMin: {x: -1.8643678, y: 1.0994483, z: -0.3180489}
+  m_BoundsMax: {x: 1.4023076, y: 2.93279, z: 2.5795805}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 1d45ceeb6feef12a8adaa6fce7b794a1
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 358b4d071d9e4c445a4e430eb974022d, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 678b98a668bf86443a1f243fb308bddb, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 5f73dc8e321599a44b3656dee2a34e7a, type: 3}
+  m_SHData: {fileID: 4900000, guid: 983521863ff63374ab9f7ac067efd8cd, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

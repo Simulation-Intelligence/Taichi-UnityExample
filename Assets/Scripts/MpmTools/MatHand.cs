@@ -7,8 +7,6 @@ using Oculus.Interaction.Input;
 
 public class MatHand : MatTool
 {
-    public enum HandType { LeftHand, RightHand }
-    public HandType handType;
     private HandJoint handJoint;
     [SerializeField]
     private HandJointId _handJointId;
@@ -168,67 +166,67 @@ public class MatHand : MatTool
             if (primitiveIndex == 69)
             {
                 primitivesJointMap[primitiveIndex] = 20;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 28)
             {
                 primitivesJointMap[primitiveIndex] = 4;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 44)
             {
                 primitivesJointMap[primitiveIndex] = 6;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 93)
             {
                 primitivesJointMap[primitiveIndex] = 12;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 94)
             {
                 primitivesJointMap[primitiveIndex] = 9;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 71)
             {
                 primitivesJointMap[primitiveIndex] = 16;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 64)
             {
                 primitivesJointMap[primitiveIndex] = 12;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 18)
             {
                 primitivesJointMap[primitiveIndex] = 16;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 92)
             {
                 primitivesJointMap[primitiveIndex] = 12;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 65)
             {
                 primitivesJointMap[primitiveIndex] = 9;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 66)
             {
                 primitivesJointMap[primitiveIndex] = 12;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 38)
             {
                 primitivesJointMap[primitiveIndex] = 2;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
             if (primitiveIndex == 19)
             {
                 primitivesJointMap[primitiveIndex] = 16;
-                Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
+                // Debug.Log("Primitive " + primitiveIndex + " is closest to " + primitivesJointMap[primitiveIndex]);
             }
         }
     }
@@ -400,10 +398,10 @@ public class MatHand : MatTool
                 }
             }
         }
-        foreach (var e in primitivesJointBindings.OrderBy(e => e.Key))
-        {
-            Debug.Log("Primitive " + e.Key + " is closest to start index " + e.Value.jointStartIndex + " and end index " + e.Value.jointEndIndex + " with interpolation " + e.Value.interpolation);
-        }
+        // foreach (var e in primitivesJointBindings.OrderBy(e => e.Key))
+        // {
+        //     Debug.Log("Primitive " + e.Key + " is closest to start index " + e.Value.jointStartIndex + " and end index " + e.Value.jointEndIndex + " with interpolation " + e.Value.interpolation);
+        // }
         Debug.Log("Intersection calculation done with:" + primitivesJointBindings.Count);
     }
 

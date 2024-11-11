@@ -13,7 +13,7 @@ public class PinchGesture : MonoBehaviour
     public FingerType firstFinger = FingerType.Thumb;
     public FingerType secondFinger = FingerType.Middle;
     
-    // Smoothed hand-tracking data
+    // Smoothed hand-tracking data hand joints information
     [SerializeField]
     private SmoothHand smoothHand;
     private List<Transform> _handJointsData;

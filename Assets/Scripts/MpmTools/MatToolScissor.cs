@@ -7,12 +7,6 @@ using Oculus.Interaction.Input;
 
 public class MatToolScissor : MatTool
 {
-    public enum HandType
-    {
-        LeftHand,
-        RightHand
-    }
-    public HandType handType;
     [SerializeField]
     private HandJointId _handJointId1, _handJointId2;
     private OVRHand oculus_hand;

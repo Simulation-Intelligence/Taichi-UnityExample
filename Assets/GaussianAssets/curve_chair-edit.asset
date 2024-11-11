@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: curve_chair-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 65127
+  m_BoundsMin: {x: -1.7055167, y: -0.9805787, z: -1.2349348}
+  m_BoundsMax: {x: 0.7189281, y: 1.1387848, z: 0.69963574}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 097034f70704e1ef09eb7519714b32db
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 73f5041c99228bb4d9535f463e017d16, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 0731fa46b01edbb4d980654e9013d9b3, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 5babd78eb5f54e543aca92d2a956ad26, type: 3}
+  m_SHData: {fileID: 4900000, guid: 07dfe40182554ae47a80047c27314984, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

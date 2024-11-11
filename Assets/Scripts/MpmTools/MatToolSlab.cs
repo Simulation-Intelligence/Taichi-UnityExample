@@ -22,12 +22,6 @@ public class MatToolSlab : MatTool
     private float radii3 = 0.1f;
 
     private HandJoint handJoint;
-    public enum HandType
-    {
-        LeftHand,
-        RightHand
-    }
-    public HandType handType;
     [SerializeField]
     private HandJointId _handJointId;
     private OVRHand oculus_hand;

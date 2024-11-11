@@ -36,10 +36,16 @@ public class MatTool : MonoBehaviour
     {
         public List<PrimitiveData> primitives;
     }
+    
+    public enum HandType
+    {
+        LeftHand,
+        RightHand
+    }
+    public HandType handType;
 
-    // Smoothed hand-tracking data
-    [SerializeField]
-    protected SmoothHand smoothHand;
+    // Smoothed hand-tracking
+    public SmoothHand smoothHand;
     protected List<Transform> _handJointsData;
 
     void Start()
@@ -55,8 +61,8 @@ public class MatTool : MonoBehaviour
     {
         UpdatePrimitives();
     }
-    // Virutal method to be overriden by child classes
     
+    // Virutal method to be overriden by child classes
     protected virtual void UpdatePrimitives()
     {
         TransformFixedPrimitives();

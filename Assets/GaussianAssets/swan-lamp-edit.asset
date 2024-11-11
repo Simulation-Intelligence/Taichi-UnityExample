@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: swan-lamp-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 95484
+  m_BoundsMin: {x: -0.69340754, y: -0.95854497, z: -0.47034097}
+  m_BoundsMax: {x: 0.49988723, y: 0.839142, z: 0.8394033}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 1f4b6d1f1e14e054ea5392f01879c354
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 19d3057bcd52d674088418ec78a8f73b, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 79a0cc94841bb284a8c7da800af0bc66, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 46a6bf8d5c172fb43818d54fe27fbccb, type: 3}
+  m_SHData: {fileID: 4900000, guid: 3da9805c4f689fa46ac92d56339d3d45, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

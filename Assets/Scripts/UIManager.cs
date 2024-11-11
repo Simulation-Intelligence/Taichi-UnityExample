@@ -14,9 +14,15 @@ class UIManager : MonoBehaviour
     public GameObject Mpm3DObject;
     public GameObject Mpm3DObject_2;
     [SerializeField]
+    private SmoothHand leftSmoothHand;
+    [SerializeField]
+    private SmoothHand rightSmoothHand;
+    [SerializeField]
     private GameObject MatTool_Hand_Left;
     [SerializeField]
     private GameObject MatTool_Hand_Right;
+    public PinchGesture pinchGestureLeft;
+    public PinchGesture pinchGestureRight;
     [SerializeField]
     private GameObject colorPickerObject;
     private ColorPicker colorPicker;
@@ -25,8 +31,6 @@ class UIManager : MonoBehaviour
     private List<GameObject> createdObjectLists = new List<GameObject>();
     private GameObject selectedObject;
     private GameObject prevSelectedObject;
-    public PinchGesture pinchGestureLeft;
-    public PinchGesture pinchGestureRight;
     private string prefabName;
     public string export_folder_path;
     private string export_file_path;
@@ -59,7 +63,7 @@ class UIManager : MonoBehaviour
     private string prevLeftHandTool;
     private string prevRightHandTool;
 
-    void Start()
+    void Awake()
     {
         canvas_anchor_offset = UI_canvas.transform.position - UI_anchor.position;
 
@@ -153,6 +157,11 @@ class UIManager : MonoBehaviour
     void InstantiateTools()
     {
         // Instantiate all mat tools at the beginning, either hands gameobject or prefabs
+        matToolDict.Add("MatTool_Slab_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Left")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Slab_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Right")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Scissor_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Left")).GetComponent<MatTool>());
+        matToolDict.Add("MatTool_Scissor_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Right")).GetComponent<MatTool>());
+
         matToolDict.Add("MatTool_Hand_Left", MatTool_Hand_Left.GetComponent<MatTool>());
         matToolDict.Add("MatTool_Hand_Right", MatTool_Hand_Right.GetComponent<MatTool>());
         matToolDict.Add("MatTool_Pad_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Pad_Left")).GetComponent<MatTool>());
@@ -161,17 +170,25 @@ class UIManager : MonoBehaviour
         matToolDict.Add("MatTool_Rod_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Rod_Right")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Cone_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Cone_Left")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Cone_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Cone_Right")).GetComponent<MatTool>());
-        matToolDict.Add("MatTool_Slab_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Left")).GetComponent<MatTool>());
-        matToolDict.Add("MatTool_Slab_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Right")).GetComponent<MatTool>());
-        matToolDict.Add("MatTool_Scissor_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Left")).GetComponent<MatTool>());
-        matToolDict.Add("MatTool_Scissor_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Right")).GetComponent<MatTool>());
+        
+        
         foreach (var matTool in matToolDict.Values)
         {
             matTool.transform.SetParent(transform);
             matTool.gameObject.SetActive(false);
+
+            // Specify SmoothHand object to MatTools
+            if (matTool.handType == MatTool.HandType.LeftHand)
+            {
+                matTool.smoothHand = leftSmoothHand;
+            }
+            else if (matTool.handType == MatTool.HandType.RightHand)
+            {
+                matTool.smoothHand = rightSmoothHand;
+            }
         }
 
-        // Capsule based tools
+        // Capsule based mpm tools
         // mpmToolDict.Add("Tool_LeftHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_LeftHand")).GetComponent<MpmTool>());
         // mpmToolDict.Add("Tool_RightHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_RightHand")).GetComponent<MpmTool>());
         // mpmToolDict.Add("Tool_Sphere_LeftHand", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/ToolPrefab_Sphere_LeftHand")).GetComponent<MpmTool>());
