@@ -1232,15 +1232,18 @@ public class Mpm3DMarching : MonoBehaviour
 
         marching_m_computeBuffer = new ComputeBuffer(render_n_grid * render_n_grid * render_n_grid * marchingCubeVisualizers.Length, sizeof(float));
     }
-    public void DiposeGrid()
+    public void DisposeGrid()
     {
-        grid_v.Dispose();
-        grid_m.Dispose();
-        hand_sdf.Dispose();
-        obstacle_velocities.Dispose();
-        obstacle_normals.Dispose();
-        segments_count_per_cell.Dispose();
-        hash_table.Dispose();
+        grid_v?.Dispose();
+        grid_m?.Dispose();
+        hand_sdf?.Dispose();
+        obstacle_velocities?.Dispose();
+        obstacle_normals?.Dispose();
+        segments_count_per_cell?.Dispose();
+        hash_table?.Dispose();
+        marching_m?.Dispose();
+        marching_m_computeBuffer?.Dispose();
+
     }
     public void SetSimulateGridSize(int n)
     {
@@ -1449,6 +1452,31 @@ public class Mpm3DMarching : MonoBehaviour
             Init_materials();
             Update_materials();
         }
+    }
+
+    void OnDestroy()
+    {
+        Dispose();
+    }
+
+    public void Dispose()
+    {
+        x?.Dispose();
+        v?.Dispose();
+        C?.Dispose();
+        dg?.Dispose();
+        E?.Dispose();
+        SigY?.Dispose();
+        nu?.Dispose();
+        min_clamp?.Dispose();
+        max_clamp?.Dispose();
+        alpha?.Dispose();
+        p_vol?.Dispose();
+        p_mass?.Dispose();
+        material?.Dispose();
+        point_color?.Dispose();
+        DisposeGrid();
+
     }
     public void SetGravity(float y)
     {

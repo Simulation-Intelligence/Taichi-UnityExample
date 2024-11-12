@@ -29,12 +29,13 @@ class UIManager : MonoBehaviour
     public GameObject ShapeParameterObject_1;
     public GameObject ShapeParameterObject_2;
     private List<GameObject> createdObjectLists = new List<GameObject>();
+    private List<GameObject> removedObjectLists = new List<GameObject>();
     private GameObject selectedObject;
     private GameObject prevSelectedObject;
     private string prefabName;
     public string export_folder_path;
     private string export_file_path;
-    
+
     // UI Components
     public GameObject UI_canvas;
     public Transform UI_anchor;
@@ -169,7 +170,7 @@ class UIManager : MonoBehaviour
         matToolDict.Add("MatTool_Slab_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Slab_Right")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Scissor_Left", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Left")).GetComponent<MatTool>());
         matToolDict.Add("MatTool_Scissor_Right", Instantiate(Resources.Load<GameObject>("Prefabs/Tools/MatToolPrefab_Scissor_Right")).GetComponent<MatTool>());
-        
+
         foreach (var matTool in matToolDict.Values)
         {
             matTool.transform.SetParent(transform);
@@ -237,9 +238,20 @@ class UIManager : MonoBehaviour
                 mpm3DSimulation.AdjustTextureColor(newColor);
         }
     }
-    
+
     void Update()
     {
+
+        if (removedObjectLists.Count > 0)
+        {
+            foreach (var removedObject in removedObjectLists)
+            {
+                createdObjectLists.Remove(removedObject);
+                removedObject.GetComponent<Mpm3DMarching>().Dispose();
+                Destroy(removedObject);
+            }
+            removedObjectLists.Clear();
+        }
         // Find the last grabbed object as the selected object for further manipulations
         if (createdObjectLists.Count > 0)
         {
@@ -261,6 +273,7 @@ class UIManager : MonoBehaviour
                                 Debug.Log("Merge object " + selectedObject.name + " with object " + objectToMerge.name);
                                 isMerging = false;
                                 mergePrompt.SetActive(false);
+                                removedObjectLists.Add(objectToMerge);
                                 objectToMerge = null;
                                 foreach (Button button in buttons)
                                 {
@@ -285,19 +298,19 @@ class UIManager : MonoBehaviour
                     break;
                 }
             }
-            
+
             if (selectedObject != null)
             {
                 // Visualize pinch gesture spheres
                 pinchGestureLeft.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
                 pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
-                
+
                 // Disable object grab when pinch gesture is enabled, avoiding unexpected rotation
                 if ((pinchGestureLeft.RenderPinchSphere && pinchGestureLeft.isPinching) || (pinchGestureRight.RenderPinchSphere && pinchGestureRight.isPinching))
                 {
                     var _grabbable = selectedObject.GetComponent<Grabbable>();
                     _grabbable.MaxGrabPoints = 0;
-                } 
+                }
                 else
                 {
                     var _grabbable = selectedObject.GetComponent<Grabbable>();
@@ -306,7 +319,7 @@ class UIManager : MonoBehaviour
             }
         }
     }
-    
+
     void CreateNewMpm3DObject()
     {
         if (Mpm3DObject != null)
@@ -595,7 +608,7 @@ class UIManager : MonoBehaviour
                     Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                     export_file_path = export_folder_path + "/" + selectedObject.name + ".txt";
                     mpm3DSimulation.ExportData(export_file_path);
-                    
+
                     // Show file name in UI
                     foreach (Button _button in buttons)
                     {
@@ -963,7 +976,7 @@ class UIManager : MonoBehaviour
     void OnDropdownValueChanged(TMP_Dropdown dropdown, int value)
     {
         Debug.Log(dropdown.name + " selected: " + dropdown.options[value].text);
-        
+
         if (dropdown.name == "Dropdown_PrimitiveShape")
         {
             // Select a primitive shape and adjust the parameters
@@ -1132,7 +1145,7 @@ class UIManager : MonoBehaviour
         {
         }
     }
-    
+
     void CreateMpm3DObjectFromPrefab()
     {
         GameObject Mpm3DObject = Resources.Load<GameObject>("Prefabs/PrimitiveShapes/Mpm3DExample");
@@ -1148,36 +1161,36 @@ class UIManager : MonoBehaviour
 
             GameObject newMpm3DObject = Instantiate(Mpm3DObject, position, rotation);
             createdObjectLists.Add(newMpm3DObject);
-            
+
             // Use the just created object as the selected object for further interactions
             selectedObject = newMpm3DObject;
             newMpm3DObject.name = "Mpm3DObject_" + createdObjectLists.Count;
-            
+
             // Initialize the object
             Mpm3DMarching mpm3DSimulation = newMpm3DObject.GetComponent<Mpm3DMarching>();
             if (prefabName == "Sphere")
             {
                 mpm3DSimulation.initShape = Mpm3DMarching.InitShape.Sphere;
                 mpm3DSimulation.cube_size = ShapeParameterObject_1.GetComponentInChildren<Slider>().value;
-            } 
+            }
             if (prefabName == "Cube")
             {
                 mpm3DSimulation.initShape = Mpm3DMarching.InitShape.Cube;
                 mpm3DSimulation.cube_size = ShapeParameterObject_1.GetComponentInChildren<Slider>().value;
-            } 
+            }
             if (prefabName == "Cylinder")
             {
                 mpm3DSimulation.initShape = Mpm3DMarching.InitShape.Cylinder;
                 mpm3DSimulation.cylinder_length = ShapeParameterObject_1.GetComponentInChildren<Slider>().value;
                 mpm3DSimulation.cylinder_radius = ShapeParameterObject_2.GetComponentInChildren<Slider>().value;
-            } 
+            }
             if (prefabName == "Torus")
             {
                 mpm3DSimulation.initShape = Mpm3DMarching.InitShape.Torus;
                 mpm3DSimulation.torus_radius = ShapeParameterObject_1.GetComponentInChildren<Slider>().value;
                 mpm3DSimulation.torus_tube_radius = ShapeParameterObject_2.GetComponentInChildren<Slider>().value;
             }
-            
+
             mpm3DSimulation.Initiate(); // Initialization
             SelectTools(selectedObject, prevLeftHandTool, prevRightHandTool); // Select tools for modeling
             mpm3DSimulation.leftPinchGesture = pinchGestureLeft; // Assign pinch gesture

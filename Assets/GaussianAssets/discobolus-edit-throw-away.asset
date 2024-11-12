@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
-  m_Name: discobolus-edit
+  m_Name: discobolus-edit-throw-away
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 83235
-  m_BoundsMin: {x: -0.90196145, y: -0.65362865, z: -0.524573}
-  m_BoundsMax: {x: 0.8819455, y: 1.605067, z: 0.8778534}
+  m_SplatCount: 83040
+  m_BoundsMin: {x: 0.20952486, y: 0.29939672, z: 0.31587705}
+  m_BoundsMax: {x: 0.6879245, y: 0.72339153, z: 0.90183324}
   m_DataHash:
     serializedVersion: 2
-    Hash: d86c09a1456b9e2479c3fac80c82afca
+    Hash: dfce3477cb7b5c8e8845d2d122bd45a9
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: 673f87d4e2d720b479846c9caf0f38c6, type: 3}
-  m_ColorData: {fileID: 4900000, guid: f5f2bf72627c88343934a62d5696f7ec, type: 3}
-  m_OtherData: {fileID: 4900000, guid: 18a760c4320cb734c8949e3bcb11d11f, type: 3}
-  m_SHData: {fileID: 4900000, guid: 4571c86ceef7a7d47aa5a403e075148e, type: 3}
+  m_PosData: {fileID: 4900000, guid: 81c25924deb54d3498e3cf4218a4ab04, type: 3}
+  m_ColorData: {fileID: 4900000, guid: ed90ca47ed7e34444b73ec5f121be503, type: 3}
+  m_OtherData: {fileID: 4900000, guid: bd6f676bd5ee8f049a2de1404b7a40c7, type: 3}
+  m_SHData: {fileID: 4900000, guid: 17af328eaf8d32248a613a990a54e4ab, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []
