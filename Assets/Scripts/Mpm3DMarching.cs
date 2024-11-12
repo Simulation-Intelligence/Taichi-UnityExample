@@ -1619,9 +1619,9 @@ public class Mpm3DMarching : MonoBehaviour
             // pinchDirection_2 = transform.InverseTransformDirection(pinchGesture_2.pinchSpeed);
         }
         _Kernel_substep_apply_force_field_two_hands.LaunchAsync(grid_v, grid_m,
-         pinchPosition_1.x, pinchPosition_1.y, pinchPosition_1.z, radius_1, pinchDirection_1.x, pinchDirection_1.y, pinchDirection_1.z,
-         pinchPosition_2.x, pinchPosition_2.y, pinchPosition_2.z, radius_2, pinchDirection_2.x, pinchDirection_2.y, pinchDirection_2.z,
-         boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+            pinchPosition_1.x, pinchPosition_1.y, pinchPosition_1.z, radius_1, pinchDirection_1.x, pinchDirection_1.y, pinchDirection_1.z,
+            pinchPosition_2.x, pinchPosition_2.y, pinchPosition_2.z, radius_2, pinchDirection_2.x, pinchDirection_2.y, pinchDirection_2.z,
+            boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
     }
 
     void ApplyPinchForce(PinchGesture pinchGesture)

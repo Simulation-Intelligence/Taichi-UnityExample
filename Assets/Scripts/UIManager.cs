@@ -286,20 +286,23 @@ class UIManager : MonoBehaviour
                 }
             }
             
-            // Visualize pinch gesture spheres
-            pinchGestureLeft.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
-            pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
-            
-            // Disable object grab when pinch gesture is enabled, avoiding misoperation
-            if ((pinchGestureLeft.RenderPinchSphere && pinchGestureLeft.isPinching) || (pinchGestureRight.RenderPinchSphere && pinchGestureRight.isPinching))
+            if (selectedObject != null)
             {
-                var _grabbable = selectedObject.GetComponent<Grabbable>();
-                _grabbable.MaxGrabPoints = 0;
-            } 
-            else
-            {
-                var _grabbable = selectedObject.GetComponent<Grabbable>();
-                _grabbable.MaxGrabPoints = -1;
+                // Visualize pinch gesture spheres
+                pinchGestureLeft.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
+                pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
+                
+                // Disable object grab when pinch gesture is enabled, avoiding unexpected rotation
+                if ((pinchGestureLeft.RenderPinchSphere && pinchGestureLeft.isPinching) || (pinchGestureRight.RenderPinchSphere && pinchGestureRight.isPinching))
+                {
+                    var _grabbable = selectedObject.GetComponent<Grabbable>();
+                    _grabbable.MaxGrabPoints = 0;
+                } 
+                else
+                {
+                    var _grabbable = selectedObject.GetComponent<Grabbable>();
+                    _grabbable.MaxGrabPoints = -1;
+                }
             }
         }
     }
