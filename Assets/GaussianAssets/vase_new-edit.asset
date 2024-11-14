@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: vase_new-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 258802
+  m_BoundsMin: {x: -1.3963403, y: -1.5262938, z: -0.72154}
+  m_BoundsMax: {x: 0.68059206, y: 1.7206632, z: 1.3742675}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 5a1345eb09c71ec8c5cf75ce01c50b87
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 02c6a68734e34b24cb85223fdceef728, type: 3}
+  m_ColorData: {fileID: 4900000, guid: faf18e1287068894d8c3c0cc808d6f7a, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 16d52c7cbf6c71842a20d572fd3a3dcb, type: 3}
+  m_SHData: {fileID: 4900000, guid: f51a67b672dfd524c9280c91119c0a74, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

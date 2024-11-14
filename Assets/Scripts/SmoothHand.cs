@@ -2,6 +2,8 @@ using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;  // To handle file writing and reading
 
 public class SmoothHand : MonoBehaviour
 {
@@ -19,11 +21,11 @@ public class SmoothHand : MonoBehaviour
     private List<Transform> rightHandJoints = new List<Transform>();
     public List<Transform> SmoothLeftHandJoints => leftHandJoints;
     public List<Transform> SmoothRightHandJoints => rightHandJoints;
-    
+
     public enum MovingAverage { None, Simple, Weighted, TimeScaled }
     public MovingAverage movingAverage = MovingAverage.Weighted;
 
-    [Range(1,20)]
+    [Range(1, 20)]
     public int windowSize = 5;
     [Range(0.01f, 1.0f)]
     public float timeWindow = 0.25f;
@@ -31,7 +33,12 @@ public class SmoothHand : MonoBehaviour
     private Dictionary<int, List<Vector3>> positionQueue = new Dictionary<int, List<Vector3>>();
     private Dictionary<int, List<Quaternion>> rotationQueue = new Dictionary<int, List<Quaternion>>();
     private Dictionary<int, List<float>> timeStepQueue = new Dictionary<int, List<float>>();
-    
+    // New variables for recording data
+    public bool record_data = false;
+    public bool use_record_data = false;
+    public string filePath = "hand_joints_data.txt"; // File path to store hand joints data
+
+    StreamReader reader;
     void Awake()
     {
         if (_newMaterial != null)
@@ -78,11 +85,24 @@ public class SmoothHand : MonoBehaviour
                 }
                 break;
         }
+        if (record_data)
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);  // Delete the file if it already exists
+            }
+        }
+        if (use_record_data && File.Exists(filePath))
+            reader = new StreamReader(filePath);
     }
 
     void Update()
     {
-        if (oculus_hand.IsTracked && oculus_hand.HandConfidence == OVRHand.TrackingConfidence.High)
+        if (use_record_data && File.Exists(filePath)) // Use recorded data if the flag is true
+        {
+            LoadRecordedData();
+        }
+        else if (oculus_hand.IsTracked && oculus_hand.HandConfidence == OVRHand.TrackingConfidence.High)
         {
             int numBones = oculus_skeleton.Bones.Count;
             float currentTime = Time.time;
@@ -90,7 +110,7 @@ public class SmoothHand : MonoBehaviour
             for (int i = 0; i < numBones; i++)
             {
                 OVRBone bone = oculus_skeleton.Bones[i];
-                
+
                 // Update queue data
                 Vector3 newPosition = bone.Transform.position;
                 Quaternion newRotation = bone.Transform.rotation;
@@ -124,7 +144,7 @@ public class SmoothHand : MonoBehaviour
                         smoothedRotation = TimeWeightedMovingAverage(rotationQueue[i], timeStepQueue[i], currentTime);
                         break;
                 }
-                
+
                 // Update position and rotation
                 if (handType == HandType.LeftHand)
                 {
@@ -136,8 +156,71 @@ public class SmoothHand : MonoBehaviour
                     rightHandJoints[i].position = smoothedPosition;
                     rightHandJoints[i].rotation = smoothedRotation;
                 }
+
+                if (record_data)
+                {
+                    RecordHandJointsData(smoothedPosition, smoothedRotation);
+                }
             }
         }
+    }
+    void RecordHandJointsData(Vector3 position, Quaternion rotation)
+    {
+        // Record position and rotation data for left or right hand joints into a text file
+        string data = $"Bone : Position = {position}, Rotation = {rotation}";
+        File.AppendAllText(filePath, data + Environment.NewLine);
+    }
+
+
+    void LoadRecordedData()
+    {
+        // Load the hand joints data from the txt file and apply it to the joint positions
+        for (int i = 0; i < leftHandJoints.Count; i++)
+        {
+            string line = reader.ReadLine();
+            if (line == null)  // End of file
+            {
+                // Optionally: Close the reader and reset to start
+                Console.WriteLine("End of file reached. Restarting...");
+                OpenReader();  // Reopen the file and reset the reader position
+            }
+            string[] parts = line.Split(new string[] { "Position = ", ", Rotation = " }, StringSplitOptions.None);
+            if (parts.Length >= 2)
+            {
+                Vector3 position = StringToVector3(parts[1]);
+                Quaternion rotation = StringToQuaternion(parts[2]);
+                if (handType == HandType.LeftHand)
+                {
+                    leftHandJoints[i].position = position;
+                    leftHandJoints[i].rotation = rotation;
+                }
+                else if (handType == HandType.RightHand)
+                {
+                    rightHandJoints[i].position = position;
+                    rightHandJoints[i].rotation = rotation;
+                }
+            }
+        }
+    }
+    private void OpenReader()
+    {
+        if (reader != null)
+        {
+            reader.Close();  // Close the existing reader if it was opened
+        }
+
+        // Open the reader to start from the beginning of the file
+        reader = new StreamReader(filePath);
+    }
+    Vector3 StringToVector3(string str)
+    {
+        string[] values = str.Trim(new char[] { '(', ')' }).Split(',');
+        return new Vector3(float.Parse(values[0]), float.Parse(values[1]), float.Parse(values[2]));
+    }
+    Quaternion StringToQuaternion(string str)
+    {
+        string[] values = str.Trim(new char[] { '(', ')' }).Split(',');
+        return new Quaternion(float.Parse(values[0]), float.Parse(values[1]), float.Parse(values[2]), float.Parse(values[3]));
     }
 
     private Vector3 TimeWeightedMovingAverage(List<Vector3> posQueue, List<float> timeQueue, float currentTime)
@@ -160,7 +243,7 @@ public class SmoothHand : MonoBehaviour
         }
         return weightedSum;
     }
-    
+
     private Quaternion TimeWeightedMovingAverage(List<Quaternion> rotQueue, List<float> timeQueue, float currentTime)
     {
         Vector3 averageForward = Vector3.zero;
@@ -184,14 +267,14 @@ public class SmoothHand : MonoBehaviour
         }
         return Quaternion.LookRotation(averageForward, averageUpwards);
     }
-    
+
     private void UpdateQueue(List<Vector3> posQueue, List<Quaternion> rotQueue, List<float> timeQueue, Vector3 newPosition, Quaternion newRotation, float currentTime)
     {
         // Update the queue based on a time duration
         posQueue.Add(newPosition);
         rotQueue.Add(newRotation);
         timeQueue.Add(currentTime);
-        
+
         while (timeQueue.Count > 0 && currentTime - timeQueue[0] > timeWindow)
         {
             posQueue.RemoveAt(0);
@@ -209,7 +292,7 @@ public class SmoothHand : MonoBehaviour
             queue.RemoveAt(0);
         }
     }
-    
+
     private Vector3 SimpleMovingAverage(List<Vector3> window)
     {
         float w = 1.0f / window.Count;
@@ -233,7 +316,7 @@ public class SmoothHand : MonoBehaviour
         }
         return Quaternion.LookRotation(averageForward, averageUpwards);
     }
-    
+
     private Quaternion SlerpMovingAverage(List<Quaternion> window)
     {
         Quaternion result = window[0];
