@@ -27,9 +27,9 @@ ratio = 3 / 4
 # 绘制不同 n_grid 的图
 ax1 = plt.subplot(1, 3, 1)
 ax1.plot(n_grid, fps_n_grid, marker=markers[0], linestyle='-', color=colors[0], linewidth=1.5, markersize=5)
-ax1.set_title("FPS vs Grid Resolution", fontsize=12)
-ax1.set_xlabel("Grid Resolution", fontsize=10)
-ax1.set_ylabel("FPS", fontsize=10)
+ax1.set_title("FPS vs Grid Resolution", fontsize=16)
+ax1.set_xlabel("Grid Resolution", fontsize=16)
+ax1.set_ylabel("FPS", fontsize=16)
 ax1.set_ylim(0, 260)  # y轴从0开始
 ax1.grid(True, linestyle='--', linewidth=0.5, color='gray', alpha=0.7)
 x_left, x_right = ax1.get_xlim()
@@ -41,9 +41,9 @@ for spine in ax1.spines.values():
 # 绘制不同 substeps per frame 的图
 ax2 = plt.subplot(1, 3, 2)
 ax2.plot(substep, fps_substep, marker=markers[1], linestyle='-', color=colors[1], linewidth=1.5, markersize=5)
-ax2.set_title("FPS vs Substeps Per Frame", fontsize=12)
-ax2.set_xlabel("Substeps Per Frame", fontsize=10)
-ax2.set_ylabel("FPS", fontsize=10)
+ax2.set_title("FPS vs Substeps Per Frame", fontsize=16)
+ax2.set_xlabel("Substeps Per Frame", fontsize=16)
+ax2.set_ylabel("FPS", fontsize=16)
 ax2.set_ylim(20, 160)  # y轴从20开始
 ax2.grid(True, linestyle='--', linewidth=0.5, color='gray', alpha=0.7)
 x_left, x_right = ax2.get_xlim()
@@ -55,9 +55,9 @@ for spine in ax2.spines.values():
 # 绘制不同 particles per cell 的图
 ax3 = plt.subplot(1, 3, 3)
 ax3.plot(particle, fps_particle, marker=markers[2], linestyle='-', color=colors[2], linewidth=1.5, markersize=5)
-ax3.set_title("FPS vs Particles Per Cell", fontsize=12)
-ax3.set_xlabel("Particles Per Cell", fontsize=10)
-ax3.set_ylabel("FPS", fontsize=10)
+ax3.set_title("FPS vs Particles Per Cell", fontsize=16)
+ax3.set_xlabel("Particles Per Cell", fontsize=16)
+ax3.set_ylabel("FPS", fontsize=16)
 ax3.set_ylim(80, 170)  # y轴从80开始
 ax3.grid(True, linestyle='--', linewidth=0.5, color='gray', alpha=0.7)
 x_left, x_right = ax3.get_xlim()
