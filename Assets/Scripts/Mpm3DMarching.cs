@@ -24,7 +24,7 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private AotModuleAsset Mpm3DModule;
     private Kernel _Kernel_subsetep_reset_grid, _Kernel_substep_neohookean_p2g, _Kernel_substep_Kirchhoff_p2g,
-    _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_apply_force_field, _Kernel_substep_apply_force_field_two_hands,
+    _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_apply_force_field, _Kernel_substep_apply_force_field_two_hands, _Kernel_substep_apply_rotate_force_field_two_hands,
     _Kernel_substep_update_grid_v, _Kernel_substep_update_grid_v_lerp, _Kernel_substep_g2p,
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
@@ -272,6 +272,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_substep_calculate_signed_distance_field = kernels["substep_calculate_signed_distance_field"];
             _Kernel_substep_apply_force_field = kernels["substep_apply_force_field"];
             _Kernel_substep_apply_force_field_two_hands = kernels["substep_apply_force_field_two_hands"];
+            _Kernel_substep_apply_rotate_force_field_two_hands = kernels["substep_apply_rotate_force_field_two_hands"];
             _Kernel_substep_update_grid_v = kernels["substep_update_grid_v"];
             _Kernel_substep_update_grid_v_lerp = kernels["substep_update_grid_v_lerp"];
             _Kernel_substep_g2p = kernels["substep_g2p"];
@@ -1651,7 +1652,32 @@ public class Mpm3DMarching : MonoBehaviour
             pinchPosition_2.x, pinchPosition_2.y, pinchPosition_2.z, radius_2, pinchDirection_2.x, pinchDirection_2.y, pinchDirection_2.z,
             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
     }
+    void ApplyRotateForce(PinchGesture pinchGesture_1, PinchGesture pinchGesture_2)
+    {
+        Vector3 rotatePosition_1 = Vector3.zero;
+        Vector3 rotateAxis_1 = Vector3.zero;
+        Vector3 rotatePosition_2 = Vector3.zero;
+        Vector3 rotateAxis_2 = Vector3.zero;
+        float radius_1 = 0.0f;
+        float radius_2 = 0.0f;
+        if (UsePinchGestureLeft && pinchGesture_1 != null && pinchGesture_1.isRotating)
+        {
+            rotatePosition_1 = transform.InverseTransformPoint(pinchGesture_1.initialRotatePosition);
+            rotateAxis_1 = pinchratio * pinchGesture_1.rotationSpeed * transform.InverseTransformDirection(pinchGesture_1.rotationAxis);
+            radius_1 = pinchGesture_1.pinchRadius / transform.lossyScale.x;
+        }
+        if (UsePinchGestureRight && pinchGesture_2 != null && pinchGesture_2.isRotating)
+        {
+            rotatePosition_2 = transform.InverseTransformPoint(pinchGesture_2.initialRotatePosition);
+            rotateAxis_2 = pinchratio * pinchGesture_2.rotationSpeed * transform.InverseTransformDirection(pinchGesture_2.rotationAxis);
+            radius_2 = pinchGesture_2.pinchRadius / transform.lossyScale.x;
+        }
+        _Kernel_substep_apply_rotate_force_field_two_hands.LaunchAsync(grid_v, grid_m,
+            rotatePosition_1.x, rotatePosition_1.y, rotatePosition_1.z, radius_1, rotateAxis_1.x, rotateAxis_1.y, rotateAxis_1.z,
+            rotatePosition_2.x, rotatePosition_2.y, rotatePosition_2.z, radius_2, rotateAxis_2.x, rotateAxis_2.y, rotateAxis_2.z,
+            boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
+    }
     void ApplyPinchForce(PinchGesture pinchGesture)
     {
         Vector3 pinchPosition = Vector3.zero;
