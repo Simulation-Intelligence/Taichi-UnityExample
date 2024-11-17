@@ -187,7 +187,7 @@ public class PinchGesture : MonoBehaviour
                 previousAngle2 = currentAngle2;
 
                 // 计算平均瞬时角速度
-                rotationSpeed = (angularVelocity1 + angularVelocity2) / 2.0f;
+                rotationSpeed = (angularVelocity1 + angularVelocity2) / 2.0f / 360.0f ;
 
                 Debug.Log($"Rotation Speed: {rotationSpeed} degrees/second");
             }

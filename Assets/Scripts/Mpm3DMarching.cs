@@ -792,6 +792,8 @@ public class Mpm3DMarching : MonoBehaviour
 
                 // Use mid-air pinch gesture
                 ApplyPinchForce(leftPinchGesture, rightPinchGesture);
+
+                ApplyRotateForce(leftPinchGesture, rightPinchGesture);
                 //ApplyPinchForce(rightPinchGesture);
 
                 if (lerp_tool)
