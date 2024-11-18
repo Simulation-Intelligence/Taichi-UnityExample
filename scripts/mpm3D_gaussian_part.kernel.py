@@ -385,7 +385,22 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 if (pos - ti.Vector([center_x2, center_y2, center_z2])).norm() < radius2:
                     # grid_v[I] += ti.Vector([force_x2, force_y2, force_z2]) * dt
                     grid_v[I] = ti.Vector([force_x2, force_y2, force_z2])
-
+    @ti.kernel
+    def substep_apply_rotate_force_field_two_hands(grid_v: ti.types.ndarray(ndim=3),
+                                        grid_m: ti.types.ndarray(ndim=3),
+                                        center_x1: ti.f32, center_y1: ti.f32, center_z1: ti.f32, radius1: ti.f32, axis_x1: ti.f32, axis_y1: ti.f32, axis_z1: ti.f32,
+                                        center_x2: ti.f32, center_y2: ti.f32, center_z2: ti.f32, radius2: ti.f32, axis_x2: ti.f32, axis_y2: ti.f32, axis_z2: ti.f32,
+                                        min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
+        dx = 1 / grid_v.shape[0]
+        for I in ti.grouped(grid_m):
+            pos = I * dx + dx * 0.5
+            if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
+                if (pos - ti.Vector([center_x1, center_y1, center_z1])).norm() < radius1:
+                    force_1=ti.Vector([axis_x1, axis_y1, axis_z1]).cross(pos-ti.Vector([center_x1, center_y1, center_z1]))
+                    grid_v[I] += force_1
+                if (pos - ti.Vector([center_x2, center_y2, center_z2])).norm() < radius2:
+                    force_2=ti.Vector([axis_x2, axis_y2, axis_z2]).cross(pos-ti.Vector([center_x2, center_y2, center_z2]))
+                    grid_v[I] += force_2
     @ti.kernel
     def substep_update_grid_v_lerp(grid_v: ti.types.ndarray(ndim=3),
                               sdf: ti.types.ndarray(ndim=3),
@@ -1091,6 +1106,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_calculate_hand_sdf_hash(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, hash_table, segments_count_per_cell, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_force_field(grid_v,grid_m,0.5,0.5,0.5,0.2,0,0,0,min_x,max_x,min_y,max_y,min_z,max_z)
         substep_apply_force_field_two_hands(grid_v,grid_m,0.5,0.5,0.5,0.2,0,0,0,0.5,0.5,0.5,0.2,0,0,0,min_x,max_x,min_y,max_y,min_z,max_z)
+        substep_apply_rotate_force_field_two_hands(grid_v,grid_m,0.5,0.5,0.5,0.2,0,0,0,0.5,0.5,0.5,0.2,0,0,0,min_x,max_x,min_y,max_y,min_z,max_z)
         substep_update_grid_v(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_update_grid_v_lerp(grid_v, hand_sdf, obstacle_normals, obstacle_velocities,hand_sdf, obstacle_normals, obstacle_velocities,0.5, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=1)
@@ -1129,6 +1145,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_calculate_signed_distance_field, template_args={'obstacle_pos': obstacle_pos, 'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_radius': obstacle_radius})
         mod.add_kernel(substep_apply_force_field, template_args={'grid_v': grid_v, 'grid_m': grid_m})
         mod.add_kernel(substep_apply_force_field_two_hands, template_args={'grid_v': grid_v, 'grid_m': grid_m})
+        mod.add_kernel(substep_apply_rotate_force_field_two_hands, template_args={'grid_v': grid_v, 'grid_m': grid_m})
         mod.add_kernel(substep_update_grid_v, template_args={'grid_v': grid_v,  'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities})
         mod.add_kernel(substep_update_grid_v_lerp, template_args={'grid_v': grid_v,  'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities,'sdf_last': sdf, 'obstacle_normals_last': obstacle_normals, 'obstacle_velocities_last': obstacle_velocities})
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'x': x,'max_speed': max_speed})

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: discobolus-edit-throw
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 83093
+  m_BoundsMin: {x: 0.09795003, y: 0.27065027, z: 0.25823024}
+  m_BoundsMax: {x: 0.90000004, y: 0.7103615, z: 0.647164}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: c77623e4155792a650ff7541b00a3da3
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: b9b8d08ce2be13245abb2d15fa831668, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 0d063c271b5ee9d4cb232b1fe9865852, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 1d1f43eecc6dbb2408b401446123abf3, type: 3}
+  m_SHData: {fileID: 4900000, guid: 6bbeb080291ed2c4a94a690a90a23ee5, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: discobolus-hand
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 7499
+  m_BoundsMin: {x: 0.42747855, y: 0.3305286, z: 0.38045102}
+  m_BoundsMax: {x: 0.60052824, y: 0.4033927, z: 0.545689}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 31b8e8518907cf69bcc71c90ba08718a
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: ef384bd85227c3b46bc1b145167979aa, type: 3}
+  m_ColorData: {fileID: 4900000, guid: c93b776ad09c6ac468d5a0a4a0e1a328, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 7450c80d05fbc244d99833d11feab16c, type: 3}
+  m_SHData: {fileID: 4900000, guid: 1b77e3d5beefb2143a904dcc59510009, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
