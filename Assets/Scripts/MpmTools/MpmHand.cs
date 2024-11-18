@@ -68,6 +68,7 @@ public class MpmHand : MpmTool
             }
         }
     }
+
     protected override void UpdateCapsules()
     {
         if (oculus_hand.IsTracked && oculus_hand.HandConfidence == OVRHand.TrackingConfidence.High)

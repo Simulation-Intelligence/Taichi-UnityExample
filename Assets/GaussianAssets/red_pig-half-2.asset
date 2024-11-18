@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
-  m_Name: humanoid-vase-edit
+  m_Name: red_pig-half-2
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 21340
-  m_BoundsMin: {x: -0.7260818, y: -1.2302544, z: -0.16814451}
-  m_BoundsMax: {x: 0.91671705, y: 1.2560405, z: 0.644088}
+  m_SplatCount: 77590
+  m_BoundsMin: {x: 0.3186123, y: 0.04965166, z: 0.3686563}
+  m_BoundsMax: {x: 0.8825928, y: 0.63413614, z: 0.849642}
   m_DataHash:
     serializedVersion: 2
-    Hash: 62985aa2b6b3971ccd983efeab4e46f0
+    Hash: 78f6bd2b8cc4948462d062081c2a39da
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: cdb08568c99a6a647a5b0708543faf59, type: 3}
-  m_ColorData: {fileID: 4900000, guid: dc85cf0ade7a00348850c78fed91359d, type: 3}
-  m_OtherData: {fileID: 4900000, guid: ff01b95215d25e343b551956553f4f40, type: 3}
-  m_SHData: {fileID: 4900000, guid: 7ef1e25b914fd0f41a182c5243562330, type: 3}
+  m_PosData: {fileID: 4900000, guid: eaa850142bfe3f543a1b26acbcf3c408, type: 3}
+  m_ColorData: {fileID: 4900000, guid: fee6de9639d907a48a1b9cbf5345d769, type: 3}
+  m_OtherData: {fileID: 4900000, guid: ec33d15b25a1d9c459b808aff0914e7e, type: 3}
+  m_SHData: {fileID: 4900000, guid: 2da5b18d04bebbc43853653c38c24923, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []

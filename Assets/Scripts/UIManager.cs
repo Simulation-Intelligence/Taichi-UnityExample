@@ -13,6 +13,11 @@ class UIManager : MonoBehaviour
 {
     public GameObject Mpm3DObject;
     public GameObject Mpm3DObject_2;
+    public GameObject Mpm3DObject_3;
+    public GameObject Mpm3DObject_4;
+    public GameObject Mpm3DObject_5;
+    public GameObject Mpm3DObject_6;
+    
     [SerializeField]
     private SmoothHand leftSmoothHand;
     [SerializeField]
@@ -23,6 +28,7 @@ class UIManager : MonoBehaviour
     private GameObject MatTool_Hand_Right;
     public PinchGesture pinchGestureLeft;
     public PinchGesture pinchGestureRight;
+    
     [SerializeField]
     private GameObject colorPickerObject;
     private ColorPicker colorPicker;
@@ -34,6 +40,7 @@ class UIManager : MonoBehaviour
     private string prefabName;
     public string export_folder_path;
     private string export_file_path;
+    private bool EnableObjectGrab;
     
     // UI Components
     public GameObject UI_canvas;
@@ -152,8 +159,28 @@ class UIManager : MonoBehaviour
             createdObjectLists.Add(Mpm3DObject_2);
             SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
         }
+        if (Mpm3DObject_3 != null)
+        {
+            createdObjectLists.Add(Mpm3DObject_3);
+            SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
+        }
+        if (Mpm3DObject_4 != null)
+        {
+            createdObjectLists.Add(Mpm3DObject_4);
+            SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
+        }
+        if (Mpm3DObject_5 != null)
+        {
+            createdObjectLists.Add(Mpm3DObject_5);
+            SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
+        }
+        if (Mpm3DObject_6 != null)
+        {
+            createdObjectLists.Add(Mpm3DObject_6);
+            SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
+        }
     }
-
+    
     void InstantiateTools()
     {
         // Instantiate all mat tools at the beginning, either hands gameobject or prefabs
@@ -293,15 +320,18 @@ class UIManager : MonoBehaviour
                 pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
                 
                 // Disable object grab when pinch gesture is enabled, avoiding unexpected rotation
-                if ((pinchGestureLeft.RenderPinchSphere && pinchGestureLeft.isPinching) || (pinchGestureRight.RenderPinchSphere && pinchGestureRight.isPinching))
+                if (EnableObjectGrab)
                 {
-                    var _grabbable = selectedObject.GetComponent<Grabbable>();
-                    _grabbable.MaxGrabPoints = 0;
-                } 
-                else
-                {
-                    var _grabbable = selectedObject.GetComponent<Grabbable>();
-                    _grabbable.MaxGrabPoints = -1;
+                    if ((pinchGestureLeft.RenderPinchSphere && pinchGestureLeft.isPinching) || (pinchGestureRight.RenderPinchSphere && pinchGestureRight.isPinching))
+                    {
+                        var _grabbable = selectedObject.GetComponent<Grabbable>();
+                        _grabbable.MaxGrabPoints = 0;
+                    } 
+                    else
+                    {
+                        var _grabbable = selectedObject.GetComponent<Grabbable>();
+                        _grabbable.MaxGrabPoints = -1;
+                    }
                 }
             }
         }
@@ -897,6 +927,7 @@ class UIManager : MonoBehaviour
                 toggle_label.text = isOn ? "Object is grabbable" : "Object is not grabbable";
                 var _grabbable = selectedObject.GetComponent<Grabbable>();
                 _grabbable.MaxGrabPoints = isOn ? -1 : 0;
+                EnableObjectGrab = isOn;
             }
         }
         // Enable/Disable object interaction for simulation to avoid unintended hand contacts

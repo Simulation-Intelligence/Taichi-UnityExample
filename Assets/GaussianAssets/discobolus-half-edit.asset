@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
-  m_Name: humanoid-vase-edit
+  m_Name: discobolus-half-edit
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 21340
-  m_BoundsMin: {x: -0.7260818, y: -1.2302544, z: -0.16814451}
-  m_BoundsMax: {x: 0.91671705, y: 1.2560405, z: 0.644088}
+  m_SplatCount: 83235
+  m_BoundsMin: {x: 0.266859, y: 0.28076154, z: 0.33608684}
+  m_BoundsMax: {x: 0.70264435, y: 0.8356331, z: 0.7088459}
   m_DataHash:
     serializedVersion: 2
-    Hash: 62985aa2b6b3971ccd983efeab4e46f0
+    Hash: 07c152dbbd9ad7b5b1a44fcfddc7d39a
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: cdb08568c99a6a647a5b0708543faf59, type: 3}
-  m_ColorData: {fileID: 4900000, guid: dc85cf0ade7a00348850c78fed91359d, type: 3}
-  m_OtherData: {fileID: 4900000, guid: ff01b95215d25e343b551956553f4f40, type: 3}
-  m_SHData: {fileID: 4900000, guid: 7ef1e25b914fd0f41a182c5243562330, type: 3}
+  m_PosData: {fileID: 4900000, guid: 31d6debc72c3b6a4aa0816affc2d34dc, type: 3}
+  m_ColorData: {fileID: 4900000, guid: b8c4a12699a0d9d42b348cefe7be238a, type: 3}
+  m_OtherData: {fileID: 4900000, guid: a2a5b9a73cc4c954f96b6b157bbd65f4, type: 3}
+  m_SHData: {fileID: 4900000, guid: bf2a28e8a756ce64d8004646c2bcc10b, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []

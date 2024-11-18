@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
-  m_Name: humanoid-vase-edit
+  m_Name: two-rice-puddings
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 21340
-  m_BoundsMin: {x: -0.7260818, y: -1.2302544, z: -0.16814451}
-  m_BoundsMax: {x: 0.91671705, y: 1.2560405, z: 0.644088}
+  m_SplatCount: 32485
+  m_BoundsMin: {x: -1.211403, y: 1.1309419, z: 0.34331098}
+  m_BoundsMax: {x: 0.8021081, y: 2.596154, z: 1.9868163}
   m_DataHash:
     serializedVersion: 2
-    Hash: 62985aa2b6b3971ccd983efeab4e46f0
+    Hash: 5ae546ae2d1203408661b856f2611e2c
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: cdb08568c99a6a647a5b0708543faf59, type: 3}
-  m_ColorData: {fileID: 4900000, guid: dc85cf0ade7a00348850c78fed91359d, type: 3}
-  m_OtherData: {fileID: 4900000, guid: ff01b95215d25e343b551956553f4f40, type: 3}
-  m_SHData: {fileID: 4900000, guid: 7ef1e25b914fd0f41a182c5243562330, type: 3}
+  m_PosData: {fileID: 4900000, guid: 3f6183a8db97145439929d27a6cce23b, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 4d0067fa4ce83314a80ac07e46b38dc7, type: 3}
+  m_OtherData: {fileID: 4900000, guid: dda90b11f18271447a7b1cf5c4c5c3cd, type: 3}
+  m_SHData: {fileID: 4900000, guid: 090e88944d0bd654095c3b64e709c786, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []

@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
-  m_Name: humanoid-vase-edit
+  m_Name: glaze_dolphin-edit
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 21340
-  m_BoundsMin: {x: -0.7260818, y: -1.2302544, z: -0.16814451}
-  m_BoundsMax: {x: 0.91671705, y: 1.2560405, z: 0.644088}
+  m_SplatCount: 114409
+  m_BoundsMin: {x: -0.769913, y: -1.0622716, z: -0.4801747}
+  m_BoundsMax: {x: 0.924706, y: 1.4687357, z: 1.2436357}
   m_DataHash:
     serializedVersion: 2
-    Hash: 62985aa2b6b3971ccd983efeab4e46f0
+    Hash: b05a57bf2bff596ee2a2a1a53f9255d7
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: cdb08568c99a6a647a5b0708543faf59, type: 3}
-  m_ColorData: {fileID: 4900000, guid: dc85cf0ade7a00348850c78fed91359d, type: 3}
-  m_OtherData: {fileID: 4900000, guid: ff01b95215d25e343b551956553f4f40, type: 3}
-  m_SHData: {fileID: 4900000, guid: 7ef1e25b914fd0f41a182c5243562330, type: 3}
+  m_PosData: {fileID: 4900000, guid: ac25cd9a893600c47bf73e2248a1ad80, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 9f558175081b29d4fbbeb263ee232083, type: 3}
+  m_OtherData: {fileID: 4900000, guid: de3750ca72b3d974992838e57abe803e, type: 3}
+  m_SHData: {fileID: 4900000, guid: 4352597f249428641af15789875d90fb, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []
