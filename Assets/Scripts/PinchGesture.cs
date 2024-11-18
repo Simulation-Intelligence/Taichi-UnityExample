@@ -25,7 +25,7 @@ public class PinchGesture : MonoBehaviour
     [SerializeField]
     private SmoothHand smoothHand;
     private List<Transform> _handJointsData;
-    public bool UseSmoothHand;
+    public bool UseSmoothHand = true;
 
     [HideInInspector] public bool isPinching = false;
     [HideInInspector] public bool isRotating = false;
@@ -45,18 +45,14 @@ public class PinchGesture : MonoBehaviour
     [HideInInspector] public Vector3 initialDirectionJoint1;
     [HideInInspector] public Vector3 initialDirectionJoint2;
 
-
-
     public float pinchThreshold = 0.02f;
     public float rotationThreshold = 0.03f;
     public float pinchRadius = 0.05f;
 
     private GameObject pinchSphere;
-
     private GameObject rotationSphere;
-    public bool RenderPinchSphere = true;
-
-    public bool RenderRotationSphere = true;
+    public bool RenderPinchSphere = true; // Visualize the selection area during pinch traslation
+    public bool RenderRotationSphere = true; // Visualize the selection area during pinch rotation
 
     void Start()
     {
@@ -187,13 +183,14 @@ public class PinchGesture : MonoBehaviour
                 previousAngle2 = currentAngle2;
 
                 // 计算平均瞬时角速度
-                rotationSpeed = (angularVelocity1 + angularVelocity2) / 2.0f / 360.0f ;
+                rotationSpeed = (angularVelocity1 + angularVelocity2) / 2.0f / 360.0f;
 
                 Debug.Log($"Rotation Speed: {rotationSpeed} degrees/second");
             }
             CreateOrUpdateRotationSphere(initialRotatePosition);
         }
     }
+    
     Transform GetBoneTransform(OVRSkeleton.BoneId boneId)
     {
         if (!UseSmoothHand)
@@ -216,6 +213,7 @@ public class PinchGesture : MonoBehaviour
         }
         return null;
     }
+    
     void CreateOrUpdatePinchSphere(Vector3 position)
     {
         if (pinchSphere == null && RenderPinchSphere)
@@ -237,6 +235,7 @@ public class PinchGesture : MonoBehaviour
 
             pinchSphere.GetComponent<Renderer>().material = transparentMaterial;
         }
+        
         if (pinchSphere != null)
             pinchSphere.transform.position = position;
     }

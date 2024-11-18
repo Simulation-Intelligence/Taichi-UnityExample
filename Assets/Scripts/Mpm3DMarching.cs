@@ -232,12 +232,9 @@ public class Mpm3DMarching : MonoBehaviour
         Init_MatTools();
         Init_Tools();
 
-
-
         _MeshRenderer = GetComponent<MeshRenderer>();
         _MeshFilter = GetComponent<MeshFilter>();
         _grabbable = GetComponent<Grabbable>();
-
 
         if (renderType == RenderType.GaussianSplat)
         {
@@ -351,7 +348,6 @@ public class Mpm3DMarching : MonoBehaviour
     {
         if (tools.Count == 0)
         {
-            // If there are no tools, return
             return;
         }
         totalCapsules = 0;
@@ -817,9 +813,8 @@ public class Mpm3DMarching : MonoBehaviour
                 if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
                     _Kernel_substep_update_dg.LaunchAsync(x_gaussian, C_gaussian, dg_gaussian, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
-                // Use mid-air pinch gesture
+                // Use mid-air pinch gesture for traslation and rotation
                 ApplyPinchForce(leftPinchGesture, rightPinchGesture);
-
                 ApplyRotateForce(leftPinchGesture, rightPinchGesture);
                 //ApplyPinchForce(rightPinchGesture);
 
@@ -1684,6 +1679,7 @@ public class Mpm3DMarching : MonoBehaviour
             pinchPosition_2.x, pinchPosition_2.y, pinchPosition_2.z, radius_2, pinchDirection_2.x, pinchDirection_2.y, pinchDirection_2.z,
             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
     }
+
     void ApplyRotateForce(PinchGesture pinchGesture_1, PinchGesture pinchGesture_2)
     {
         Vector3 rotatePosition_1 = Vector3.zero;

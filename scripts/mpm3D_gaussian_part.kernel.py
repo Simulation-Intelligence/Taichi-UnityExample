@@ -385,6 +385,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 if (pos - ti.Vector([center_x2, center_y2, center_z2])).norm() < radius2:
                     # grid_v[I] += ti.Vector([force_x2, force_y2, force_z2]) * dt
                     grid_v[I] = ti.Vector([force_x2, force_y2, force_z2])
+    
     @ti.kernel
     def substep_apply_rotate_force_field_two_hands(grid_v: ti.types.ndarray(ndim=3),
                                         grid_m: ti.types.ndarray(ndim=3),
@@ -396,11 +397,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             pos = I * dx + dx * 0.5
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
                 if (pos - ti.Vector([center_x1, center_y1, center_z1])).norm() < radius1:
-                    force_1=ti.Vector([axis_x1, axis_y1, axis_z1]).cross(pos-ti.Vector([center_x1, center_y1, center_z1]))
+                    force_1 = ti.Vector([axis_x1, axis_y1, axis_z1]).cross(pos - ti.Vector([center_x1, center_y1, center_z1]))
                     grid_v[I] += force_1
                 if (pos - ti.Vector([center_x2, center_y2, center_z2])).norm() < radius2:
-                    force_2=ti.Vector([axis_x2, axis_y2, axis_z2]).cross(pos-ti.Vector([center_x2, center_y2, center_z2]))
+                    force_2 = ti.Vector([axis_x2, axis_y2, axis_z2]).cross(pos - ti.Vector([center_x2, center_y2, center_z2]))
                     grid_v[I] += force_2
+    
     @ti.kernel
     def substep_update_grid_v_lerp(grid_v: ti.types.ndarray(ndim=3),
                               sdf: ti.types.ndarray(ndim=3),
