@@ -77,6 +77,10 @@ PrefabInstance:
       value: 0.005
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
+      propertyPath: render_n_grid
+      value: 64
+      objectReference: {fileID: 0}
+    - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: cylinder_length
       value: 0.8
       objectReference: {fileID: 0}
@@ -106,7 +110,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6652588665450643096, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: TargetValue
-      value: 0.01
+      value: 0.0001
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

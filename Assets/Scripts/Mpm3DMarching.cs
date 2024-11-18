@@ -449,6 +449,13 @@ public class Mpm3DMarching : MonoBehaviour
         else if (initShape == InitShape.Torus)
             _Kernel_init_torus.LaunchAsync(x, dg, torus_radius, torus_tube_radius);
     }
+    private void Dispose_MarchingCubes()
+    {
+        for (int i = 0; i < marchingCubeVisualizers.Length; i++)
+        {
+            marchingCubeVisualizers[i].OnDestroy();
+        }
+    }
     public void Init_MarchingCubes()
     {
         _p_vol = dx * dx * dx / particle_per_grid;
@@ -592,6 +599,26 @@ public class Mpm3DMarching : MonoBehaviour
                     break;
             }
         }
+    }
+    private void Dispose_particles()
+    {
+        x.Dispose();
+        v.Dispose();
+        C.Dispose();
+        dg.Dispose();
+    }
+    private void Dispose_Materials()
+    {
+        E.Dispose();
+        SigY.Dispose();
+        nu.Dispose();
+        min_clamp.Dispose();
+        max_clamp.Dispose();
+        alpha.Dispose();
+        p_vol.Dispose();
+        p_mass.Dispose();
+        material.Dispose();
+        point_color.Dispose();
     }
     public void Update_materials()
     {
@@ -1450,8 +1477,11 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else
         {
+            Dispose_particles();
             Init_Particles();
+            Dispose_MarchingCubes();
             Init_MarchingCubes();
+            Dispose_Materials();
             Init_materials();
             Update_materials();
         }
