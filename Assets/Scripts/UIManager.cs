@@ -13,10 +13,10 @@ class UIManager : MonoBehaviour
 {
     public GameObject Mpm3DObject;
     public GameObject Mpm3DObject_2;
-    public GameObject Mpm3DObject_3;
-    public GameObject Mpm3DObject_4;
-    public GameObject Mpm3DObject_5;
-    public GameObject Mpm3DObject_6;
+    // public GameObject Mpm3DObject_3;
+    // public GameObject Mpm3DObject_4;
+    // public GameObject Mpm3DObject_5;
+    // public GameObject Mpm3DObject_6;
     
     [SerializeField]
     private SmoothHand leftSmoothHand;
@@ -41,8 +41,7 @@ class UIManager : MonoBehaviour
     private string prefabName;
     public string export_folder_path;
     private string export_file_path;
-    private bool EnableObjectGrab;
-    
+    private bool EnableObjectGrab = true;
 
     // UI Components
     public GameObject UI_canvas;
@@ -161,26 +160,26 @@ class UIManager : MonoBehaviour
             createdObjectLists.Add(Mpm3DObject_2);
             SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
         }
-        if (Mpm3DObject_3 != null)
-        {
-            createdObjectLists.Add(Mpm3DObject_3);
-            SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
-        }
-        if (Mpm3DObject_4 != null)
-        {
-            createdObjectLists.Add(Mpm3DObject_4);
-            SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
-        }
-        if (Mpm3DObject_5 != null)
-        {
-            createdObjectLists.Add(Mpm3DObject_5);
-            SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
-        }
-        if (Mpm3DObject_6 != null)
-        {
-            createdObjectLists.Add(Mpm3DObject_6);
-            SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
-        }
+        // if (Mpm3DObject_3 != null)
+        // {
+        //     createdObjectLists.Add(Mpm3DObject_3);
+        //     SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
+        // }
+        // if (Mpm3DObject_4 != null)
+        // {
+        //     createdObjectLists.Add(Mpm3DObject_4);
+        //     SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
+        // }
+        // if (Mpm3DObject_5 != null)
+        // {
+        //     createdObjectLists.Add(Mpm3DObject_5);
+        //     SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
+        // }
+        // if (Mpm3DObject_6 != null)
+        // {
+        //     createdObjectLists.Add(Mpm3DObject_6);
+        //     SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
+        // }
     }
     
     void InstantiateTools()
@@ -318,14 +317,17 @@ class UIManager : MonoBehaviour
 
             if (selectedObject != null)
             {
-                // Visualize pinch gesture spheres
+                // Visualize pinch gesture spheres when enabled
                 pinchGestureLeft.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
+                pinchGestureLeft.RenderRotationSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
                 pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
+                pinchGestureRight.RenderRotationSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
 
                 // Disable object grab when pinch gesture is enabled, avoiding unexpected rotation
                 if (EnableObjectGrab)
                 {
-                    if ((pinchGestureLeft.RenderPinchSphere && pinchGestureLeft.isPinching) || (pinchGestureRight.RenderPinchSphere && pinchGestureRight.isPinching))
+                    if ((pinchGestureLeft.RenderPinchSphere && pinchGestureLeft.isPinching) || (pinchGestureRight.RenderPinchSphere && pinchGestureRight.isPinching)
+                     || (pinchGestureLeft.RenderRotationSphere && pinchGestureLeft.isRotating) || (pinchGestureRight.RenderRotationSphere && pinchGestureRight.isRotating))
                     {
                         var _grabbable = selectedObject.GetComponent<Grabbable>();
                         _grabbable.MaxGrabPoints = 0;

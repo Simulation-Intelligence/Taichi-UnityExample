@@ -1706,6 +1706,7 @@ public class Mpm3DMarching : MonoBehaviour
             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
     }
+    
     void ApplyPinchForce(PinchGesture pinchGesture)
     {
         Vector3 pinchPosition = Vector3.zero;

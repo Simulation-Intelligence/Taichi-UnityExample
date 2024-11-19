@@ -49,10 +49,11 @@ public class PinchGesture : MonoBehaviour
     public float rotationThreshold = 0.03f;
     public float pinchRadius = 0.05f;
 
+    // Visualize the selection area while pinch translation and rotation
     private GameObject pinchSphere;
     private GameObject rotationSphere;
-    public bool RenderPinchSphere = true; // Visualize the selection area during pinch traslation
-    public bool RenderRotationSphere = true; // Visualize the selection area during pinch rotation
+    public bool RenderPinchSphere = true; 
+    public bool RenderRotationSphere = true; 
 
     void Start()
     {
