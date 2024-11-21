@@ -32,11 +32,10 @@ class UIManagerNew : MonoBehaviour
     [SerializeField]
     private GameObject colorPickerObject;
     private ColorPicker colorPicker;
-    public GameObject ShapeParameterObject_1;
-    public GameObject ShapeParameterObject_2;
-    public GameObject PinchParameterObject_1;
-    public GameObject PinchParameterObject_2;
+    public GameObject ShapeParameterObject_1, ShapeParameterObject_2;
+    public GameObject PinchParameterObject_1, PinchParameterObject_2;
     public GameObject RightSidePanel;
+    public GameObject bk1, bk2, bk3, bk4;
 
     private List<GameObject> createdObjectLists = new List<GameObject>();
     private List<GameObject> removedObjectLists = new List<GameObject>(); // Merged objects are removed
@@ -520,6 +519,14 @@ class UIManagerNew : MonoBehaviour
             parameter_text.text = "Radius";
             ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.5f;
             prefabName = "Sphere";
+            
+            // Adjust UI background
+            RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
+            Vector2 sizeDelta = rectTransform_1.sizeDelta;
+            sizeDelta.y += 140;
+            rectTransform_1.sizeDelta = sizeDelta;
+            RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+            rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 140);
         }
         if (button.name == "CubeShape")
         {
@@ -528,6 +535,14 @@ class UIManagerNew : MonoBehaviour
             parameter_text.text = "Size";
             ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.5f;
             prefabName = "Cube";
+            
+            // Adjust UI background
+            RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
+            Vector2 sizeDelta = rectTransform_1.sizeDelta;
+            sizeDelta.y += 140;
+            rectTransform_1.sizeDelta = sizeDelta;
+            RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+            rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 140);
         }
         if (button.name == "CylinderShape")
         {
@@ -540,6 +555,14 @@ class UIManagerNew : MonoBehaviour
             parameter_text_2.text = "Cylinder Radius";
             ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.05f;
             prefabName = "Cylinder";
+            
+            // Adjust UI background
+            RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
+            Vector2 sizeDelta = rectTransform_1.sizeDelta;
+            sizeDelta.y += 280;
+            rectTransform_1.sizeDelta = sizeDelta;
+            RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+            rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 280);
         }
         if (button.name == "TorusShape")
         {
@@ -552,13 +575,30 @@ class UIManagerNew : MonoBehaviour
             parameter_text_2.text = "Torus Tube Radius";
             ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.05f;
             prefabName = "Torus";
+            
+            // Adjust UI background
+            RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
+            Vector2 sizeDelta = rectTransform_1.sizeDelta;
+            sizeDelta.y += 280;
+            rectTransform_1.sizeDelta = sizeDelta;
+            RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+            rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 280);
         }
+        
         // Create object based on shape parameters
         if (button.name == "Button_Confirm")
         {
             ShapeParameterObject_1.SetActive(false);
             ShapeParameterObject_2.SetActive(false);
             CreateMpm3DObjectFromPrefab();
+            
+            // Adjust UI background
+            RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
+            Vector2 sizeDelta = rectTransform_1.sizeDelta;
+            sizeDelta.y = 500;
+            rectTransform_1.sizeDelta = sizeDelta;
+            RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+            rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, -740);
         }
         // Merge the object with another object
         if (button.name == "Button_MergeObject")
@@ -954,14 +994,31 @@ class UIManagerNew : MonoBehaviour
                     {
                         if (!tog.isOn)
                         {
-                            PinchParameterObject_1.SetActive(isOn);
-                            PinchParameterObject_2.SetActive(isOn);
+                            PinchParameterObject_1.SetActive(false);
+                            PinchParameterObject_2.SetActive(false);
+                            // Adjust UI background
+                            RectTransform rectTransform_3 = bk3.GetComponent<RectTransform>();
+                            Vector2 sizeDelta = rectTransform_3.sizeDelta;
+                            sizeDelta.y = 230;
+                            rectTransform_3.sizeDelta = sizeDelta;
+                            RectTransform rectTransform_4 = bk4.GetComponent<RectTransform>();
+                            rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, -470);
                         }
                     }
                 }
             } else {
-                PinchParameterObject_1.SetActive(isOn);
-                PinchParameterObject_2.SetActive(isOn);
+                if (!PinchParameterObject_1.activeSelf)
+                {
+                    PinchParameterObject_1.SetActive(true);
+                    PinchParameterObject_2.SetActive(true);
+                    // Adjust UI background
+                    RectTransform rectTransform_3 = bk3.GetComponent<RectTransform>();
+                    Vector2 sizeDelta = rectTransform_3.sizeDelta;
+                    sizeDelta.y += 290;
+                    rectTransform_3.sizeDelta = sizeDelta;
+                    RectTransform rectTransform_4 = bk4.GetComponent<RectTransform>();
+                    rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, rectTransform_4.anchoredPosition.y - 290);
+                }
             }
             if (selectedObject != null)
             {
@@ -979,14 +1036,31 @@ class UIManagerNew : MonoBehaviour
                     {
                         if (!tog.isOn)
                         {
-                            PinchParameterObject_1.SetActive(isOn);
-                            PinchParameterObject_2.SetActive(isOn);
+                            PinchParameterObject_1.SetActive(false);
+                            PinchParameterObject_2.SetActive(false);
+                            // Adjust UI background
+                            RectTransform rectTransform_3 = bk3.GetComponent<RectTransform>();
+                            Vector2 sizeDelta = rectTransform_3.sizeDelta;
+                            sizeDelta.y = 230;
+                            rectTransform_3.sizeDelta = sizeDelta;
+                            RectTransform rectTransform_4 = bk4.GetComponent<RectTransform>();
+                            rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, -470);
                         }
                     }
                 }
             } else {
-                PinchParameterObject_1.SetActive(isOn);
-                PinchParameterObject_2.SetActive(isOn);
+                if (!PinchParameterObject_1.activeSelf)
+                {
+                    PinchParameterObject_1.SetActive(true);
+                    PinchParameterObject_2.SetActive(true);
+                    // Adjust UI background
+                    RectTransform rectTransform_3 = bk3.GetComponent<RectTransform>();
+                    Vector2 sizeDelta = rectTransform_3.sizeDelta;
+                    sizeDelta.y += 290;
+                    rectTransform_3.sizeDelta = sizeDelta;
+                    RectTransform rectTransform_4 = bk4.GetComponent<RectTransform>();
+                    rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, rectTransform_4.anchoredPosition.y - 290);
+                }
             }
             if (selectedObject != null)
             {
@@ -1016,6 +1090,23 @@ class UIManagerNew : MonoBehaviour
         if (toggle.name == "Toggle_EnabeSmoothButtons")
         {
             AdjustSmoothButtons.SetActive(isOn);
+            // Adjust UI background
+            if (isOn)
+            {
+                RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
+                Vector2 sizeDelta = rectTransform_1.sizeDelta;
+                sizeDelta.y += 120;
+                rectTransform_1.sizeDelta = sizeDelta;
+                RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+                rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 120);
+            } else {
+                RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
+                Vector2 sizeDelta = rectTransform_1.sizeDelta;
+                sizeDelta.y -= 120;
+                rectTransform_1.sizeDelta = sizeDelta;
+                RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+                rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y + 120);
+            }
         }
         // Enable/Disable object grab
         if (toggle.name == "Toggle_EnableGrab")
