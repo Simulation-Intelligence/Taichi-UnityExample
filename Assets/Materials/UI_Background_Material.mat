@@ -7,8 +7,10 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: MultiGradientUI
+  m_Name: UI_Background_Material
   m_Shader: {fileID: 4800000, guid: 8793e48fa98bb9544878252e863b2827, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -17,6 +19,7 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -36,9 +39,9 @@ Material:
     - _UseUIAlphaClip: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Color0: {r: 0.14509776, g: 0.827451, b: 0.39999974, a: 0.2}
-    - _Color1: {r: 0.62745106, g: 0.19999981, b: 1, a: 0.16078432}
-    - _Color2: {r: 1, g: 0.42352915, b: 0.36078405, a: 0.14901961}
+    - _Color0: {r: 0.14509803, g: 0.36977988, b: 0.827451, a: 0.2}
+    - _Color1: {r: 0.19999999, g: 0.6298164, b: 1, a: 0.16078432}
+    - _Color2: {r: 0, g: 0, b: 0, a: 0.14901961}
     - _GradientPosition0: {r: 1, g: 1, b: 1.2, a: 1}
     - _GradientPosition1: {r: 0, g: 1, b: 1.2, a: 1}
     - _GradientPosition2: {r: 0.5, g: -0.2, b: 1, a: 1}
