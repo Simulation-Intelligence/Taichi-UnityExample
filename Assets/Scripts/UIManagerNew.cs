@@ -47,6 +47,7 @@ class UIManagerNew : MonoBehaviour
     private bool EnableObjectGrab = true;
 
     // UI Components
+    public bool FixUIPosition = false;
     public GameObject UI_canvas;
     private Transform UI_panel;
     public Transform UI_anchor;
@@ -159,7 +160,7 @@ class UIManagerNew : MonoBehaviour
             selectedObject = Mpm3DObject;
             // Select tools for modeling
             SelectTools(selectedObject, "MatTool_Hand_Left", "MatTool_Hand_Right");
-            ShowSelectedObjectCanvas();
+            ShowSelectedObjectInfo();
         }
         if (Mpm3DObject_2 != null)
         {
@@ -313,7 +314,7 @@ class UIManagerNew : MonoBehaviour
                         selectedObject = createdObject;
                         if (selectedObject != prevSelectedObject)
                         {
-                            ShowSelectedObjectCanvas();
+                            ShowSelectedObjectInfo();
                             prevSelectedObject = selectedObject;
                         }
                     }
@@ -1428,28 +1429,29 @@ class UIManagerNew : MonoBehaviour
 
     public void ShowCanvas()
     {
-        if (UI_canvas != null && oculus_hands[1].IsTracked && sceneCamera != null)
+        // Set position and rotation of the UI canvas
+        Vector3 handThumbTipPosition = Vector3.zero;
+        foreach (var b in oculus_skeletons[1].Bones)
         {
-            // Set position and rotation of the UI canvas
-            Vector3 handThumbTipPosition = Vector3.zero;
-
-            foreach (var b in oculus_skeletons[1].Bones)
+            if (b.Id == OVRSkeleton.BoneId.Hand_ThumbTip)
             {
-                if (b.Id == OVRSkeleton.BoneId.Hand_ThumbTip)
-                {
-                    handThumbTipPosition = b.Transform.position;
-                    break;
-                }
+                handThumbTipPosition = b.Transform.position;
+                break;
             }
-            UI_canvas.SetActive(true);
-            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.2f;
+        }
+        UI_canvas.SetActive(true);
+        
+        // Move the UI canvas according to the hand position
+        if (!FixUIPosition)
+        {
+            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.3f;
             UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
             UI_canvas.transform.position = UI_anchor.position + canvas_anchor_offset;
             UI_canvas.transform.rotation = UI_anchor.rotation;
         }
     }
 
-    public void ShowSelectedObjectCanvas()
+    public void ShowSelectedObjectInfo()
     {
         if (UI_canvas != null && sceneCamera != null)
         {
@@ -1589,24 +1591,6 @@ class UIManagerNew : MonoBehaviour
                     }
                 }
             }
-
-            // Set position and rotation of the UI canvas
-            Vector3 handThumbTipPosition = Vector3.zero;
-            foreach (var b in oculus_skeletons[1].Bones)
-            {
-                if (b.Id == OVRSkeleton.BoneId.Hand_ThumbTip)
-                {
-                    handThumbTipPosition = b.Transform.position;
-                    break;
-                }
-            }
-            UI_canvas.SetActive(true);
-
-            // Move the UI canvas to the hand position
-            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.3f;
-            UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
-            UI_canvas.transform.position = UI_anchor.position + canvas_anchor_offset;
-            UI_canvas.transform.rotation = UI_anchor.rotation;
         }
     }
 
