@@ -1444,7 +1444,7 @@ class UIManagerNew : MonoBehaviour
         // Move the UI canvas according to the hand position
         if (!FixUIPosition)
         {
-            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.3f;
+            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.4f;
             UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
             UI_canvas.transform.position = UI_anchor.position + canvas_anchor_offset;
             UI_canvas.transform.rotation = UI_anchor.rotation;
