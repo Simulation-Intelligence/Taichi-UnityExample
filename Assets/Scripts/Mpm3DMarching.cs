@@ -1104,6 +1104,9 @@ public class Mpm3DMarching : MonoBehaviour
 
         // 根据 point_color 的最大值决定 MarchingCubeVisualizers 的数量
         int maxColor = point_color_host.Max() + 1;
+
+        if (maxColor > 10)
+            maxColor = 1;
         marchingCubeVisualizers = new MarchingCubeVisualizer[maxColor];
 
         // 查找原有的 MarchingCubeVisualizer 子对象
@@ -1706,7 +1709,7 @@ public class Mpm3DMarching : MonoBehaviour
             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
     }
-    
+
     void ApplyPinchForce(PinchGesture pinchGesture)
     {
         Vector3 pinchPosition = Vector3.zero;

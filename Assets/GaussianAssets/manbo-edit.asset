@@ -13,19 +13,19 @@ MonoBehaviour:
   m_Name: manbo-edit
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 230787
+  m_SplatCount: 234789
   m_BoundsMin: {x: -0.15519455, y: -1.7963465, z: 0.27381507}
-  m_BoundsMax: {x: 2.6111197, y: 1.9010135, z: 2.4116914}
+  m_BoundsMax: {x: 2.6763961, y: 1.9010135, z: 2.4139228}
   m_DataHash:
     serializedVersion: 2
-    Hash: b55432e9db8b8c017e9fba6b0da25d06
+    Hash: c11dc4fd264d932aebe20a4900014760
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: 4ef5f4e9b392bb54988239d5e06e96a2, type: 3}
-  m_ColorData: {fileID: 4900000, guid: 068fb1fd7d8edf6478916855db6679a4, type: 3}
-  m_OtherData: {fileID: 4900000, guid: 4e7fdff4a495f3a46a9ddf32339efd36, type: 3}
-  m_SHData: {fileID: 4900000, guid: d519d55256fc34a4cbe7e0e29fe17971, type: 3}
+  m_PosData: {fileID: 4900000, guid: a55061e75447c114783d7575047f845a, type: 3}
+  m_ColorData: {fileID: 4900000, guid: e9e56d4cd9af48b4cad42fe26617e61f, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 76774a2345eb8ba4c96b5eb5f91361ae, type: 3}
+  m_SHData: {fileID: 4900000, guid: 72f785cd8e087544fa6c928c134c45c7, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []
