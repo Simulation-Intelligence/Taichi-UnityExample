@@ -57,6 +57,10 @@ PrefabInstance:
       value: 1000000
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
+      propertyPath: n_grid
+      value: 32
+      objectReference: {fileID: 0}
+    - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: damping
       value: 200
       objectReference: {fileID: 0}
@@ -75,6 +79,10 @@ PrefabInstance:
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: colide_factor
       value: 0.005
+      objectReference: {fileID: 0}
+    - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
+      propertyPath: render_n_grid
+      value: 64
       objectReference: {fileID: 0}
     - target: {fileID: 4415489578730440453, guid: a6863a46782a6394eab72ee35341f9d0, type: 3}
       propertyPath: matTools.Array.size
