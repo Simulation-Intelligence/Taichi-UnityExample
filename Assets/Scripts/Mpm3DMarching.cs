@@ -1105,7 +1105,7 @@ public class Mpm3DMarching : MonoBehaviour
         // 根据 point_color 的最大值决定 MarchingCubeVisualizers 的数量
         int maxColor = point_color_host.Max() + 1;
 
-        if (maxColor > 10)
+        if (maxColor > 100)
             maxColor = 1;
         marchingCubeVisualizers = new MarchingCubeVisualizer[maxColor];
 
