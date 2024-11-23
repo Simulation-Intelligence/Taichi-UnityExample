@@ -1358,40 +1358,44 @@ class UIManagerNew : MonoBehaviour
         {
             if (selectedObject != null)
             {
-                var mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-                if (dropdown.options[value].text == "Dough")
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                if (dropdown.options[value].text == "Default Material (Clay)")
                 {
-                    mpm3DSimulation._SigY = 0.0f;
-                    mpm3DSimulation._E = 1e7f;
-                    mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
-                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
-                    mpm3DSimulation.damping = 200f;
                     mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Von_Mises;
-                    mpm3DSimulation.Init_materials();
-                    mpm3DSimulation.Update_materials();
-                }
-                else if (dropdown.options[value].text == "Clay")
-                {
+                    mpm3DSimulation._E = 1e7f;
                     mpm3DSimulation._SigY = 1e6f;
-                    mpm3DSimulation._E = 1e7f;
-                    mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
-                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
-                    mpm3DSimulation.damping = 200f;
-                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Von_Mises;
                     mpm3DSimulation.Init_materials();
                     mpm3DSimulation.Update_materials();
+                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Default_Clay;
                 }
-                else if (dropdown.options[value].text == "Elastic_Material")
+                else if (dropdown.options[value].text == "Soft Clay")
                 {
-                    mpm3DSimulation._SigY = 1e7f;
+                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Von_Mises;
                     mpm3DSimulation._E = 1e7f;
-                    mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
-                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
-                    mpm3DSimulation.damping = 200f;
-                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Elastic;
+                    mpm3DSimulation._SigY = 4e5f;
                     mpm3DSimulation.Init_materials();
                     mpm3DSimulation.Update_materials();
+                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Soft_Clay;
                 }
+                else if (dropdown.options[value].text == "Clamp Plasticity")
+                {
+                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Clamp;
+                    mpm3DSimulation._E = 1e7f;
+                    mpm3DSimulation._SigY = 1e6f;
+                    mpm3DSimulation.Init_materials();
+                    mpm3DSimulation.Update_materials();
+                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Clamp_Plasticity;
+                } 
+                else if (dropdown.options[value].text == "Drucker Plasticity")
+                {
+                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Drucker_Prager;
+                    mpm3DSimulation._E = 1e7f;
+                    mpm3DSimulation._SigY = 1e6f;
+                    mpm3DSimulation.Init_materials();
+                    mpm3DSimulation.Update_materials();
+                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Drucker_Plasticity;
+                }
+                ShowSelectedObjectInfo();
             }
         }
         if (dropdown.name == "Dropdown_PlasticityType")
@@ -1410,8 +1414,8 @@ class UIManagerNew : MonoBehaviour
         {
             // Position and name
             Vector3 position = sceneCamera.transform.position + sceneCamera.transform.forward * 0.1f;
-            position.x -= 0.2f;
-            position.y -= 0.2f;
+            position.x -= 0.1f;
+            position.y -= 0.3f;
             position.z += 0.2f;
             Quaternion rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
 
@@ -1491,7 +1495,7 @@ class UIManagerNew : MonoBehaviour
         // Move the UI canvas according to the hand position
         if (!FixUIPosition)
         {
-            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.4f;
+            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.4f - sceneCamera.transform.up * 0.2f;
             UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
             UI_canvas.transform.position = UI_anchor.position + canvas_anchor_offset;
             UI_canvas.transform.rotation = UI_anchor.rotation;

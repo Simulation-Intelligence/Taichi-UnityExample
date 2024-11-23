@@ -41,10 +41,10 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public enum MaterialType
     {
-        Customize,
-        Clay,
-        Dough,
-        Elastic_Material
+        Default_Clay,
+        Soft_Clay,
+        Clamp_Plasticity,
+        Drucker_Plasticity
     }
     public enum InitShape
     {
@@ -77,7 +77,7 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     private Material pointMaterial;
     [SerializeField]
-    public MaterialType materialType = MaterialType.Customize;
+    public MaterialType materialType = MaterialType.Default_Clay;
     [SerializeField]
     public PlasticityType plasticityType = PlasticityType.Von_Mises;
     [SerializeField]

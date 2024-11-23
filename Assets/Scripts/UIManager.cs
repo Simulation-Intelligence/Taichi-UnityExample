@@ -1172,43 +1172,43 @@ class UIManager : MonoBehaviour
         }
         if (dropdown.name == "Dropdown_MaterialType")
         {
-            if (selectedObject != null)
-            {
-                var mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-                if (dropdown.options[value].text == "Dough")
-                {
-                    mpm3DSimulation._SigY = 0.0f;
-                    mpm3DSimulation._E = 1e7f;
-                    mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
-                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
-                    mpm3DSimulation.damping = 200f;
-                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Von_Mises;
-                    mpm3DSimulation.Init_materials();
-                    mpm3DSimulation.Update_materials();
-                }
-                else if (dropdown.options[value].text == "Clay")
-                {
-                    mpm3DSimulation._SigY = 1e6f;
-                    mpm3DSimulation._E = 1e7f;
-                    mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
-                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
-                    mpm3DSimulation.damping = 200f;
-                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Von_Mises;
-                    mpm3DSimulation.Init_materials();
-                    mpm3DSimulation.Update_materials();
-                }
-                else if (dropdown.options[value].text == "Elastic_Material")
-                {
-                    mpm3DSimulation._SigY = 1e7f;
-                    mpm3DSimulation._E = 1e7f;
-                    mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
-                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
-                    mpm3DSimulation.damping = 200f;
-                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Elastic;
-                    mpm3DSimulation.Init_materials();
-                    mpm3DSimulation.Update_materials();
-                }
-            }
+            // if (selectedObject != null)
+            // {
+            //     var mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+            //     if (dropdown.options[value].text == "Dough")
+            //     {
+            //         mpm3DSimulation._SigY = 0.0f;
+            //         mpm3DSimulation._E = 1e7f;
+            //         mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
+            //         mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
+            //         mpm3DSimulation.damping = 200f;
+            //         mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Von_Mises;
+            //         mpm3DSimulation.Init_materials();
+            //         mpm3DSimulation.Update_materials();
+            //     }
+            //     else if (dropdown.options[value].text == "Clay")
+            //     {
+            //         mpm3DSimulation._SigY = 1e6f;
+            //         mpm3DSimulation._E = 1e7f;
+            //         mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
+            //         mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
+            //         mpm3DSimulation.damping = 200f;
+            //         mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Von_Mises;
+            //         mpm3DSimulation.Init_materials();
+            //         mpm3DSimulation.Update_materials();
+            //     }
+            //     else if (dropdown.options[value].text == "Elastic_Material")
+            //     {
+            //         mpm3DSimulation._SigY = 1e7f;
+            //         mpm3DSimulation._E = 1e7f;
+            //         mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
+            //         mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
+            //         mpm3DSimulation.damping = 200f;
+            //         mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Elastic;
+            //         mpm3DSimulation.Init_materials();
+            //         mpm3DSimulation.Update_materials();
+            //     }
+            // }
         }
         if (dropdown.name == "Dropdown_PlasticityType")
         {
