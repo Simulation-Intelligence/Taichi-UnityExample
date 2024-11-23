@@ -17,7 +17,7 @@ class UIManagerNew : MonoBehaviour
     // public GameObject Mpm3DObject_4;
     // public GameObject Mpm3DObject_5;
     // public GameObject Mpm3DObject_6;
-    
+
     [SerializeField]
     private SmoothHand leftSmoothHand;
     [SerializeField]
@@ -28,7 +28,7 @@ class UIManagerNew : MonoBehaviour
     private GameObject MatTool_Hand_Right;
     public PinchGesture pinchGestureLeft;
     public PinchGesture pinchGestureRight;
-    
+
     [SerializeField]
     private GameObject colorPickerObject;
     private ColorPicker colorPicker;
@@ -69,7 +69,7 @@ class UIManagerNew : MonoBehaviour
     public TMP_InputField[] tmpInputFields;
     public GameObject[] parameterObjects;
     public TouchScreenKeyboard overlayKeyboard;
-    
+
     // Tools
     private Dictionary<string, MpmTool> mpmToolDict = new Dictionary<string, MpmTool>();
     private Dictionary<string, MatTool> matToolDict = new Dictionary<string, MatTool>();
@@ -187,7 +187,7 @@ class UIManagerNew : MonoBehaviour
         //     SelectTools(Mpm3DObject_2, "MatTool_Hand_Left", "MatTool_Hand_Right");
         // }
     }
-    
+
     void InstantiateTools()
     {
         // Instantiate all mat tools at the beginning, either hands gameobject or prefabs
@@ -295,7 +295,7 @@ class UIManagerNew : MonoBehaviour
                                 Debug.Log("Merge object " + selectedObject.name + " with object " + objectToMerge.name);
                                 isMerging = false;
                                 mergePrompt.SetActive(false);
-                                removedObjectLists.Add(objectToMerge); // Need to distroy the merged object
+                                //removedObjectLists.Add(objectToMerge); // Need to distroy the merged object
                                 objectToMerge = null;
                                 foreach (Button button in buttons)
                                 {
@@ -337,7 +337,7 @@ class UIManagerNew : MonoBehaviour
                     {
                         var _grabbable = selectedObject.GetComponent<Grabbable>();
                         _grabbable.MaxGrabPoints = 0;
-                    } 
+                    }
                     else
                     {
                         var _grabbable = selectedObject.GetComponent<Grabbable>();
@@ -346,7 +346,7 @@ class UIManagerNew : MonoBehaviour
                 }
             }
         }
-        
+
         // Distroy the removed objects
         if (removedObjectLists.Count > 0)
         {
@@ -519,7 +519,7 @@ class UIManagerNew : MonoBehaviour
             parameter_text.text = "Radius";
             ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.5f;
             prefabName = "Sphere";
-            
+
             // Adjust UI background
             RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
             Vector2 sizeDelta = rectTransform_1.sizeDelta;
@@ -535,7 +535,7 @@ class UIManagerNew : MonoBehaviour
             parameter_text.text = "Size";
             ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.5f;
             prefabName = "Cube";
-            
+
             // Adjust UI background
             RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
             Vector2 sizeDelta = rectTransform_1.sizeDelta;
@@ -555,7 +555,7 @@ class UIManagerNew : MonoBehaviour
             parameter_text_2.text = "Cylinder Radius";
             ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.05f;
             prefabName = "Cylinder";
-            
+
             // Adjust UI background
             RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
             Vector2 sizeDelta = rectTransform_1.sizeDelta;
@@ -575,7 +575,7 @@ class UIManagerNew : MonoBehaviour
             parameter_text_2.text = "Torus Tube Radius";
             ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.05f;
             prefabName = "Torus";
-            
+
             // Adjust UI background
             RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
             Vector2 sizeDelta = rectTransform_1.sizeDelta;
@@ -584,14 +584,14 @@ class UIManagerNew : MonoBehaviour
             RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
             rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 280);
         }
-        
+
         // Create object based on shape parameters
         if (button.name == "Button_Confirm")
         {
             ShapeParameterObject_1.SetActive(false);
             ShapeParameterObject_2.SetActive(false);
             CreateMpm3DObjectFromPrefab();
-            
+
             // Adjust UI background
             RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
             Vector2 sizeDelta = rectTransform_1.sizeDelta;
@@ -710,7 +710,9 @@ class UIManagerNew : MonoBehaviour
                             if (initialText == "Export My Creation")
                             {
                                 _button.GetComponentInChildren<TMP_Text>().text = "Exported!";
-                            } else {
+                            }
+                            else
+                            {
                                 _button.GetComponentInChildren<TMP_Text>().text = "Export My Creation";
                             }
                         }
@@ -974,7 +976,9 @@ class UIManagerNew : MonoBehaviour
                     sizeDelta.x = 2700;
                     rectTransform.sizeDelta = sizeDelta;
                     RightSidePanel.SetActive(true);
-                } else {
+                }
+                else
+                {
                     Vector2 sizeDelta = rectTransform.sizeDelta;
                     sizeDelta.x = 1800;
                     rectTransform.sizeDelta = sizeDelta;
@@ -1006,7 +1010,9 @@ class UIManagerNew : MonoBehaviour
                         }
                     }
                 }
-            } else {
+            }
+            else
+            {
                 if (!PinchParameterObject_1.activeSelf)
                 {
                     PinchParameterObject_1.SetActive(true);
@@ -1048,7 +1054,9 @@ class UIManagerNew : MonoBehaviour
                         }
                     }
                 }
-            } else {
+            }
+            else
+            {
                 if (!PinchParameterObject_1.activeSelf)
                 {
                     PinchParameterObject_1.SetActive(true);
@@ -1099,7 +1107,9 @@ class UIManagerNew : MonoBehaviour
                 rectTransform_1.sizeDelta = sizeDelta;
                 RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
                 rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 120);
-            } else {
+            }
+            else
+            {
                 RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
                 Vector2 sizeDelta = rectTransform_1.sizeDelta;
                 sizeDelta.y -= 120;
@@ -1345,6 +1355,43 @@ class UIManagerNew : MonoBehaviour
         }
         if (dropdown.name == "Dropdown_MaterialType")
         {
+            if (selectedObject != null)
+            {
+                var mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                if (dropdown.options[value].text == "Dough")
+                {
+                    mpm3DSimulation._SigY = 0.0f;
+                    mpm3DSimulation._E = 1e7f;
+                    mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
+                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
+                    mpm3DSimulation.damping = 200f;
+                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Von_Mises;
+                    mpm3DSimulation.Init_materials();
+                    mpm3DSimulation.Update_materials();
+                }
+                else if (dropdown.options[value].text == "Clay")
+                {
+                    mpm3DSimulation._SigY = 1e6f;
+                    mpm3DSimulation._E = 1e7f;
+                    mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
+                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
+                    mpm3DSimulation.damping = 200f;
+                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Von_Mises;
+                    mpm3DSimulation.Init_materials();
+                    mpm3DSimulation.Update_materials();
+                }
+                else if (dropdown.options[value].text == "Elastic_Material")
+                {
+                    mpm3DSimulation._SigY = 1e7f;
+                    mpm3DSimulation._E = 1e7f;
+                    mpm3DSimulation.stressType = Mpm3DMarching.StressType.NeoHookean;
+                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Dough;
+                    mpm3DSimulation.damping = 200f;
+                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Elastic;
+                    mpm3DSimulation.Init_materials();
+                    mpm3DSimulation.Update_materials();
+                }
+            }
         }
         if (dropdown.name == "Dropdown_PlasticityType")
         {
@@ -1464,7 +1511,7 @@ class UIManagerNew : MonoBehaviour
                     int grid_size = mpm3DSimulation.GetGridSize(); // grid size
                     string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size).ToString();
                     valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
-                    
+
                     // Update rendering smooth iterations in UI
                     string initial_text_smooth = valueAdjustSmoothness.GetComponent<Text>().text;
                     int smooth_value = mpm3DSimulation.GetSmoothingIterations(); // smooth iterations
@@ -1602,11 +1649,11 @@ class UIManagerNew : MonoBehaviour
             }
             UI_canvas.SetActive(true);
 
-            // Move the UI canvas to the hand position
-            UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.3f;
-            UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
-            UI_canvas.transform.position = UI_anchor.position + canvas_anchor_offset;
-            UI_canvas.transform.rotation = UI_anchor.rotation;
+            // // Move the UI canvas to the hand position
+            // UI_anchor.position = handThumbTipPosition + sceneCamera.transform.forward * 0.3f;
+            // UI_anchor.rotation = Quaternion.LookRotation(sceneCamera.transform.forward);
+            // UI_canvas.transform.position = UI_anchor.position + canvas_anchor_offset;
+            // UI_canvas.transform.rotation = UI_anchor.rotation;
         }
     }
 
