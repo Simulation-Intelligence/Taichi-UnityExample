@@ -413,9 +413,9 @@ MonoBehaviour:
   initShape: 1
   g: {x: 0, y: 0, z: 0}
   gy: 0
-  n_grid: 64
+  n_grid: 32
   bound: 3
-  render_n_grid: 128
+  render_n_grid: 64
   gaussian_simulate_ratio: 0.5
   use_gaussian_acceleration: 0
   lerp_tool: 1

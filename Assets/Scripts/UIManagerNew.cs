@@ -672,7 +672,7 @@ class UIManagerNew : MonoBehaviour
                 Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                 foreach (GameObject parameter in parameterObjects)
                 {
-                    if (parameter.name == "Parameter_Pinch_Force")
+                    if (parameter.name == "Parameter_Pinch_Force_Ratio")
                     {
                         mpm3DSimulation.SetPinchForceRatio(parameter.GetComponentInChildren<Slider>().value);
                     }
@@ -1579,7 +1579,7 @@ class UIManagerNew : MonoBehaviour
                         {
                             parameter.GetComponentInChildren<Slider>().value = pinchGestureLeft.pinchRadius;
                         }
-                        if (parameter.name == "Parameter_Pinch_Force")
+                        if (parameter.name == "Parameter_Pinch_Force_Ratio")
                         {
                             parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.GetPinchForceRatio();
                         }

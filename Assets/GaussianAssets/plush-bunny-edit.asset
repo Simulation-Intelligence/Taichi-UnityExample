@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: plush-bunny-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 118246
+  m_BoundsMin: {x: -1.203028, y: -1.6584686, z: 1.3981923}
+  m_BoundsMax: {x: 1.3746446, y: 1.0957942, z: 2.7216592}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 70cd1d8c90f3f6bd32873bcb5a0d4800
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 93e75dfe9abca0d479076f61756c4fde, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 8eea7d9167ecd9e45b0eddc90e831b7e, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 794d8fb06df17ff46bb6ff4749b8437d, type: 3}
+  m_SHData: {fileID: 4900000, guid: bc43e039c828a8243a448b48c1b91a2c, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

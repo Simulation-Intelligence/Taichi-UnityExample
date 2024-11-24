@@ -54503,8 +54503,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 777508262}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.21367165, y: -0.22315313, z: 0.15846807, w: 0.937782}
-  m_LocalPosition: {x: -0.25, y: 1.971, z: 0.931}
+  m_LocalRotation: {x: 0.12771943, y: -0.20785761, z: 0.17805815, w: 0.9532986}
+  m_LocalPosition: {x: -0.25, y: 1.97, z: 0.82}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -54512,7 +54512,7 @@ Transform:
   - {fileID: 845131902}
   - {fileID: 422189619}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 28.13, y: -23.441, z: 13.232}
+  m_LocalEulerAnglesHint: {x: 18.514, y: -21.713, z: 17.579}
 --- !u!114 &777508270
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -159016,8 +159016,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6346840257109693302}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.788, y: 0.274, z: 0.357}
+  m_LocalRotation: {x: -0.057732165, y: -0.015859688, z: -0.9982057, w: 0.0009172632}
+  m_LocalPosition: {x: 0.02, y: 0.442, z: 0.272}
   m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -159027,7 +159027,7 @@ Transform:
   - {fileID: 3044940610915310528}
   - {fileID: 8004707438724406298}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 181.82, y: 186.62, z: 0}
 --- !u!4 &3850581632207887600
 Transform:
   m_ObjectHideFlags: 0
@@ -159037,7 +159037,7 @@ Transform:
   m_GameObject: {fileID: 6346840257241395886}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.621, y: 0.339, z: -0.05}
+  m_LocalPosition: {x: -0.621, y: 0.107, z: 0.376}
   m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -159303,31 +159303,31 @@ MonoBehaviour:
   plasticityType: 0
   stressType: 0
   loadfromfile: 0
-  file_path: particle_data.txt
+  file_path: .\Exported3DModels\full_burger.txt
   RunSimulation: 0
   splatManager: {fileID: 4401015504029462390}
   marchingCubeVisualizers:
   - {fileID: 6652588665667749096}
   _builderCompute: {fileID: 0}
   copyShader: {fileID: 7200000, guid: 1d32da0d43641244b9432112ab3ce4b8, type: 3}
-  initShape: 3
+  initShape: 1
   g: {x: 0, y: 0, z: 0}
   gy: 0
-  n_grid: 64
+  n_grid: 32
   bound: 3
-  render_n_grid: 128
+  render_n_grid: 64
   gaussian_simulate_ratio: 0.5
   use_gaussian_acceleration: 0
   lerp_tool: 1
   adjust_particle: 1
   smooth_iter: 10
-  bounding_eps: 0.1
+  bounding_eps: 0.2
   max_dt: 0.0001
   frame_time: 0.002
   particle_per_grid: 8
   allowed_cfl: 0.5
   damping: 200
-  cube_size: 0.8
+  cube_size: 0.5
   cylinder_length: 0.8
   cylinder_radius: 0.02
   torus_radius: 0.3
@@ -159377,8 +159377,8 @@ MonoBehaviour:
   materialType: 0
   plasticityType: 0
   stressType: 0
-  loadfromfile: 0
-  file_path: E:\VR Project\Tachi_mpm\Exported3DModels\data.txt
+  loadfromfile: 1
+  file_path: .\Exported3DModels\Test_Example_1.txt
   RunSimulation: 1
   splatManager: {fileID: 4401015505771564718}
   marchingCubeVisualizers:
@@ -159388,15 +159388,15 @@ MonoBehaviour:
   initShape: 1
   g: {x: 0, y: 0, z: 0}
   gy: 0
-  n_grid: 64
+  n_grid: 32
   bound: 3
-  render_n_grid: 128
+  render_n_grid: 64
   gaussian_simulate_ratio: 0.5
   use_gaussian_acceleration: 0
   lerp_tool: 1
   adjust_particle: 1
   smooth_iter: 10
-  bounding_eps: 0.1
+  bounding_eps: 0.2
   max_dt: 0.0001
   frame_time: 0.002
   particle_per_grid: 8
@@ -159479,7 +159479,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 371dcae7f7954b74d8dbbf4d1163953d, type: 2}
+  m_Asset: {fileID: 11400000, guid: 4af0ee04431cbf140848ea2d1b69e1e9, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -159507,7 +159507,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: ca3c6ee8c4700f348ad639f0c7cfd99c, type: 2}
+  m_Asset: {fileID: 11400000, guid: 4af0ee04431cbf140848ea2d1b69e1e9, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
