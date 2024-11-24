@@ -326,8 +326,8 @@ class UIManagerNew : MonoBehaviour
             {
                 // Visualize pinch gesture spheres when enabled
                 pinchGestureLeft.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
-                pinchGestureLeft.RenderRotationSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
                 pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
+                pinchGestureLeft.RenderRotationSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
                 pinchGestureRight.RenderRotationSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
 
                 // Disable object grab when pinch gesture is enabled, avoiding unexpected rotation
@@ -1173,7 +1173,7 @@ class UIManagerNew : MonoBehaviour
             }
         }
         // Enable/Disable the gravity
-        if (toggle.name == "Toggle_Gravity")
+        if (toggle.name == "Toggle_EnableGravity")
         {
             if (selectedObject != null)
             {
