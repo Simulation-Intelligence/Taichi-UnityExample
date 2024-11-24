@@ -29,6 +29,8 @@ namespace MarchingCubes
         int VoxelCount => _dimensions.x * _dimensions.y * _dimensions.z;
 
         public ComputeBuffer _voxelBuffer;
+
+        public int _smoothingIterations = 0;
         MeshBuilder _builder;
 
         #endregion
@@ -49,6 +51,7 @@ namespace MarchingCubes
 
         void Update()
         {
+            // _builder._smoothingIterations = _smoothingIterations;
             if (!shouldUpdate)
             {
                 return;
