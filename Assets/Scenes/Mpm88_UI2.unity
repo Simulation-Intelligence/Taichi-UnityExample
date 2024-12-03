@@ -159017,7 +159017,7 @@ Transform:
   m_GameObject: {fileID: 6346840257109693302}
   serializedVersion: 2
   m_LocalRotation: {x: -0.057732165, y: -0.015859688, z: -0.9982057, w: 0.0009172632}
-  m_LocalPosition: {x: 0.02, y: 0.442, z: 0.272}
+  m_LocalPosition: {x: 0.392, y: 0.442, z: 0.272}
   m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -159036,8 +159036,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6346840257241395886}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.621, y: 0.107, z: 0.376}
+  m_LocalRotation: {x: -0, y: -0, z: -0.9973233, w: 0.07311903}
+  m_LocalPosition: {x: -0.514, y: 0.348, z: 0.376}
   m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -159047,7 +159047,7 @@ Transform:
   - {fileID: 3044940610246883864}
   - {fileID: 8004707438860303810}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -171.614}
 --- !u!4 &3961826088232161563
 Transform:
   m_ObjectHideFlags: 0
@@ -159303,7 +159303,7 @@ MonoBehaviour:
   plasticityType: 0
   stressType: 0
   loadfromfile: 0
-  file_path: .\Exported3DModels\full_burger.txt
+  file_path: .\Exported3DModels\Mpm3DObject_4.txt
   RunSimulation: 0
   splatManager: {fileID: 4401015504029462390}
   marchingCubeVisualizers:
@@ -159313,9 +159313,9 @@ MonoBehaviour:
   initShape: 1
   g: {x: 0, y: 0, z: 0}
   gy: 0
-  n_grid: 32
+  n_grid: 64
   bound: 3
-  render_n_grid: 64
+  render_n_grid: 128
   gaussian_simulate_ratio: 0.5
   use_gaussian_acceleration: 0
   lerp_tool: 1
@@ -159377,8 +159377,8 @@ MonoBehaviour:
   materialType: 0
   plasticityType: 0
   stressType: 0
-  loadfromfile: 1
-  file_path: .\Exported3DModels\Test_Example_1.txt
+  loadfromfile: 0
+  file_path: .\Exported3DModels\Mpm3DObject_2.txt
   RunSimulation: 1
   splatManager: {fileID: 4401015505771564718}
   marchingCubeVisualizers:
@@ -159388,9 +159388,9 @@ MonoBehaviour:
   initShape: 1
   g: {x: 0, y: 0, z: 0}
   gy: 0
-  n_grid: 32
+  n_grid: 64
   bound: 3
-  render_n_grid: 64
+  render_n_grid: 128
   gaussian_simulate_ratio: 0.5
   use_gaussian_acceleration: 0
   lerp_tool: 1
@@ -159479,7 +159479,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 4af0ee04431cbf140848ea2d1b69e1e9, type: 2}
+  m_Asset: {fileID: 11400000, guid: 55824d6ba569f514ab01d140e387cbde, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3
@@ -159507,7 +159507,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c12d929a7f62c48adbe9ff45c9a33ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Asset: {fileID: 11400000, guid: 4af0ee04431cbf140848ea2d1b69e1e9, type: 2}
+  m_Asset: {fileID: 11400000, guid: 55824d6ba569f514ab01d140e387cbde, type: 2}
   m_SplatScale: 1
   m_OpacityScale: 1
   m_SHOrder: 3

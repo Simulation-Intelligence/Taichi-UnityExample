@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: tabby-cat-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 99246
+  m_BoundsMin: {x: -0.68965274, y: -1.0857506, z: -0.3768879}
+  m_BoundsMax: {x: 0.83766866, y: 1.287921, z: 1.1062421}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 0d0d251c9847efe9c3ef49340a0ad325
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 3c21e5a3d6a51f543b082ece18706a38, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 1f31bf5dc5d97d941bbdc0cf3338323a, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 258428c44df03fd44943d3c47da3f388, type: 3}
+  m_SHData: {fileID: 4900000, guid: d0a975a5711730642b905033b54023ea, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: P3-red-pig-magic-wand
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 117017
+  m_BoundsMin: {x: 0.28386655, y: 0.22465657, z: 0.20119849}
+  m_BoundsMax: {x: 0.718701, y: 0.7766725, z: 0.7956497}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 0c59189af9397083b7743f34b20722d1
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 91242fd25c2e76346963ee30dc53d5fd, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 296550780817cae44a13c014f1ea4c57, type: 3}
+  m_OtherData: {fileID: 4900000, guid: c9954ba64b2cbdf4ab1c40c72f5178be, type: 3}
+  m_SHData: {fileID: 4900000, guid: 8117008c4d50a0648a4bda4d8a9f2158, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: pumpkin_wizard-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 72624
+  m_BoundsMin: {x: -0.9844729, y: -1.0949357, z: -0.54724526}
+  m_BoundsMax: {x: 1.0581657, y: 1.3301373, z: 0.95817643}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 3dcf350eb24d39212f52e5f3313b7c36
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 4cbe7ed13b8e3d74488ca8b46f2cec8e, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 40f8d30444a81f14085b047b3b35d770, type: 3}
+  m_OtherData: {fileID: 4900000, guid: d7effa12722e6ed42b9a2ad82281c5c9, type: 3}
+  m_SHData: {fileID: 4900000, guid: 9e280aaf4e3e63b41ad0469508b23597, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

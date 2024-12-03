@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: dancing-women-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 148506
+  m_BoundsMin: {x: -0.43669447, y: -1.4801884, z: -0.6695909}
+  m_BoundsMax: {x: 0.58972293, y: 1.3653808, z: 1.1517872}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 77101b91e2e13e0d1215e50735a1c2ff
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 098448fe276d46a4bb0e29fa2e64d8d7, type: 3}
+  m_ColorData: {fileID: 4900000, guid: d7e9080926326f74f9d9e77322e1cffe, type: 3}
+  m_OtherData: {fileID: 4900000, guid: a554638ee15b9494696430cb12958075, type: 3}
+  m_SHData: {fileID: 4900000, guid: 73db8b1b5a2034a4795a564e80e00a86, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
