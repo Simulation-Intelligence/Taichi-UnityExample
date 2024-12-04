@@ -29,7 +29,7 @@ public class Mpm3DMarching : MonoBehaviour
      _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
      _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
      _Kernel_substep_calculate_mat_sdf, _Kernel_substep_adjust_particle_mat,
-     _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_init_sphere, _Kernel_init_cylinder, _Kernel_init_torus,
+     _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_recenter_to_unit_cube, _Kernel_init_sphere, _Kernel_init_cylinder, _Kernel_init_torus,
      _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi, _Kernel_substep_p2marching,
         _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_3dim1, _Kernel_copy_array_3dim3, _Kernel_copy_array_1dim1I, _Kernel_init_sample_gaussian_data, _Kernel_substep_update_dg;
 
@@ -295,6 +295,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_init_gaussian_data = kernels["init_gaussian_data"];
             _Kernel_substep_update_gaussian_data = kernels["substep_update_gaussian_data"];
             _Kernel_scale_to_unit_cube = kernels["scale_to_unit_cube"];
+            _Kernel_recenter_to_unit_cube = kernels["recenter_to_unit_cube"];
 
             _Kernel_normalize_m = kernels["normalize_m"];
             _Kernel_init_sphere = kernels["init_sphere"];
@@ -1489,7 +1490,9 @@ public class Mpm3DMarching : MonoBehaviour
         {
             if (use_gaussian_acceleration)
             {
-                _Kernel_scale_to_unit_cube.LaunchAsync(x_gaussian, other_data, bounding_eps);
+                // _Kernel_scale_to_unit_cube.LaunchAsync(x, other_data, bounding_eps);
+                // _Kernel_scale_to_unit_cube.LaunchAsync(x_gaussian, other_data, bounding_eps);
+                _Kernel_recenter_to_unit_cube.LaunchAsync(x_gaussian, x, other_data, bounding_eps);
             }
             else
             {

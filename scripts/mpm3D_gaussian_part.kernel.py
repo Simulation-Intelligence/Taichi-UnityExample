@@ -980,7 +980,54 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             other_data[i][1] = scaleFactor * other_data[i][1]
             other_data[i][2] = scaleFactor * other_data[i][2]
             other_data[i][3] = scaleFactor * other_data[i][3]
+    
+    @ti.kernel
+    def recenter_to_unit_cube(x_gaussian: ti.types.ndarray(ndim=1), x: ti.types.ndarray(ndim=1), other_data: ti.types.ndarray(ndim=1), eps:ti.f32):
+        # Calculate the bounding box of all particls
+        min_val = ti.Vector([float('inf'), float('inf'), float('inf')])
+        max_val = ti.Vector([float('-inf'), float('-inf'), float('-inf')])
+        for j in range(1):  
+            for i in x_gaussian:
+                # Update min_val for the bounding box
+                if x_gaussian[i][0] < min_val[0]:
+                    min_val[0] = x_gaussian[i][0]
+                if x_gaussian[i][1] < min_val[1]:
+                    min_val[1] = x_gaussian[i][1]
+                if x_gaussian[i][2] < min_val[2]:
+                    min_val[2] = x_gaussian[i][2]
+                # Update max_val for the bounding box
+                if x_gaussian[i][0] > max_val[0]:
+                    max_val[0] = x_gaussian[i][0]
+                if x_gaussian[i][1] > max_val[1]:
+                    max_val[1] = x_gaussian[i][1]
+                if x_gaussian[i][2] > max_val[2]:
+                    max_val[2] = x_gaussian[i][2]
+        
+        center = (min_val + max_val) / 2.0
+        size = max_val - min_val
 
+        # Calculate the scaling factor based on the largest dimension
+        scaleFactor = (1.0 - 2 * eps) / ti.max(size[0], size[1], size[2])
+        # Define the center of the unit cube
+        new_center = ti.Vector([0.5, 0.5, 0.5])
+        
+        for i in x:
+            # Scale and translate
+            x[i] = (x[i] - center) * scaleFactor + new_center
+            # x[i] = x[i] - center + new_center
+            # Scale the corresponding values in other_data
+            other_data[i][1] = scaleFactor * other_data[i][1]
+            other_data[i][2] = scaleFactor * other_data[i][2]
+            other_data[i][3] = scaleFactor * other_data[i][3]
+        for i in x_gaussian:
+            # Scale and translate
+            x_gaussian[i] = (x_gaussian[i] - center) * scaleFactor + new_center
+            # x_gaussian[i] = x_gaussian[i] - center + new_center
+            # Scale the corresponding values in other_data
+            other_data[i][1] = scaleFactor * other_data[i][1]
+            other_data[i][2] = scaleFactor * other_data[i][2]
+            other_data[i][3] = scaleFactor * other_data[i][3]
+    
     @ti.kernel
     def copy_array_1dim1(src: ti.types.ndarray(ndim=1), dst:ti.types.ndarray(ndim=1)):
         for I in ti.grouped(src):
@@ -1170,6 +1217,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(init_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'other_data': other_data})
         mod.add_kernel(substep_update_gaussian_data, template_args={'init_rotation': init_rotation, 'init_scale': init_scale, 'dg': dg, 'other_data': other_data, 'init_sh': init_sh, 'sh': sh, 'x': x})
         mod.add_kernel(scale_to_unit_cube, template_args={'x': x, 'other_data': other_data})
+        mod.add_kernel(recenter_to_unit_cube, template_args={'x_gaussian': x, 'x': x, 'other_data': other_data})
 
         mod.add_kernel(normalize_m, template_args={'marching_m': marching_m})
         mod.add_kernel(transform_and_merge, template_args={'x1': x, 'x2': x, 'x3': x, 'mat2': mat2, 'mat3': mat3})
