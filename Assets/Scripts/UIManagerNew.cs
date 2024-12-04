@@ -650,6 +650,16 @@ class UIManagerNew : MonoBehaviour
                 mpm3DSimulation.Reset();
             }
         }
+        // Recenter the object with original parameters
+        if (button.name == "Button_RecenterObject")
+        {
+            if (selectedObject != null)
+            {
+                // Recenter the object to the visual box
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.RecenterObject();
+            }
+        }
         if (button.name == "Button_Pinch_Selection_Radius")
         {
             if (selectedObject != null)

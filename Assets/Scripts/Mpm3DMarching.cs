@@ -506,7 +506,6 @@ public class Mpm3DMarching : MonoBehaviour
 
         }
     }
-
     public void Init_gaussian_new()
     {
         if (!use_gaussian_acceleration)
@@ -1484,7 +1483,20 @@ public class Mpm3DMarching : MonoBehaviour
             Update_materials();
         }
     }
-
+    public void RecenterObject()
+    {
+        if (renderType == RenderType.GaussianSplat)
+        {
+            if (use_gaussian_acceleration)
+            {
+                _Kernel_scale_to_unit_cube.LaunchAsync(x_gaussian, other_data, bounding_eps);
+            }
+            else
+            {
+                _Kernel_scale_to_unit_cube.LaunchAsync(x, other_data, bounding_eps);
+            }
+        }
+    }
     void OnDestroy()
     {
         Dispose();
