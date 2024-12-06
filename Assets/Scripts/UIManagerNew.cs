@@ -28,6 +28,8 @@ class UIManagerNew : MonoBehaviour
     private GameObject MatTool_Hand_Right;
     public PinchGesture pinchGestureLeft;
     public PinchGesture pinchGestureRight;
+    public Material SimulationBoxMaterial;
+    public Material HighlightedSimulationBoxMaterial;
 
     [SerializeField]
     private GameObject colorPickerObject;
@@ -314,6 +316,7 @@ class UIManagerNew : MonoBehaviour
                         selectedObject = createdObject;
                         if (selectedObject != prevSelectedObject)
                         {
+                            HighlightSelectedObject();
                             ShowSelectedObjectInfo();
                             prevSelectedObject = selectedObject;
                         }
@@ -358,6 +361,22 @@ class UIManagerNew : MonoBehaviour
                 Destroy(removedObject);
             }
             removedObjectLists.Clear();
+        }
+    }
+
+    void HighlightSelectedObject()
+    {
+        if (prevSelectedObject != null && prevSelectedObject.transform.Find("Visuals") != null)
+        {
+            Transform VisualObject = prevSelectedObject.transform.Find("Visuals");
+            MeshRenderer meshRenderer = VisualObject.Find("Mesh").GetComponent<MeshRenderer>();
+            meshRenderer.material = SimulationBoxMaterial;
+        }
+        if (selectedObject != null && selectedObject.transform.Find("Visuals") != null)
+        {
+            Transform VisualObject = selectedObject.transform.Find("Visuals");
+            MeshRenderer meshRenderer = VisualObject.Find("Mesh").GetComponent<MeshRenderer>();
+            meshRenderer.material = HighlightedSimulationBoxMaterial;
         }
     }
 
@@ -1557,7 +1576,7 @@ class UIManagerNew : MonoBehaviour
                         {
                             toggle.isOn = mpm3DSimulation.GetIsStickyBoundary();
                         }
-                        if (toggle.name == "Toggle_Gravity")
+                        if (toggle.name == "Toggle_EnableGravity")
                         {
                             toggle.isOn = mpm3DSimulation.GetGravity() != 0.0f;
                         }

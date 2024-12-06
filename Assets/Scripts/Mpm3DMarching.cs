@@ -530,7 +530,7 @@ public class Mpm3DMarching : MonoBehaviour
         _Kernel_init_dg.LaunchAsync(dg);
         _Kernel_init_dg.LaunchAsync(dg_gaussian);
         _Kernel_scale_to_unit_cube.LaunchAsync(x_gaussian, other_data, bounding_eps);
-        _Kernel_init_sample_gaussian_data.LaunchAsync(x_gaussian, x);
+        _Kernel_init_sample_gaussian_data.LaunchAsync(x_gaussian, x); // Need to infill gaussian objects for sub-sampling
         _Kernel_init_gaussian_data.LaunchAsync(init_rotation, init_scale, other_data);
     }
     public void Init_materials()
@@ -1490,8 +1490,6 @@ public class Mpm3DMarching : MonoBehaviour
         {
             if (use_gaussian_acceleration)
             {
-                // _Kernel_scale_to_unit_cube.LaunchAsync(x, other_data, bounding_eps);
-                // _Kernel_scale_to_unit_cube.LaunchAsync(x_gaussian, other_data, bounding_eps);
                 _Kernel_recenter_to_unit_cube.LaunchAsync(x_gaussian, x, other_data, bounding_eps);
             }
             else

@@ -19,7 +19,7 @@ public class FPS : MonoBehaviour
             m_FPS = m_FrameUpdate / m_UpdateShowDeltaTime;
             m_UpdateShowDeltaTime = 0;
             m_FrameUpdate = 0;
-            FPS_Text.text = m_FPS.ToString("f1");
+            FPS_Text.text = m_FPS.ToString("f1") + " fps";
         }
     }
 
