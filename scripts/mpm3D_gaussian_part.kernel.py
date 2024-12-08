@@ -320,7 +320,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                               v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, use_sticky_cond: ti.i32,
                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
         for I in ti.grouped(grid_v):
-            pos = I * dx + dx * 0.5
+            pos = I * dx + dx * 0.5     
             # Check if the current position is within the specified bounding box
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
                 # # Normalize the velocity if the grid cell has mass

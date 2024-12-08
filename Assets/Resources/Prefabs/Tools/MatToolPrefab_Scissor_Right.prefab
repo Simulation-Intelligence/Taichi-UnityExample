@@ -70,7 +70,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   matTool: {fileID: 9088782870179109359}
-  material: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
+  material: {fileID: 2100000, guid: 39f87a2d73277e048b3e215ee15e97ee, type: 2}
   render_cylinder: 1
 --- !u!1001 &1756280488315985261
 PrefabInstance:
@@ -139,15 +139,15 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
+      objectReference: {fileID: 2100000, guid: 39f87a2d73277e048b3e215ee15e97ee, type: 2}
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[1]
       value: 
-      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
+      objectReference: {fileID: 2100000, guid: 39f87a2d73277e048b3e215ee15e97ee, type: 2}
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[2]
       value: 
-      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
+      objectReference: {fileID: 2100000, guid: 39f87a2d73277e048b3e215ee15e97ee, type: 2}
     - target: {fileID: 919132149155446097, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Name
       value: scissor_p1
@@ -234,15 +234,15 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
+      objectReference: {fileID: 2100000, guid: 39f87a2d73277e048b3e215ee15e97ee, type: 2}
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[1]
       value: 
-      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
+      objectReference: {fileID: 2100000, guid: 39f87a2d73277e048b3e215ee15e97ee, type: 2}
     - target: {fileID: -7511558181221131132, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Materials.Array.data[2]
       value: 
-      objectReference: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
+      objectReference: {fileID: 2100000, guid: 39f87a2d73277e048b3e215ee15e97ee, type: 2}
     - target: {fileID: 919132149155446097, guid: aeacfcc51474d0d4bb6fd6aea968d911, type: 3}
       propertyPath: m_Name
       value: scissor_p2

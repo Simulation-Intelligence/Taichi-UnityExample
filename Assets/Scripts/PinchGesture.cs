@@ -52,8 +52,8 @@ public class PinchGesture : MonoBehaviour
     // Visualize the selection area while pinch translation and rotation
     private GameObject pinchSphere;
     private GameObject rotationSphere;
-    public bool RenderPinchSphere = true; 
-    public bool RenderRotationSphere = true; 
+    public bool RenderPinchSphere = true;
+    public bool RenderRotationSphere = true;
 
     void Start()
     {
@@ -76,7 +76,7 @@ public class PinchGesture : MonoBehaviour
         if (hand.IsTracked && oculus_skeleton != null)
         {
             DetectPinch();
-            // DetectRotation();
+            DetectRotation();
         }
     }
 
@@ -191,7 +191,7 @@ public class PinchGesture : MonoBehaviour
             CreateOrUpdateRotationSphere(initialRotatePosition);
         }
     }
-    
+
     Transform GetBoneTransform(OVRSkeleton.BoneId boneId)
     {
         if (!UseSmoothHand)
@@ -214,7 +214,7 @@ public class PinchGesture : MonoBehaviour
         }
         return null;
     }
-    
+
     void CreateOrUpdatePinchSphere(Vector3 position)
     {
         if (pinchSphere == null && RenderPinchSphere)
@@ -236,7 +236,7 @@ public class PinchGesture : MonoBehaviour
 
             pinchSphere.GetComponent<Renderer>().material = transparentMaterial;
         }
-        
+
         if (pinchSphere != null)
             pinchSphere.transform.position = position;
     }
