@@ -139,6 +139,9 @@ public class Mpm3DMarching : MonoBehaviour
 
     public bool lerp_tool = false;
 
+
+    public bool use_grid_force = true;
+    public bool use_standard_mpm_boundary = false;
     public bool adjust_particle = true;
     [SerializeField]
     private int smooth_iter = 0;
@@ -176,7 +179,7 @@ public class Mpm3DMarching : MonoBehaviour
     private float fix_radius = 0.2f;
     // Use sticky boundary condition, 1 for sticky boundary, 0 for non-sticky boundary
     [SerializeField]
-    private int use_sticky_boundary = 1;
+    private bool use_sticky_boundary = true;
 
     [Header("Tools")]
     public List<MatTool> matTools = new List<MatTool>();
@@ -816,19 +819,17 @@ public class Mpm3DMarching : MonoBehaviour
                 // Use mid-air pinch gesture for traslation and rotation
                 ApplyPinchForce(leftPinchGesture, rightPinchGesture);
                 ApplyRotateForce(leftPinchGesture, rightPinchGesture);
-                //ApplyPinchForce(rightPinchGesture);
 
                 if (lerp_tool)
                 {
                     float lerp_factor = 1 - time_left / frame_time;
-                    _Kernel_substep_update_grid_v_lerp.LaunchAsync(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, hand_sdf_last, obstacle_normals_last, obstacle_velocities_last, lerp_factor, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                    _Kernel_substep_update_grid_v_lerp.LaunchAsync(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, hand_sdf_last, obstacle_normals_last, obstacle_velocities_last, lerp_factor, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary == true ? 1 : 0, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 }
                 else
-                    _Kernel_substep_update_grid_v.LaunchAsync(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                    _Kernel_substep_update_grid_v.LaunchAsync(grid_v, hand_sdf, obstacle_normals, obstacle_velocities,
+                    g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary == true ? 1 : 0, use_grid_force == true ? 1 : 0, use_standard_mpm_boundary == true ? 1 : 0,
+                     boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
-                // Fix the object in place during the modeling process by pinch gesture
-                // if (FixObject)
-                //     FixObjectByPinch(leftPinchGesture, rightPinchGesture);
 
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 _Kernel_substep_apply_plasticity.LaunchAsync(dg, x, E, nu, material, SigY, alpha, min_clamp, max_clamp, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
@@ -1206,11 +1207,11 @@ public class Mpm3DMarching : MonoBehaviour
 
     public void SetStickyBoundary(bool sticky)
     {
-        use_sticky_boundary = sticky ? 1 : 0;
+        use_sticky_boundary = sticky;
     }
     public bool GetIsStickyBoundary()
     {
-        return use_sticky_boundary == 1;
+        return use_sticky_boundary == true;
     }
     public void SetHandsimulationRadius(float radius)
     {

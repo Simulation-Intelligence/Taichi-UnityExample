@@ -317,7 +317,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                               obstacle_normals: ti.types.ndarray(ndim=3),
                               obstacle_velocities: ti.types.ndarray(ndim=3),
                               gx: float, gy: float, gz: float, k: float, damping: float, friction_k: float,
-                              v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, use_sticky_cond: ti.i32,
+                              v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, use_sticky_cond: ti.i32,use_grid_force: ti.i32,use_standard_mpm_boundary: ti.i32,
                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
         for I in ti.grouped(grid_v):
             pos = I * dx + dx * 0.5
@@ -335,10 +335,13 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     d = -sdf[I] # Calculate penetration depth
                     rel_v = grid_v[I] - obstacle_velocities[I] # Calculate relative velocity with respect to the obstacle
                     normal_v = rel_v.dot(obstacle_normals[I]) * obstacle_normals[I] # Calculate the normal component of the relative velocity
+                    if use_standard_mpm_boundary and normal_v.norm() > 0:
+                        grid_v[I] = obstacle_velocities[I] # Set velocity to obstacle velocity
                     delta_v = obstacle_normals[I] * d / dt * k - normal_v # Calculate the velocity correction due to collision
                     tangent_direction = (rel_v - normal_v).normalized() # Determine the tangential direction of the relative velocity
                     friction_force = friction_k * delta_v # Calculate the frictional force
-                    grid_v[I] += delta_v - friction_force * tangent_direction # Apply both the collision correction and the frictional force to the velocity
+                    if use_grid_force:
+                        grid_v[I] += delta_v - friction_force * tangent_direction # Apply both the collision correction and the frictional force to the velocity
                 # Enforce boundary conditions by setting velocity to zero if it points outside the grid at the boundaries
                 cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
                 if (use_sticky_cond):
@@ -1156,7 +1159,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_apply_force_field(grid_v,grid_m,0.5,0.5,0.5,0.2,0,0,0,min_x,max_x,min_y,max_y,min_z,max_z)
         substep_apply_force_field_two_hands(grid_v,grid_m,0.5,0.5,0.5,0.2,0,0,0,0.5,0.5,0.5,0.2,0,0,0,min_x,max_x,min_y,max_y,min_z,max_z)
         substep_apply_rotate_force_field_two_hands(grid_v,grid_m,0.5,0.5,0.5,0.2,0,0,0,0.5,0.5,0.5,0.2,0,0,0,min_x,max_x,min_y,max_y,min_z,max_z)
-        substep_update_grid_v(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_update_grid_v(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond,True,False,
+                               min_x, max_x, min_y, max_y, min_z, max_z)
         substep_update_grid_v_lerp(grid_v, hand_sdf, obstacle_normals, obstacle_velocities,hand_sdf, obstacle_normals, obstacle_velocities,0.5, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=1)
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
