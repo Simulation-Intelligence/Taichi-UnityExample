@@ -1010,7 +1010,6 @@ public class Mpm3DMarching : MonoBehaviour
         _Kernel_copy_array_1dim3.LaunchAsync(x, _x);
         _Kernel_copy_array_1dim1I.LaunchAsync(point_color, _pointColor);
         Runtime.Submit();
-
         // 创建数组存储数据
         float[] hostx = new float[NParticles * 3];
         int[] hostPointColor = new int[NParticles];
