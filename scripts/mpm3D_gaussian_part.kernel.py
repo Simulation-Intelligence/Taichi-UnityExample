@@ -179,10 +179,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def substep_p2g_multi(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
                     dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
                     E: ti.types.ndarray(ndim=1), nu: ti.types.ndarray(ndim=1), material: ti.types.ndarray(ndim=1),
-                    p_vol: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), dx: ti.f32, dt: ti.f32, 
+                    p_vol: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), dx: ti.f32, dt: ti.f32, use_unified_material: ti.i32,
                     min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for p in x:
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
+                E_p , nu_p , material_p ,p_vol_p, p_mass_p = 0.0, 0.0, 0, 0.0, 0.0
+                if(use_unified_material == 1):
+                    E_p, nu_p, material_p, p_vol_p, p_mass_p = E[0], nu[0], material[0], p_vol[0], p_mass[0]
+                else: 
+                    E_p , nu_p , material_p ,p_vol_p, p_mass_p = E[p], nu[p], material[p], p_vol[p], p_mass[p]
                 Xp = x[p] / dx
                 base = int(Xp - 0.5)
                 fx = Xp - base
@@ -190,12 +195,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
 
                 dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
 
-                mu = E[p] / (2 * (1 + nu[p]))
-                la = E[p] * nu[p] / ((1 + nu[p]) * (1 - 2 * nu[p]))
+                mu = E_p / (2 * (1 + nu_p))
+                la = E[p] * nu_p / ((1 + nu_p) * (1 - 2 * nu_p))
                 stress = ti.Matrix([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
-                plasticity_type = (material[p] >> 16) & 0xFFFF
+                plasticity_type = (material_p >> 16) & 0xFFFF
                 # Calculate stress based on material type
-                if material[p] & 0xFFFF == 1:  # kirchhoff
+                if material_p & 0xFFFF == 1:  # kirchhoff
                     U, sig, V = ti.svd(dg[p])
                     J_new = sig[0, 0] * sig[1, 1] * sig[2, 2]
                     if(plasticity_type==2):
@@ -203,30 +208,35 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         mu ,la = mu * h, la * h
                     stress = 2 * mu * (dg[p] - U @ V.transpose()) @ dg[p].transpose() + \
                              ti.Matrix.identity(float, dim) * la * J_new * (J_new - 1)
-                    stress = (-dt * p_vol[p] * 4) * stress / dx**2
+                    stress = (-dt * p_vol_p * 4) * stress / dx**2
                 else :  # neohookean
                     J = dg[p].determinant()
                     cauchy = mu * (dg[p] @ dg[p].transpose()) + ti.Matrix.identity(float, dim) * (la * ti.log(J) - mu)
-                    stress = -(dt * p_vol[p] * 4 / dx**2) * cauchy
+                    stress = -(dt * p_vol_p * 4 / dx**2) * cauchy
 
-                affine = stress + p_mass[p] * C[p]
+                affine = stress + p_mass_p * C[p]
 
                 for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
                     dpos = (offset - fx) * dx
                     weight = 1.0
                     for i in ti.static(range(dim)):
                         weight *= w[offset[i]][i]
-                    grid_v[base + offset] += weight * (p_mass[p] * v[p] + affine @ dpos)
-                    grid_m[base + offset] += weight * p_mass[p]
+                    grid_v[base + offset] += weight * (p_mass_p * v[p] + affine @ dpos)
+                    grid_m[base + offset] += weight * p_mass_p
 
     @ti.kernel
     def substep_p2marching(x: ti.types.ndarray(ndim=1),
                     point_color: ti.types.ndarray(ndim=1), marching_m: ti.types.ndarray(ndim=4),
-                    p_mass: ti.types.ndarray(ndim=1), 
+                    p_mass: ti.types.ndarray(ndim=1), use_unified_material: ti.i32,
                     min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         for p in x:
             dx_marching=1/marching_m.shape[1]
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
+                p_mass_p=0.0
+                if(use_unified_material == 1):
+                    p_mass_p=p_mass[0]
+                else: 
+                    p_mass_p=p_mass[p]
                 color=point_color[p]
                 Xp_marching = x[p] / dx_marching
                 base_marching = int(Xp_marching - 0.5)
@@ -236,19 +246,27 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     weight = 1.0
                     for i in ti.static(range(dim)):
                         weight *= w_marching[offset[i]][i]
-                    marching_m[color,base_marching + offset] += weight * p_mass[p]
+                    marching_m[color,base_marching + offset] += weight * p_mass_p
     
     @ti.kernel
     def substep_apply_plasticity(dg: ti.types.ndarray(ndim=1), x: ti.types.ndarray(ndim=1), 
                                  E: ti.types.ndarray(ndim=1), nu: ti.types.ndarray(ndim=1), 
                                  material: ti.types.ndarray(ndim=1), SigY: ti.types.ndarray(ndim=1), 
-                                 alpha: ti.types.ndarray(ndim=1), min_clamp: ti.types.ndarray(ndim=1), max_clamp: ti.types.ndarray(ndim=1),
+                                 alpha: ti.types.ndarray(ndim=1), min_clamp: ti.types.ndarray(ndim=1), max_clamp: ti.types.ndarray(ndim=1),use_unified_material: ti.i32,
                                  min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
         ratio = float(dg.shape[0]) / E.shape[0]
         for p in dg:
             p_ratio=int(p/ratio)
             # Check if the particle is within the specified simulation boundaries
             if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
+
+                E_p, nu_p, material_p, SigY_p, alpha_p, min_clamp_p, max_clamp_p = 0.0, 0.0, 0, 0.0, 0.0, 0.0, 0.0
+                if use_unified_material == 0:
+                    E_p, nu_p, material_p, SigY_p, alpha_p, min_clamp_p, max_clamp_p = E[p_ratio], nu[p_ratio], material[p_ratio], SigY[p_ratio], alpha[p_ratio], min_clamp[p_ratio], max_clamp[p_ratio]
+                else:
+                    E_p, nu_p, material_p, SigY_p, alpha_p, min_clamp_p, max_clamp_p = E[0], nu[0], material[0], SigY[0], alpha[0], min_clamp[0], max_clamp[0]
+
+
                 U, sig, V = ti.svd(dg[p])
                 sig_vec = ti.Vector([sig[i, i] for i in range(dim)])
                 
@@ -258,23 +276,23 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 epsilon_hat = epsilon - trace_epsilon / 3 * ti.Vector([1.0, 1.0, 1.0])
                 epsilon_hat_squared_norm = epsilon_hat.norm_sqr()
                 epsilon_hat_norm = ti.sqrt(epsilon_hat_squared_norm)
-                mu = E[p_ratio] / (2 * (1 + nu[p_ratio]))
-                la= E[p_ratio] * nu[p_ratio] / ((1 + nu[p_ratio]) * (1 - 2 * nu[p_ratio]))
+                mu = E_p / (2 * (1 + nu_p))
+                la= E_p * nu_p / ((1 + nu_p) * (1 - 2 * nu_p))
                 delta_gamma = 0.0
 
                 # Apply plasticity based on material type
-                plasticity_type = (material[p_ratio] >> 16) & 0xFFFF
+                plasticity_type = (material_p >> 16) & 0xFFFF
                 if plasticity_type == 2:  # Clamp plasticity type
                     for i in ti.static(range(dim)):
-                        sig[i, i] = min(max(sig[i, i], 1 - min_clamp[p_ratio]), 1 + max_clamp[p_ratio])
+                        sig[i, i] = min(max(sig[i, i], 1 - min_clamp_p), 1 + max_clamp_p)
                     dg[p] = U @ sig @ V.transpose()
                 else:
                     if plasticity_type == 1:  # Von_Mises plasticity type
-                        delta_gamma = epsilon_hat_norm - SigY[p_ratio] / (2 * mu)
+                        delta_gamma = epsilon_hat_norm - SigY_p / (2 * mu)
 
                     elif plasticity_type == 3:  # Drucker_Prager plasticity type
                         if trace_epsilon <= 0:
-                            delta_gamma = epsilon_hat_norm + (3 * la + 2 * mu) / (2 * mu) * trace_epsilon * alpha[p_ratio]
+                            delta_gamma = epsilon_hat_norm + (3 * la + 2 * mu) / (2 * mu) * trace_epsilon * alpha_p
                         else:
                             delta_gamma = epsilon_hat_norm
 
@@ -334,14 +352,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 if sdf[I] < 0:
                     d = -sdf[I] # Calculate penetration depth
                     rel_v = grid_v[I] - obstacle_velocities[I] # Calculate relative velocity with respect to the obstacle
-                    normal_v = rel_v.dot(obstacle_normals[I]) * obstacle_normals[I] # Calculate the normal component of the relative velocity
-                    if use_standard_mpm_boundary and normal_v.norm() > 0:
+                    normal_v_norm=rel_v.dot(obstacle_normals[I])
+                    normal_v = normal_v_norm * obstacle_normals[I] # Calculate the normal component of the relative velocity
+                    if use_standard_mpm_boundary and normal_v_norm <= 0:
                         grid_v[I] = obstacle_velocities[I] # Set velocity to obstacle velocity
-                    delta_v = obstacle_normals[I] * d / dt * k - normal_v # Calculate the velocity correction due to collision
+                    pressure_force = obstacle_normals[I] * d / dt * k - normal_v # Calculate the velocity correction due to collision
                     tangent_direction = (rel_v - normal_v).normalized() # Determine the tangential direction of the relative velocity
-                    friction_force = friction_k * delta_v # Calculate the frictional force
+                    friction_force = friction_k * pressure_force # Calculate the frictional force
                     if use_grid_force:
-                        grid_v[I] += delta_v - friction_force * tangent_direction # Apply both the collision correction and the frictional force to the velocity
+                        grid_v[I] += pressure_force - friction_force * tangent_direction # Apply both the collision correction and the frictional force to the velocity
                 # Enforce boundary conditions by setting velocity to zero if it points outside the grid at the boundaries
                 cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
                 if (use_sticky_cond):
@@ -416,15 +435,23 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                               obstacle_velocities_last: ti.types.ndarray(ndim=3),
                               ratio: ti.f32,
                               gx: ti.f32, gy: ti.f32, gz: ti.f32, k: ti.f32, damping: ti.f32, friction_k: ti.f32,
-                              v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, use_sticky_cond: ti.i32,use_grid_force: ti.i32,use_standard_mpm_boundary: ti.i32,
+                              v_allowed: ti.f32, dt: ti.f32, n_grid: ti.i32, dx: ti.f32, bound: ti.i32, use_sticky_cond: ti.i32,use_grid_force: ti.i32,use_standard_mpm_boundary: ti.i32, use_lerp: ti.i32,
                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z:ti.f32):
         for I in ti.grouped(grid_v):
             pos = I * dx + dx * 0.5
             # Check if the current position is within the specified bounding box
             if pos[0] > min_x and pos[0] < max_x and pos[1] > min_y and pos[1] < max_y and pos[2] > min_z and pos[2] < max_z:
-                sdf_lerp =sdf_last[I]+(sdf[I]-sdf_last[I])*ratio
-                obstacle_normals_lerp = obstacle_normals_last[I]+(obstacle_normals[I]-obstacle_normals_last[I])*ratio
-                obstacle_velocities_lerp = obstacle_velocities_last[I]+(obstacle_velocities[I]-obstacle_velocities_last[I])*ratio
+                sdf_lerp = 0.0 
+                obstacle_velocities_lerp = ti.Vector([0.0, 0.0, 0.0])
+                obstacle_normals_lerp = ti.Vector([0.0, 0.0, 0.0])
+                if  use_lerp:
+                    sdf_lerp =sdf_last[I]+(sdf[I]-sdf_last[I])*ratio
+                    obstacle_normals_lerp = obstacle_normals_last[I]+(obstacle_normals[I]-obstacle_normals_last[I])*ratio
+                    obstacle_velocities_lerp = obstacle_velocities_last[I]+(obstacle_velocities[I]-obstacle_velocities_last[I])*ratio
+                else:
+                    sdf_lerp = sdf[I]
+                    obstacle_normals_lerp = obstacle_normals[I]
+                    obstacle_velocities_lerp = obstacle_velocities[I]
                 # Apply gravitational force
                 gravity = ti.Vector([gx, gy, gz]) 
                 grid_v[I] += dt * gravity
@@ -433,14 +460,15 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 if sdf_lerp < 0:
                     d = -sdf_lerp # Calculate penetration depth
                     rel_v = grid_v[I] - obstacle_velocities_lerp # Calculate relative velocity with respect to the obstacle
-                    normal_v = rel_v.dot(obstacle_normals_lerp) * obstacle_normals_lerp # Calculate the normal component of the relative velocity
-                    if use_standard_mpm_boundary and normal_v.norm() > 0:
+                    normal_v_norm=rel_v.dot(obstacle_normals_lerp)
+                    normal_v = normal_v_norm * obstacle_normals_lerp # Calculate the normal component of the relative velocity
+                    if use_standard_mpm_boundary and normal_v_norm <= 0:
                         grid_v[I] = obstacle_velocities_lerp
-                    delta_v = obstacle_normals_lerp * d / dt * k - normal_v # Calculate the velocity correction due to collision
+                    pressure_force = obstacle_normals_lerp * d / dt * k - normal_v # Calculate the velocity correction due to collision
                     tangent_direction = (rel_v - normal_v).normalized() # Determine the tangential direction of the relative velocity
-                    friction_force = friction_k * delta_v # Calculate the frictional force
+                    friction_force = friction_k * pressure_force # Calculate the frictional force
                     if use_grid_force:
-                        grid_v[I] += delta_v - friction_force * tangent_direction # Apply both the collision correction and the frictional force to the velocity
+                        grid_v[I] += pressure_force - friction_force * tangent_direction # Apply both the collision correction and the frictional force to the velocity
                 # Enforce boundary conditions by setting velocity to zero if it points outside the grid at the boundaries
                 cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)
                 if (use_sticky_cond):
@@ -1153,8 +1181,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_p2g(x, v, C,  dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_p2g_multi(x, v, C,  dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_p2marching(x, point_color, marching_m, p_mass, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_p2g_multi(x, v, C,  dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, True,
+                           min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_p2marching(x, point_color, marching_m, p_mass,True,
+                            min_x, max_x, min_y, max_y, min_z, max_z)
         substep_calculate_signed_distance_field(obstacle_pos,sdf,obstacle_velocities,obstacle_radius,dx,dt,min_x,max_x,min_y,max_y,min_z,max_z)
         substep_calculate_hand_sdf(skeleton_segments, skeleton_velocities, hand_sdf, obstacle_normals, obstacle_velocities, skeleton_capsule_radius, dx, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_calculate_hand_hash(skeleton_segments, skeleton_capsule_radius, n_grid, hash_table, segments_count_per_cell)
@@ -1164,7 +1194,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_apply_rotate_force_field_two_hands(grid_v,grid_m,0.5,0.5,0.5,0.2,0,0,0,0.5,0.5,0.5,0.2,0,0,0,min_x,max_x,min_y,max_y,min_z,max_z)
         substep_update_grid_v(grid_v, hand_sdf, obstacle_normals, obstacle_velocities, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond,True,False,
                                min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_update_grid_v_lerp(grid_v, hand_sdf, obstacle_normals, obstacle_velocities,hand_sdf, obstacle_normals, obstacle_velocities,0.5, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, True,False,
+        substep_update_grid_v_lerp(grid_v, hand_sdf, obstacle_normals, obstacle_velocities,hand_sdf, obstacle_normals, obstacle_velocities,0.5, gx, gy, gz, k, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_cond, True,False,True,
                                    min_x, max_x, min_y, max_y, min_z, max_z)
         substep_fix_object(grid_v, fix_center_x=0.5, fix_center_y=0.5, fix_center_z=0.5, fix_range=1)
         substep_g2p(x, v, C,  grid_v, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
@@ -1174,7 +1204,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_apply_Von_Mises_plasticity(dg,x, mu_0, _SigY, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_clamp_plasticity(dg, x,_min_clamp,_max_clamp, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_Drucker_Prager_plasticity(dg, x,lambda_0, mu_0, _alpha, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_apply_plasticity(dg, x,E,nu, material,SigY,alpha,min_clamp,max_clamp, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_apply_plasticity(dg, x,E,nu, material,SigY,alpha,min_clamp,max_clamp,True,
+                                  min_x, max_x, min_y, max_y, min_z, max_z)
         substep_get_max_speed(v,x, max_speed, min_x, max_x, min_y, max_y, min_z, max_z)
         copy_array_1dim1(x, x)
         copy_array_1dim3(v, v)

@@ -3,7 +3,8 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;  // To handle file writing and reading
+using System.Linq;
+using UnityEngine.Rendering;  // To handle file writing and reading
 
 public class SmoothHand : MonoBehaviour
 {
@@ -39,6 +40,11 @@ public class SmoothHand : MonoBehaviour
     public string filePath = "hand_joints_data.txt"; // File path to store hand joints data
 
     StreamReader reader;
+
+    int cnt = 0;
+
+    [SerializeField]
+    int maxFrame = int.MaxValue;
     void Awake()
     {
         if (_newMaterial != null)
@@ -98,6 +104,7 @@ public class SmoothHand : MonoBehaviour
 
     void Update()
     {
+        cnt++;
         if (use_record_data && File.Exists(filePath)) // Use recorded data if the flag is true
         {
             LoadRecordedData();
@@ -159,32 +166,43 @@ public class SmoothHand : MonoBehaviour
 
                 if (record_data)
                 {
-                    RecordHandJointsData(smoothedPosition, smoothedRotation);
+                    //RecordHandJointsData(smoothedPosition, smoothedRotation, i);
+                    RecordHandJointsData(newPosition, newRotation, i);
                 }
             }
         }
     }
-    void RecordHandJointsData(Vector3 position, Quaternion rotation)
+    void RecordHandJointsData(Vector3 position, Quaternion rotation, int i)
     {
         // Record position and rotation data for left or right hand joints into a text file
-        string data = $"Bone : Position = {position}, Rotation = {rotation}";
+        string data = $"Bone {i} : Position = {position}, Rotation = {rotation}";
         File.AppendAllText(filePath, data + Environment.NewLine);
     }
 
 
     void LoadRecordedData()
     {
-        // Load the hand joints data from the txt file and apply it to the joint positions
-        for (int i = 0; i < leftHandJoints.Count; i++)
+        if (cnt >= maxFrame)
         {
-            string line = reader.ReadLine();
-            if (line == null)  // End of file
-            {
-                // Optionally: Close the reader and reset to start
-                Console.WriteLine("End of file reached. Restarting...");
-                OpenReader();  // Reopen the file and reset the reader position
-            }
-            string[] parts = line.Split(new string[] { "Position = ", ", Rotation = " }, StringSplitOptions.None);
+            return;
+        }
+        // Load the hand joints data from the txt file and apply it to the joint positions
+        int count = handType == HandType.LeftHand ? leftHandJoints.Count : rightHandJoints.Count;
+        string[] lines = new string[count];
+        //check if next line is null
+        if (reader.Peek() == -1)
+        {
+            // 处理文件末尾的逻辑，例如重新打开文件
+            Console.WriteLine("End of file reached. Restarting...");
+            OpenReader();  // 重新打开文件并重置读取器位置
+        }
+        for (int i = 0; i < count; i++)
+        {
+            lines[i] = reader.ReadLine();
+        }
+        for (int i = 0; i < count; i++)
+        {
+            string[] parts = lines[i].Split(new string[] { "Position = ", ", Rotation = " }, StringSplitOptions.None);
             if (parts.Length >= 2)
             {
                 Vector3 position = StringToVector3(parts[1]);

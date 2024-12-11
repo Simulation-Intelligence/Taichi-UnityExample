@@ -143,6 +143,7 @@ public class Mpm3DMarching : MonoBehaviour
     public bool use_grid_force = true;
     public bool use_standard_mpm_boundary = false;
     public bool adjust_particle = true;
+    public bool use_unified_material = true;
     [SerializeField]
     private int smooth_iter = 0;
 
@@ -256,7 +257,8 @@ public class Mpm3DMarching : MonoBehaviour
         Init_PointMesh();
 
         Init_materials();
-        Update_materials();
+        Build_materials();
+        Copy_materials();
 
         Init_MarchingCubes();
     }
@@ -548,21 +550,26 @@ public class Mpm3DMarching : MonoBehaviour
         sin_phi = Mathf.Sin(friction_angle * Mathf.Deg2Rad);
         _alpha = Mathf.Sqrt(2.0f / 3.0f) * 2 * sin_phi / (3 - sin_phi);
 
-        E_host = new float[NParticles];
-        SigY_host = new float[NParticles];
-        nu_host = new float[NParticles];
-        min_clamp_host = new float[NParticles];
-        max_clamp_host = new float[NParticles];
-        alpha_host = new float[NParticles];
-        p_vol_host = new float[NParticles];
-        p_mass_host = new float[NParticles];
+        int N_materials = use_unified_material ? 1 : NParticles;
+        E_host = new float[N_materials];
+        SigY_host = new float[N_materials];
+        nu_host = new float[N_materials];
+        min_clamp_host = new float[N_materials];
+        max_clamp_host = new float[N_materials];
+        alpha_host = new float[N_materials];
+        p_vol_host = new float[N_materials];
+        p_mass_host = new float[N_materials];
 
         if (marchingCubeVisualizers.Length == 1)
             point_color_host = new int[NParticles];
 
-        material_host = new int[NParticles];
-
+        material_host = new int[N_materials];
         for (int i = 0; i < NParticles; i++)
+        {
+            if (marchingCubeVisualizers.Length == 1)
+                point_color_host[i] = 0;
+        }
+        for (int i = 0; i < N_materials; i++)
         {
             E_host[i] = _E;
             SigY_host[i] = _SigY;
@@ -573,8 +580,7 @@ public class Mpm3DMarching : MonoBehaviour
             p_vol_host[i] = _p_vol;
             p_mass_host[i] = _p_mass;
             material_host[i] = 0;
-            if (marchingCubeVisualizers.Length == 1)
-                point_color_host[i] = 0;
+
             switch (plasticityType)
             {
                 case PlasticityType.Von_Mises:
@@ -619,21 +625,25 @@ public class Mpm3DMarching : MonoBehaviour
         material.Dispose();
         point_color.Dispose();
     }
-    public void Update_materials()
+
+    public void Build_materials()
     {
+        int N_materials = use_unified_material ? 1 : NParticles;
         //materials
-        E = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        SigY = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        nu = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        min_clamp = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        max_clamp = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        alpha = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        p_vol = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        p_mass = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
+        E = new NdArrayBuilder<float>().Shape(N_materials).HostWrite(true).Build();
+        SigY = new NdArrayBuilder<float>().Shape(N_materials).HostWrite(true).Build();
+        nu = new NdArrayBuilder<float>().Shape(N_materials).HostWrite(true).Build();
+        min_clamp = new NdArrayBuilder<float>().Shape(N_materials).HostWrite(true).Build();
+        max_clamp = new NdArrayBuilder<float>().Shape(N_materials).HostWrite(true).Build();
+        alpha = new NdArrayBuilder<float>().Shape(N_materials).HostWrite(true).Build();
+        p_vol = new NdArrayBuilder<float>().Shape(N_materials).HostWrite(true).Build();
+        p_mass = new NdArrayBuilder<float>().Shape(N_materials).HostWrite(true).Build();
 
-        material = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
+        material = new NdArrayBuilder<int>().Shape(N_materials).HostWrite(true).Build();
         point_color = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
-
+    }
+    public void Copy_materials()
+    {
         E.CopyFromArray(E_host);
         SigY.CopyFromArray(SigY_host);
         nu.CopyFromArray(nu_host);
@@ -643,6 +653,7 @@ public class Mpm3DMarching : MonoBehaviour
         p_vol.CopyFromArray(p_vol_host);
         p_mass.CopyFromArray(p_mass_host);
         material.CopyFromArray(material_host);
+
         if (point_color_host != null)
             point_color.CopyFromArray(point_color_host);
     }
@@ -812,7 +823,8 @@ public class Mpm3DMarching : MonoBehaviour
                 time_left -= dt;
 
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m, marching_m, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, use_unified_material == true ? 1 : 0,
+                boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
                     _Kernel_substep_update_dg.LaunchAsync(x_gaussian, C_gaussian, dg_gaussian, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
@@ -820,26 +832,28 @@ public class Mpm3DMarching : MonoBehaviour
                 ApplyPinchForce(leftPinchGesture, rightPinchGesture);
                 ApplyRotateForce(leftPinchGesture, rightPinchGesture);
 
-                if (lerp_tool)
+                // if (lerp_tool)
                 {
                     float lerp_factor = 1 - time_left / frame_time;
                     _Kernel_substep_update_grid_v_lerp.LaunchAsync(grid_v, hand_sdf, obstacle_normals, obstacle_velocities,
                      hand_sdf_last, obstacle_normals_last, obstacle_velocities_last, lerp_factor, g.x, g.y, g.z, colide_factor, damping, friction_k,
-                     v_allowed, dt, n_grid, dx, bound, use_sticky_boundary == true ? 1 : 0, use_grid_force == true ? 1 : 0, use_standard_mpm_boundary == true ? 1 : 0,
+                     v_allowed, dt, n_grid, dx, bound, use_sticky_boundary == true ? 1 : 0, use_grid_force == true ? 1 : 0, use_standard_mpm_boundary == true ? 1 : 0, lerp_tool == true ? 1 : 0,
                      boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 }
-                else
-                    _Kernel_substep_update_grid_v.LaunchAsync(grid_v, hand_sdf, obstacle_normals, obstacle_velocities,
-                    g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary == true ? 1 : 0, use_grid_force == true ? 1 : 0, use_standard_mpm_boundary == true ? 1 : 0,
-                     boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                // else
+                //     _Kernel_substep_update_grid_v.LaunchAsync(grid_v, hand_sdf, obstacle_normals, obstacle_velocities,
+                //     g.x, g.y, g.z, colide_factor, damping, friction_k, v_allowed, dt, n_grid, dx, bound, use_sticky_boundary == true ? 1 : 0, use_grid_force == true ? 1 : 0, use_standard_mpm_boundary == true ? 1 : 0,
+                //      boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
 
 
                 _Kernel_substep_g2p.LaunchAsync(x, v, C, grid_v, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                _Kernel_substep_apply_plasticity.LaunchAsync(dg, x, E, nu, material, SigY, alpha, min_clamp, max_clamp, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                _Kernel_substep_apply_plasticity.LaunchAsync(dg, x, E, nu, material, SigY, alpha, min_clamp, max_clamp, use_unified_material == true ? 1 : 0,
+                 boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
                 {
                     _Kernel_substep_g2p.LaunchAsync(x_gaussian, v_gaussian, C_gaussian, grid_v, dx, dt, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
-                    _Kernel_substep_apply_plasticity.LaunchAsync(dg_gaussian, x_gaussian, E, nu, material, SigY, alpha, min_clamp, max_clamp, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+                    _Kernel_substep_apply_plasticity.LaunchAsync(dg_gaussian, x_gaussian, E, nu, material, SigY, alpha, min_clamp, max_clamp, use_unified_material == true ? 1 : 0,
+                    boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 }
                 if (use_correct_cfl)
                 {
@@ -912,7 +926,8 @@ public class Mpm3DMarching : MonoBehaviour
         }
         else if (renderType == RenderType.MarchingCubes)
         {
-            _Kernel_substep_p2marching.LaunchAsync(x, point_color, marching_m, p_mass, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+            _Kernel_substep_p2marching.LaunchAsync(x, point_color, marching_m, p_mass, use_unified_material == true ? 1 : 0,
+             boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             _Kernel_normalize_m.LaunchAsync(marching_m, max_density);
             marching_m.CopyToNativeBufferAsync(marching_m_computeBuffer.GetNativeBufferPtr());
             int kernelId = copyShader.FindKernel("CopySubBuffer");
@@ -1178,29 +1193,23 @@ public class Mpm3DMarching : MonoBehaviour
     }
     private void MergeMaterials(Mpm3DMarching other)
     {
-        E_host = E_host.Concat(other.E_host).ToArray();
-        SigY_host = SigY_host.Concat(other.SigY_host).ToArray();
-        nu_host = nu_host.Concat(other.nu_host).ToArray();
-        min_clamp_host = min_clamp_host.Concat(other.min_clamp_host).ToArray();
-        max_clamp_host = max_clamp_host.Concat(other.max_clamp_host).ToArray();
-        alpha_host = alpha_host.Concat(other.alpha_host).ToArray();
-        p_vol_host = p_vol_host.Concat(other.p_vol_host).ToArray();
-        p_mass_host = p_mass_host.Concat(other.p_mass_host).ToArray();
-        material_host = material_host.Concat(other.material_host).ToArray();
+        if (!use_unified_material)
+        {
+            E_host = E_host.Concat(other.E_host).ToArray();
+            SigY_host = SigY_host.Concat(other.SigY_host).ToArray();
+            nu_host = nu_host.Concat(other.nu_host).ToArray();
+            min_clamp_host = min_clamp_host.Concat(other.min_clamp_host).ToArray();
+            max_clamp_host = max_clamp_host.Concat(other.max_clamp_host).ToArray();
+            alpha_host = alpha_host.Concat(other.alpha_host).ToArray();
+            p_vol_host = p_vol_host.Concat(other.p_vol_host).ToArray();
+            p_mass_host = p_mass_host.Concat(other.p_mass_host).ToArray();
+            material_host = material_host.Concat(other.material_host).ToArray();
+        }
         point_color_host = point_color_host.Concat(other.point_color_host).ToArray();
 
-        E = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        SigY = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        nu = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        min_clamp = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        max_clamp = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        alpha = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        p_vol = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        p_mass = new NdArrayBuilder<float>().Shape(NParticles).HostWrite(true).Build();
-        material = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
-        point_color = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();
+        Build_materials();
 
-        Update_materials();
+        Copy_materials();
     }
     public void MergeGrabbable(GameObject object2)
     {
@@ -1435,19 +1444,21 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_init_dg.LaunchAsync(other.dg);
 
             CopyMaterials(other);
-            other.Update_materials();
+            other.Build_materials();
+            other.Copy_materials();
             //other.SetSimulateGridSize(other.n_grid);
         }
     }
     public void CopyMaterials(Mpm3DMarching other)
     {
-        other.E_host = new float[NParticles];
-        other.SigY_host = new float[NParticles];
-        other.nu_host = new float[NParticles];
-        other.min_clamp_host = new float[NParticles];
-        other.max_clamp_host = new float[NParticles];
-        other.alpha_host = new float[NParticles];
-        other.p_vol_host = new float[NParticles];
+        int NMaterials = E_host.Length;
+        other.E_host = new float[NMaterials];
+        other.SigY_host = new float[NMaterials];
+        other.nu_host = new float[NMaterials];
+        other.min_clamp_host = new float[NMaterials];
+        other.max_clamp_host = new float[NMaterials];
+        other.alpha_host = new float[NMaterials];
+        other.p_vol_host = new float[NMaterials];
         other.p_mass_host = new float[NParticles];
         other.material_host = new int[NParticles];
         other.point_color_host = new int[NParticles];
@@ -1484,7 +1495,8 @@ public class Mpm3DMarching : MonoBehaviour
             Init_MarchingCubes();
             Dispose_Materials();
             Init_materials();
-            Update_materials();
+            Build_materials();
+            Copy_materials();
         }
     }
     public void RecenterObject()

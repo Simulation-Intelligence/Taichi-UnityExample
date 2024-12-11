@@ -320,7 +320,7 @@ class UIManager : MonoBehaviour
                 // Visualize pinch gesture spheres when enabled
                 pinchGestureLeft.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
                 pinchGestureRight.RenderPinchSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
-                
+
                 pinchGestureLeft.RenderRotationSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
                 pinchGestureRight.RenderRotationSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
 
@@ -484,7 +484,7 @@ class UIManager : MonoBehaviour
 
         // Update materials to simulation
         mpm3DSimulation.Init_materials();
-        mpm3DSimulation.Update_materials();
+        mpm3DSimulation.Copy_materials();
     }
 
     void OnButtonClick(Button button)
@@ -747,7 +747,7 @@ class UIManager : MonoBehaviour
                     {
                         mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -763,7 +763,7 @@ class UIManager : MonoBehaviour
                     {
                         mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -779,7 +779,7 @@ class UIManager : MonoBehaviour
                     {
                         mpm3DSimulation.damping = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -795,7 +795,7 @@ class UIManager : MonoBehaviour
                     {
                         mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -811,7 +811,7 @@ class UIManager : MonoBehaviour
                     {
                         mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -827,7 +827,7 @@ class UIManager : MonoBehaviour
                     {
                         mpm3DSimulation.friction_k = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -843,7 +843,7 @@ class UIManager : MonoBehaviour
                     {
                         mpm3DSimulation.p_rho = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -860,7 +860,7 @@ class UIManager : MonoBehaviour
                     {
                         mpm3DSimulation.friction_angle = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -890,7 +890,7 @@ class UIManager : MonoBehaviour
                     {
                         mpm3DSimulation.max_dt = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }

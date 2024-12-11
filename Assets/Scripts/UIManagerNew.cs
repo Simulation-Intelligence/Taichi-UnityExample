@@ -509,7 +509,7 @@ class UIManagerNew : MonoBehaviour
 
         // Update materials to simulation
         mpm3DSimulation.Init_materials();
-        mpm3DSimulation.Update_materials();
+        mpm3DSimulation.Copy_materials();
     }
 
     void OnButtonClick(Button button)
@@ -841,7 +841,7 @@ class UIManagerNew : MonoBehaviour
                     {
                         mpm3DSimulation._E = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -857,7 +857,7 @@ class UIManagerNew : MonoBehaviour
                     {
                         mpm3DSimulation._SigY = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -873,7 +873,7 @@ class UIManagerNew : MonoBehaviour
                     {
                         mpm3DSimulation.damping = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -889,7 +889,7 @@ class UIManagerNew : MonoBehaviour
                     {
                         mpm3DSimulation._nu = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -905,7 +905,7 @@ class UIManagerNew : MonoBehaviour
                     {
                         mpm3DSimulation.colide_factor = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -921,7 +921,7 @@ class UIManagerNew : MonoBehaviour
                     {
                         mpm3DSimulation.friction_k = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -937,7 +937,7 @@ class UIManagerNew : MonoBehaviour
                     {
                         mpm3DSimulation.p_rho = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -954,7 +954,7 @@ class UIManagerNew : MonoBehaviour
                     {
                         mpm3DSimulation.friction_angle = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -984,7 +984,7 @@ class UIManagerNew : MonoBehaviour
                     {
                         mpm3DSimulation.max_dt = parameter.GetComponentInChildren<Slider>().value;
                         mpm3DSimulation.Init_materials();
-                        mpm3DSimulation.Update_materials();
+                        mpm3DSimulation.Copy_materials();
                     }
                 }
             }
@@ -1394,7 +1394,7 @@ class UIManagerNew : MonoBehaviour
                     mpm3DSimulation._E = 1e7f;
                     mpm3DSimulation._SigY = 1e6f;
                     mpm3DSimulation.Init_materials();
-                    mpm3DSimulation.Update_materials();
+                    mpm3DSimulation.Copy_materials();
                     mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Default_Clay;
                 }
                 else if (dropdown.options[value].text == "Soft Clay")
@@ -1403,7 +1403,7 @@ class UIManagerNew : MonoBehaviour
                     mpm3DSimulation._E = 1e7f;
                     mpm3DSimulation._SigY = 4e5f;
                     mpm3DSimulation.Init_materials();
-                    mpm3DSimulation.Update_materials();
+                    mpm3DSimulation.Copy_materials();
                     mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Soft_Clay;
                 }
                 else if (dropdown.options[value].text == "Clamp Plasticity")
@@ -1412,16 +1412,16 @@ class UIManagerNew : MonoBehaviour
                     mpm3DSimulation._E = 1e7f;
                     mpm3DSimulation._SigY = 1e6f;
                     mpm3DSimulation.Init_materials();
-                    mpm3DSimulation.Update_materials();
+                    mpm3DSimulation.Copy_materials();
                     mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Clamp_Plasticity;
-                } 
+                }
                 else if (dropdown.options[value].text == "Drucker Plasticity")
                 {
                     mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Drucker_Prager;
                     mpm3DSimulation._E = 1e7f;
                     mpm3DSimulation._SigY = 1e6f;
                     mpm3DSimulation.Init_materials();
-                    mpm3DSimulation.Update_materials();
+                    mpm3DSimulation.Copy_materials();
                     mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Drucker_Plasticity;
                 }
                 ShowSelectedObjectInfo();
