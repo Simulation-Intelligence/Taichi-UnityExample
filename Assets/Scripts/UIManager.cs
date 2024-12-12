@@ -995,7 +995,7 @@ class UIManager : MonoBehaviour
             if (selectedObject != null)
             {
                 Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-                mpm3DSimulation.SetGravity(isOn ? -200f : 0.0f);
+                mpm3DSimulation.SetGravity(isOn ? -50f : 0.0f);
             }
         }
         // Use correct CFL condition

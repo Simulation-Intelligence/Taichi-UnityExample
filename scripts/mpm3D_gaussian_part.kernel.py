@@ -75,105 +75,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         for I in ti.grouped(marching_m):
             marching_m[I] = 0
     
-    @ti.kernel
-    def substep_neohookean_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
-                               dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
-                               mu: ti.f32, la: ti.f32, p_vol: ti.f32, p_mass: ti.f32, dx: ti.f32, dt: ti.f32,
-                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
-        for p in x:
-            # Check if the particle is within the specified simulation boundaries
-            if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
-                Xp = x[p] / dx
-                base = int(Xp - 0.5)
-                fx = Xp - base
-                # Quadratic B-spline weights for particle-grid interpolation
-                w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
-                # Update the deformation gradient with the velocity gradient
-                dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
-                # Calculate the determinant of the deformation gradient (volume change)
-                J = dg[p].determinant()
-                # Cauchy stress tensor using the Neo-Hookean model
-                cauchy = mu * (dg[p] @ dg[p].transpose()) + ti.Matrix.identity(float, dim) * (la * ti.log(J) - mu)
-                # Stress contribution to the grid, scaled by the particle volume and grid resolution
-                stress = -(dt * p_vol * 4 / dx**2) * cauchy
-                # Compute the affine velocity update matrix, combining stress and velocity gradient
-                affine = stress + p_mass * C[p]
-                # Neighboring grid cells
-                for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
-                    dpos = (offset - fx) * dx
-                    weight = 1.0
-                    for i in ti.static(range(dim)):
-                        weight *= w[offset[i]][i]
-                    grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
-                    grid_m[base + offset] += weight * p_mass
-    
-    @ti.kernel
-    def substep_kirchhoff_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1),
-                               dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
-                               mu: ti.f32,la:ti.f32,p_vol: ti.f32, p_mass: ti.f32, dx: ti.f32, dt: ti.f32,
-                               min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
-        for p in x:
-            if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
-                Xp = x[p] / dx
-                base = int(Xp - 0.5)
-                fx = Xp - base
-                w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
 
-                dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
-                U, sig, V = ti.svd(dg[p])
-                J_new = sig[0, 0] * sig[1, 1] * sig[2, 2]
-                stress = 2 * mu * (dg[p] - U @ V.transpose()) @ dg[p].transpose() + ti.Matrix.identity(
-                    float, dim) * la * J_new * (J_new - 1)
-                stress = (-dt * p_vol * 4) * stress / dx**2
-                affine = stress + p_mass * C[p]
-
-                for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
-                    dpos = (offset - fx) * dx
-                    weight = 1.0
-                    for i in ti.static(range(dim)):
-                        weight *= w[offset[i]][i]
-                    grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
-                    grid_m[base + offset] += weight * p_mass
-    
-    @ti.kernel
-    def substep_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
-                    dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
-                    E: ti.types.ndarray(ndim=1), nu: ti.types.ndarray(ndim=1), material: ti.types.ndarray(ndim=1),
-                    p_vol: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), dx: ti.f32, dt:ti.f32, 
-                    min_x: ti.f32, max_x: ti.f32, min_y: ti.f32, max_y: ti.f32, min_z: ti.f32, max_z: ti.f32):
-        for p in x:
-            if(x[p][0] > min_x and x[p][0] < max_x and x[p][1] > min_y and x[p][1] < max_y and x[p][2] > min_z and x[p][2] < max_z):
-                Xp = x[p] / dx
-                base = int(Xp - 0.5)
-                fx = Xp - base
-                w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
-
-                dg[p] = (ti.Matrix.identity(float, dim) + dt * C[p]) @ dg[p]
-                
-                mu = E[p] / (2 * (1 + nu[p]))
-                la = E[p] * nu[p] / ((1 + nu[p]) * (1 - 2 * nu[p]))
-                stress = ti.Matrix([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
-                # Calculate stress based on material type
-                if material[p] & 0xFFFF == 1:  # kirchhoff
-                    U, sig, V = ti.svd(dg[p])
-                    J_new = sig[0, 0] * sig[1, 1] * sig[2, 2]
-                    stress = 2 * mu * (dg[p] - U @ V.transpose()) @ dg[p].transpose() + \
-                             ti.Matrix.identity(float, dim) * la * J_new * (J_new - 1)
-                    stress = (-dt * p_vol[p] * 4) * stress / dx**2
-                else :  # neohookean
-                    J = dg[p].determinant()
-                    cauchy = mu * (dg[p] @ dg[p].transpose()) + ti.Matrix.identity(float, dim) * (la * ti.log(J) - mu)
-                    stress = -(dt * p_vol[p] * 4 / dx**2) * cauchy
-
-                affine = stress + p_mass[p] * C[p]
-
-                for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
-                    dpos = (offset - fx) * dx
-                    weight = 1.0
-                    for i in ti.static(range(dim)):
-                        weight *= w[offset[i]][i]
-                    grid_v[base + offset] += weight * (p_mass[p] * v[p] + affine @ dpos)
-                    grid_m[base + offset] += weight * p_mass[p]
     
     @ti.kernel
     def substep_p2g_multi(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
@@ -626,80 +528,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     x[p] = x[p] + min_dist.normalized() * (skeleton_capsule_radius[min_seg_idx] - min_dist.norm())
 
                     #vectorized version keep in bound
-                    x[p] = ti.Vector([min(max(x[p][i], 0.02), 0.98) for i in range(3)])
+                    x[p] = ti.Vector([min(max(x[p][i], 0.03), 0.97) for i in range(3)])
 
                     # Update the particle's velocity to match the segment's velocity (with interpolation)
                     v[p] = skeleton_velocities[min_seg_idx, 0] * (1 - min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
+
     
-    @ti.kernel
-    def substep_apply_Drucker_Prager_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),lambda_0:ti.f32,mu_0:ti.f32,alpha:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
-        for p in dg:
-            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
-                U, sig, V = ti.svd(dg[p])
-
-                # 将 sig 转换为向量
-                sig_vec = ti.Vector([sig[i, i] for i in range(dim)])
-
-                epsilon = ti.log(ti.abs(sig_vec))
-                trace_epsilon = epsilon.sum()
-
-                epsilon_hat = epsilon - trace_epsilon / 3 * ti.Vector([1.0, 1.0, 1.0])
-                epsilon_hat_squared_norm = epsilon_hat.norm_sqr()
-                epsilon_hat_norm = ti.sqrt(epsilon_hat_squared_norm)
-                delta_gamma = 0.0
-
-                if trace_epsilon <= 0:
-                    delta_gamma = epsilon_hat_norm + (3 * lambda_0 + 2 * mu_0) / (2 * mu_0) * trace_epsilon * alpha
-                else:
-                    delta_gamma = epsilon_hat_norm
-
-                Z = ti.Matrix.identity(float, 3)
-                if delta_gamma <= 0:
-                    for i in range(dim):
-                        Z[i, i] = sig_vec[i]
-                else:
-                    H = epsilon - (delta_gamma / epsilon_hat_norm) * epsilon_hat
-                    E = ti.exp(H)
-                    Z = ti.Matrix([[E[0], 0, 0], [0, E[1], 0], [0, 0, E[2]]])
-
-                dg[p] = U @ Z @ V.transpose()
-    
-    @ti.kernel
-    def substep_apply_Von_Mises_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),mu_0:ti.f32,SigY:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
-        for p in dg:
-            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
-                U, sig, V = ti.svd(dg[p])
-
-                # 将 sig 转换为向量
-                sig_vec = ti.Vector([sig[i, i] for i in range(dim)])
-
-                epsilon = ti.log(ti.abs(sig_vec))
-                trace_epsilon = epsilon.sum()
-
-                epsilon_hat = epsilon - trace_epsilon / 3 * ti.Vector([1.0, 1.0, 1.0])
-                epsilon_hat_squared_norm = epsilon_hat.norm_sqr()
-                epsilon_hat_norm = ti.sqrt(epsilon_hat_squared_norm)
-                delta_gamma = epsilon_hat_norm - SigY / (2 * mu_0)
-
-                Z = ti.Matrix.identity(float, 3)
-                if delta_gamma <= 0:
-                    for i in range(dim):
-                        Z[i, i] = sig_vec[i]
-                else:
-                    H = epsilon - (delta_gamma / epsilon_hat_norm) * epsilon_hat
-                    E = ti.exp(H)
-                    Z = ti.Matrix([[E[0], 0, 0], [0, E[1], 0], [0, 0, E[2]]])
-
-                dg[p] = U @ Z @ V.transpose()
-    
-    @ti.kernel
-    def substep_apply_clamp_plasticity(dg: ti.types.ndarray(ndim=1),x: ti.types.ndarray(ndim=1),min_clamp:ti.f32,max_clamp:ti.f32,min_x:ti.f32,max_x:ti.f32,min_y:ti.f32,max_y:ti.f32,min_z:ti.f32,max_z:ti.f32):
-        for p in dg:
-            if(x[p][0]>min_x and x[p][0]<max_x and x[p][1]>min_y and x[p][1]<max_y and x[p][2]>min_z and x[p][2]<max_z):
-                U, sig, V = ti.svd(dg[p]) 
-                for i in ti.static(range(dim)):
-                    sig[i, i] = min(max(sig[i, i], 1-min_clamp), 1+max_clamp)
-                dg[p] = U @ sig @ V.transpose()
 
     @ti.kernel
     def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cube_size:ti.f32):
@@ -1106,6 +940,45 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             x1[i + n2] = multiply_point(mat3, x3[i])
     # endregion
 
+    @ti.kernel
+    def substep_squeeze_particles(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),target_p_mass:ti.f32,
+                          center_x:ti.f32, center_y:ti.f32, center_z:ti.f32,velocity_x:ti.f32, velocity_y:ti.f32, velocity_z:ti.f32, radius:ti.f32,dt:ti.f32,
+                          starting_index:ti.i32, ending_index:ti.i32):
+        # 计算圆柱高度（速度大小乘以dt）
+        velocity_norm = ti.Vector([velocity_x, velocity_y, velocity_z])
+        speed = velocity_norm.norm()
+        cylinder_height = speed * dt
+        if speed > 0:
+            velocity_norm = velocity_norm / speed
+        else:
+            velocity_norm = ti.Vector([0.0, 0.0, 1.0])  # 默认方向
+
+        # 构建正交基底
+        # 选择一个与 velocity_norm 不平行的向量
+        arbitrary = ti.Vector([1.0, 0.0, 0.0])
+        if ti.abs(velocity_norm.dot(arbitrary)) > 0.99:
+            arbitrary = ti.Vector([0.0, 1.0, 0.0])
+        x_axis = velocity_norm.cross(arbitrary).normalized()
+        y_axis = velocity_norm.cross(x_axis).normalized()
+
+        for p in range(starting_index, ending_index):
+            p_mass[p] = target_p_mass
+            x_0 ,y_0, z_0 = 0.0, 0.0, 0.0
+            #粒子位置随机均匀分部在圆柱内,圆柱的底面与velocity方向垂直，圆柱的高度为速度大小乘以dt
+            while True:
+                x_0 = ti.random() * 2 - 1
+                y_0 = ti.random() * 2 - 1
+                z_0= ti.random()
+                if x_0 * x_0 + y_0 * y_0<=1:
+                    break
+            #将生成的点转到速度方向
+            x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0* cylinder_height 
+            v[p] = velocity_norm * speed
+
+                
+
+            
+
     # Medial Axis Transform (MAT) for Shape Appreximation
     mat_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
     mat_primitives = ti.Vector.ndarray(3, ti.f32, shape=(60, 3))
@@ -1178,9 +1051,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     def substep():
         substep_reset_grid(grid_v, grid_m,marching_m, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_kirchhoff_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_neohookean_p2g(x, v, C,  dg, grid_v, grid_m, mu_0, lambda_0, _p_vol, _p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_p2g(x, v, C,  dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, min_x, max_x, min_y, max_y, min_z, max_z)
+        substep_squeeze_particles(x, p_mass, v,_p_mass, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.1,dt, 0, 1)
         substep_p2g_multi(x, v, C,  dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, True,
                            min_x, max_x, min_y, max_y, min_z, max_z)
         substep_p2marching(x, point_color, marching_m, p_mass,True,
@@ -1201,13 +1072,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         substep_update_dg(x, C,  dg,  dt, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle_hash(x, v, hash_table, segments_count_per_cell, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle(x, v, skeleton_capsule_radius, skeleton_velocities, skeleton_segments, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_apply_Von_Mises_plasticity(dg,x, mu_0, _SigY, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_apply_clamp_plasticity(dg, x,_min_clamp,_max_clamp, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_apply_Drucker_Prager_plasticity(dg, x,lambda_0, mu_0, _alpha, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_apply_plasticity(dg, x,E,nu, material,SigY,alpha,min_clamp,max_clamp,True,
                                   min_x, max_x, min_y, max_y, min_z, max_z)
         substep_get_max_speed(v,x, max_speed, min_x, max_x, min_y, max_y, min_z, max_z)
-        copy_array_1dim1(x, x)
+        copy_array_1dim1(E, E)
         copy_array_1dim3(v, v)
         copy_array_1dim1I(material, material)
         copy_array_3dim1(sdf, sdf)
@@ -1219,13 +1087,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def run_aot():
         mod = ti.aot.Module(arch)
         mod.add_kernel(substep_reset_grid, template_args={'grid_v': grid_v, 'grid_m': grid_m, 'marching_m': marching_m})
-        mod.add_kernel(substep_kirchhoff_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})  
-        mod.add_kernel(substep_neohookean_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m})
         mod.add_kernel(substep_g2p, template_args={'x': x, 'v': v, 'C': C, 'grid_v': grid_v})
         mod.add_kernel(substep_update_dg, template_args={'x': x, 'C': C, 'dg': dg})
-        mod.add_kernel(substep_apply_Drucker_Prager_plasticity, template_args={'dg': dg,'x': x})
-        mod.add_kernel(substep_apply_Von_Mises_plasticity, template_args={'dg': dg,'x': x})
-        mod.add_kernel(substep_apply_clamp_plasticity, template_args={'dg': dg,'x': x})
         mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'dg': dg})
         mod.add_kernel(init_sphere, template_args={'x': x, 'dg': dg})
         mod.add_kernel(init_cylinder, template_args={'x': x, 'dg': dg})
@@ -1238,7 +1101,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(substep_update_grid_v_lerp, template_args={'grid_v': grid_v,  'sdf': sdf, 'obstacle_normals': obstacle_normals, 'obstacle_velocities': obstacle_velocities,'sdf_last': sdf, 'obstacle_normals_last': obstacle_normals, 'obstacle_velocities_last': obstacle_velocities})
         mod.add_kernel(substep_get_max_speed, template_args={'v': v, 'x': x,'max_speed': max_speed})
         mod.add_kernel(init_dg, template_args={'dg': dg})
-        mod.add_kernel(substep_p2g, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m,'E':E,'nu':nu,'material':material,'p_vol':p_vol,'p_mass':p_mass})
         mod.add_kernel(substep_p2g_multi, template_args={'x': x, 'v': v, 'C': C,  'dg': dg, 'grid_v': grid_v, 'grid_m': grid_m,'E':E,'nu':nu,'material':material,'p_vol':p_vol,'p_mass':p_mass})
         mod.add_kernel(substep_p2marching, template_args={'x': x, 'point_color': point_color, 'marching_m': marching_m, 'p_mass': p_mass})
         mod.add_kernel(substep_apply_plasticity, template_args={'dg': dg,'x': x,'material':material,"E":E,"nu":nu,"SigY":SigY,"alpha":alpha,"min_clamp":min_clamp,"max_clamp":max_clamp})
@@ -1267,6 +1129,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(copy_array_3dim1, template_args={'src': sdf, 'dst': sdf})
         mod.add_kernel(copy_array_3dim3, template_args={'src': obstacle_normals, 'dst': obstacle_normals})
         mod.add_kernel(init_sample_gaussian_data, template_args={'x_gaussian': x, 'x': x})
+
+        mod.add_kernel(substep_squeeze_particles, template_args={'x': x, 'p_mass': p_mass, 'v': v})
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part_mat.kernel.tcm")
         print("AOT done")

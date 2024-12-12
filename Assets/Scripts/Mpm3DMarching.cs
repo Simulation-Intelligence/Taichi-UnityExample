@@ -12,6 +12,7 @@ using GaussianSplatting.Runtime;
 using UnityEngine.Experimental.Rendering;
 using MarchingCubes;
 using System.Xml;
+using Unity.Mathematics;
 
 public class Mpm3DMarching : MonoBehaviour
 {
@@ -23,15 +24,16 @@ public class Mpm3DMarching : MonoBehaviour
     [Header("MpM Engine")]
     [SerializeField]
     private AotModuleAsset Mpm3DModule;
-    private Kernel _Kernel_subsetep_reset_grid, _Kernel_substep_neohookean_p2g, _Kernel_substep_Kirchhoff_p2g,
+    private Kernel _Kernel_subsetep_reset_grid,
     _Kernel_substep_calculate_signed_distance_field, _Kernel_substep_apply_force_field, _Kernel_substep_apply_force_field_two_hands, _Kernel_substep_apply_rotate_force_field_two_hands,
     _Kernel_substep_update_grid_v, _Kernel_substep_update_grid_v_lerp, _Kernel_substep_g2p,
-     _Kernel_substep_apply_Von_Mises_plasticity, _Kernel_substep_apply_Drucker_Prager_plasticity, _Kernel_substep_p2g, _Kernel_substep_apply_plasticity,
-     _Kernel_substep_apply_clamp_plasticity, _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
+     _Kernel_substep_apply_plasticity,
+      _Kernel_substep_calculate_hand_sdf, _Kernel_substep_get_max_speed, _Kernel_substep_calculate_hand_hash, _Kernel_substep_adjust_particle_hash, _Kernel_substep_adjust_particle, _Kernel_substep_calculate_hand_sdf_hash,
      _Kernel_substep_calculate_mat_sdf, _Kernel_substep_adjust_particle_mat,
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_recenter_to_unit_cube, _Kernel_init_sphere, _Kernel_init_cylinder, _Kernel_init_torus,
      _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi, _Kernel_substep_p2marching,
-        _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_3dim1, _Kernel_copy_array_3dim3, _Kernel_copy_array_1dim1I, _Kernel_init_sample_gaussian_data, _Kernel_substep_update_dg;
+        _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_3dim1, _Kernel_copy_array_3dim3, _Kernel_copy_array_1dim1I, _Kernel_init_sample_gaussian_data, _Kernel_substep_update_dg,
+        _Kernel_substep_squeeze_particles;
 
     public enum RenderType
     {
@@ -159,6 +161,16 @@ public class Mpm3DMarching : MonoBehaviour
     public float rotate_speed = 0.0f;
     private Vector3 rotationCenter = new(0.5f, 0.5f, 0.5f);
 
+    private int squeeze_particle_index = 0;
+
+    public Vector3 squeeze_center = new Vector3(0.5f, 0.5f, 0.5f);
+
+    public Vector3 squeeze_velocity = new Vector3(0, 0, 0);
+
+    public float squeeze_radius = 0.1f;
+
+    public bool squeeze_particles = false;
+
     [Header("Interaction Settings")]
     [SerializeField]
     private float hand_simulation_radius = 0.5f;
@@ -208,16 +220,6 @@ public class Mpm3DMarching : MonoBehaviour
     private int handMotionIndex = 0;
     private InputAction spaceAction;
 
-    private OVRSkeletonRenderer ovrRend;
-
-    [Header("Hand Recording")]
-    [SerializeField]
-    private bool UseRecordDate = false;
-    [SerializeField]
-    private string filePath = "HandMotionData.txt";
-
-    private bool RendererInitialized = false; // Used for recorded hand
-    private List<CapsuleVisualization> _capsuleVisualizations = new();
 
     // Start is called before the first frame update
     void Start()
@@ -269,8 +271,6 @@ public class Mpm3DMarching : MonoBehaviour
         {
             // Mpm
             _Kernel_subsetep_reset_grid = kernels["substep_reset_grid"];
-            _Kernel_substep_neohookean_p2g = kernels["substep_neohookean_p2g"];
-            _Kernel_substep_Kirchhoff_p2g = kernels["substep_kirchhoff_p2g"];
             _Kernel_substep_calculate_signed_distance_field = kernels["substep_calculate_signed_distance_field"];
             _Kernel_substep_apply_force_field = kernels["substep_apply_force_field"];
             _Kernel_substep_apply_force_field_two_hands = kernels["substep_apply_force_field_two_hands"];
@@ -278,9 +278,6 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_substep_update_grid_v = kernels["substep_update_grid_v"];
             _Kernel_substep_update_grid_v_lerp = kernels["substep_update_grid_v_lerp"];
             _Kernel_substep_g2p = kernels["substep_g2p"];
-            _Kernel_substep_apply_Von_Mises_plasticity = kernels["substep_apply_Von_Mises_plasticity"];
-            _Kernel_substep_apply_Drucker_Prager_plasticity = kernels["substep_apply_Drucker_Prager_plasticity"];
-            _Kernel_substep_apply_clamp_plasticity = kernels["substep_apply_clamp_plasticity"];
             _Kernel_init_particles = kernels["init_particles"];
             _Kernel_init_dg = kernels["init_dg"];
 
@@ -293,7 +290,6 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_substep_adjust_particle_hash = kernels["substep_adjust_particle_hash"];
             _Kernel_substep_adjust_particle_mat = kernels["substep_adjust_particle_mat"];
             _Kernel_substep_adjust_particle = kernels["substep_adjust_particle"];
-            _Kernel_substep_p2g = kernels["substep_p2g"];
             _Kernel_substep_apply_plasticity = kernels["substep_apply_plasticity"];
 
             // Gaussian
@@ -320,6 +316,8 @@ public class Mpm3DMarching : MonoBehaviour
 
             _Kernel_init_sample_gaussian_data = kernels["init_sample_gaussian_data"];
             _Kernel_substep_update_dg = kernels["substep_update_dg"];
+
+            _Kernel_substep_squeeze_particles = kernels["substep_squeeze_particles"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -579,6 +577,8 @@ public class Mpm3DMarching : MonoBehaviour
             alpha_host[i] = _alpha;
             p_vol_host[i] = _p_vol;
             p_mass_host[i] = _p_mass;
+            // if (squeeze_particles)
+            //     p_mass_host[i] = 0;
             material_host[i] = 0;
 
             switch (plasticityType)
@@ -657,17 +657,6 @@ public class Mpm3DMarching : MonoBehaviour
         if (point_color_host != null)
             point_color.CopyFromArray(point_color_host);
     }
-    void Init_Record()
-    {
-        // Use the recorded hand data for simulation tests in Unity
-        if (UseRecordDate)
-        {
-            LoadHandMotionData();
-        }
-        spaceAction = new InputAction(binding: "<Keyboard>/space");
-        spaceAction.performed += ctx => OnSpacePressed();
-        spaceAction.Enable();
-    }
     // Update is called once per frame
     void Update()
     {
@@ -689,47 +678,7 @@ public class Mpm3DMarching : MonoBehaviour
         RotateAroundPoint(rotationCenter, Vector3.up, rotate_speed * Time.deltaTime);
         if (lastRenderType != renderType)
         {
-            switch (lastRenderType)
-            {
-                case RenderType.PointMesh:
-                    GetComponent<MeshRenderer>().enabled = false;
-                    break;
-                case RenderType.GaussianSplat:
-                    GetComponent<GaussianSplatRenderer>().enabled = false;
-                    break;
-                case RenderType.MarchingCubes:
-                    Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>(true);
-                    string childName = "MarchingCubeVisualizer";
-                    foreach (Transform child in allChildren)
-                    {
-                        if (child.name == childName)
-                        {
-                            child.gameObject.SetActive(false);
-                        }
-                    }
-                    break;
-            }
-            switch (renderType)
-            {
-                case RenderType.PointMesh:
-                    GetComponent<MeshRenderer>().enabled = true;
-                    break;
-                case RenderType.GaussianSplat:
-                    GetComponent<GaussianSplatRenderer>().enabled = true;
-                    break;
-                case RenderType.MarchingCubes:
-                    Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>(true);
-                    string childName = "MarchingCubeVisualizer";
-                    foreach (Transform child in allChildren)
-                    {
-                        if (child.name == childName)
-                        {
-                            child.gameObject.SetActive(true);
-                        }
-                    }
-                    break;
-            }
-            lastRenderType = renderType;
+            SwitchRenderType();
         }
         if (_Compute_Graph_g_substep != null)
         {
@@ -783,18 +732,12 @@ public class Mpm3DMarching : MonoBehaviour
             // Simulation loop
             float dt = max_dt, time_left = frame_time;
 
-            if (UseRecordDate)
-            {
-                UpdateHandSDFFromRecordedData(handMotionIndex++);
-                RenderRecordedHandSkeletonCapsule(handMotionIndex - 1);
-            }
-            else
-            {
-                if (tools.Count > 0)
-                    UpdateCapsules();
-                if (matTools.Count > 0)
-                    UpdateMatPrimitives();
-            }
+
+            if (tools.Count > 0)
+                UpdateCapsules();
+            if (matTools.Count > 0)
+                UpdateMatPrimitives();
+
 
             if (tools.Count > 0)
             {
@@ -817,12 +760,14 @@ public class Mpm3DMarching : MonoBehaviour
                 _Kernel_substep_calculate_mat_sdf.LaunchAsync(mat_primitives, mat_primitives_radius, mat_velocities, hand_sdf, obstacle_normals, obstacle_velocities, dx,
                 boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             }
-
+            if (squeeze_particles)
+                SqueezeParticles();
             while (time_left > 0)
             {
                 time_left -= dt;
 
                 _Kernel_subsetep_reset_grid.LaunchAsync(grid_v, grid_m, marching_m, boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
+
                 _Kernel_substep_p2g_multi.LaunchAsync(x, v, C, dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, use_unified_material == true ? 1 : 0,
                 boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
                 if (renderType == RenderType.GaussianSplat && use_gaussian_acceleration)
@@ -946,6 +891,50 @@ public class Mpm3DMarching : MonoBehaviour
         Runtime.Submit();
     }
 
+
+    public void FillSqueezeParticles(float len)
+    {
+        int N_to_fill = (int)(len * math.PI * squeeze_radius * squeeze_radius * particle_per_grid * n_grid * n_grid * n_grid);
+        if (N_to_fill > 0)
+        {
+            NdArray<float> x_new, v_new, C_new, dg_new, p_mass_new;
+            NParticles = NParticles + N_to_fill;
+            x_new = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
+            v_new = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).Build();
+            C_new = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+            dg_new = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
+            p_mass_new = new NdArrayBuilder<float>().Shape(NParticles).Build();
+            _Kernel_copy_array_1dim3.LaunchAsync(x, x_new);
+            _Kernel_copy_array_1dim3.LaunchAsync(v, v_new);
+            _Kernel_copy_array_1dim1.LaunchAsync(p_mass, p_mass_new);
+            Init_materials();
+            Build_materials();
+            Copy_materials();
+            _Kernel_init_dg.LaunchAsync(dg_new);
+            x = x_new;
+            v = v_new;
+            dg = dg_new;
+            C = C_new;
+            p_mass = p_mass_new;
+        }
+    }
+
+    private void SqueezeParticles()
+    {
+        float squeeze_v_norm = squeeze_velocity.magnitude;
+        int N_to_squeeze = (int)(math.PI * squeeze_radius * squeeze_radius * particle_per_grid * frame_time * squeeze_v_norm * n_grid * n_grid * n_grid);
+        N_to_squeeze = math.max(N_to_squeeze, 1);
+        N_to_squeeze = math.min(N_to_squeeze, NParticles - squeeze_particle_index);
+        if (N_to_squeeze > 0)
+        {
+            int end_index = squeeze_particle_index + N_to_squeeze;
+            _Kernel_substep_squeeze_particles.LaunchAsync(x, p_mass, v, _p_mass,
+            squeeze_center.x, squeeze_center.y, squeeze_center.z,
+            squeeze_velocity.x, squeeze_velocity.y, squeeze_velocity.z,
+            squeeze_radius, max_dt, squeeze_particle_index, end_index);
+            squeeze_particle_index = end_index;
+        }
+    }
     public void MergeAndUpdate(Mpm3DMarching other)
     {
         if (other.renderType != renderType)
@@ -1210,6 +1199,50 @@ public class Mpm3DMarching : MonoBehaviour
         Build_materials();
 
         Copy_materials();
+    }
+    private void SwitchRenderType()
+    {
+        switch (lastRenderType)
+        {
+            case RenderType.PointMesh:
+                GetComponent<MeshRenderer>().enabled = false;
+                break;
+            case RenderType.GaussianSplat:
+                GetComponent<GaussianSplatRenderer>().enabled = false;
+                break;
+            case RenderType.MarchingCubes:
+                Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>(true);
+                string childName = "MarchingCubeVisualizer";
+                foreach (Transform child in allChildren)
+                {
+                    if (child.name == childName)
+                    {
+                        child.gameObject.SetActive(false);
+                    }
+                }
+                break;
+        }
+        switch (renderType)
+        {
+            case RenderType.PointMesh:
+                GetComponent<MeshRenderer>().enabled = true;
+                break;
+            case RenderType.GaussianSplat:
+                GetComponent<GaussianSplatRenderer>().enabled = true;
+                break;
+            case RenderType.MarchingCubes:
+                Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>(true);
+                string childName = "MarchingCubeVisualizer";
+                foreach (Transform child in allChildren)
+                {
+                    if (child.name == childName)
+                    {
+                        child.gameObject.SetActive(true);
+                    }
+                }
+                break;
+        }
+        lastRenderType = renderType;
     }
     public void MergeGrabbable(GameObject object2)
     {
@@ -1655,14 +1688,6 @@ public class Mpm3DMarching : MonoBehaviour
         boundary_max = transform.InverseTransformPoint(Center) + Vector3.one * hand_simulation_radius / transform.lossyScale.x;
     }
 
-    void SaveHandMotionData()
-    {
-        using StreamWriter writer = new(filePath);
-        foreach (var position in handPositions)
-        {
-            writer.WriteLine(string.Join(",", position));
-        }
-    }
 
     public void SetFixed(bool fixed_)
     {
@@ -1761,85 +1786,6 @@ public class Mpm3DMarching : MonoBehaviour
         pinchratio = ratio;
     }
 
-    void LoadHandMotionData()
-    {
-        handPositions.Clear();
-        using StreamReader reader = new(filePath);
-
-        string line;
-        while ((line = reader.ReadLine()) != null)
-        {
-            float[] position = Array.ConvertAll(line.Split(','), float.Parse);
-            handPositions.Add(position);
-        }
-    }
-
-    void UpdateHandSDFFromRecordedData(int index)
-    {
-        // index %= handPositions.Count / (skeleton_num_capsules * oculus_skeletons.Length);
-        // if (handPositions.Count == 0)
-        // {
-        //     UnityEngine.Debug.LogWarning("No recorded hand positions available.");
-        //     return;
-        // }
-
-        // // Iterate through the recorded hand positions and apply them to the hand skeleton segments
-        // for (int i = 0; i < oculus_skeletons.Length; i++)
-        // {
-        //     int init = i * skeleton_num_capsules * 6;
-
-        //     for (int j = 0; j < skeleton_num_capsules; j++)
-        //     {
-        //         int idx = index * skeleton_num_capsules * oculus_skeletons.Length + i * skeleton_num_capsules + j;
-        //         if (idx >= handPositions.Count)
-        //         {
-        //             return;
-        //         }
-        //         float[] position = handPositions[idx];
-        //         UpdateHandSkeletonSegment(tool_segments, tool_segments_prev, tool_velocities, init + j * 6, new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]), frame_time);
-        //     }
-        // }
-
-        // skeleton_segments.CopyFromArray(tool_segments);
-        // skeleton_velocities.CopyFromArray(tool_velocities);
-    }
-
-    private void RenderRecordedHandSkeletonCapsule(int index)
-    {
-        // // initialization
-        // if (!RendererInitialized)
-        // {
-        //     for (int i = 0; i < oculus_skeletons.Length; i++)
-        //     {
-        //         for (int j = 0; j < skeleton_num_capsules; j++)
-        //         {
-        //             var capsuleVis = new CapsuleVisualization(preset_capsule_radius[j], handMaterial);
-        //             _capsuleVisualizations.Add(capsuleVis);
-        //         }
-        //     }
-        //     RendererInitialized = true;
-        // }
-
-        // if (RendererInitialized)
-        // {
-        //     index %= handPositions.Count / (skeleton_num_capsules * oculus_skeletons.Length);
-        //     for (int i = 0; i < oculus_skeletons.Length; i++)
-        //     {
-        //         int init = i * skeleton_num_capsules * 6;
-
-        //         for (int j = 0; j < skeleton_num_capsules; j++)
-        //         {
-        //             int idx = index * skeleton_num_capsules * oculus_skeletons.Length + i * skeleton_num_capsules + j;
-        //             if (idx >= handPositions.Count)
-        //             {
-        //                 return;
-        //             }
-        //             float[] position = handPositions[idx];
-        //             _capsuleVisualizations[i * skeleton_num_capsules + j].Update(new Vector3(position[0], position[1], position[2]), new Vector3(position[3], position[4], position[5]));
-        //         }
-        //     }
-        // }
-    }
 
     private void UpdateSkeletonSegment(float[] skeleton_segments, float[] skeleton_segments_prev, float[] skeleton_velocities, int init, Vector3 segment_start, Vector3 segment_end, float frameTime)
     {
@@ -1881,19 +1827,6 @@ public class Mpm3DMarching : MonoBehaviour
         return tools.Count > 0;
     }
 
-    void OnSpacePressed()
-    {
-        isRecording = !isRecording;
-        //print("Recording: " + isRecording);
-        if (!isRecording)
-        {
-            SaveHandMotionData();
-        }
-        else
-        {
-            handPositions.Clear();
-        }
-    }
     unsafe void PrintNativeTextureData(IntPtr ptr, int size)
     {
 
