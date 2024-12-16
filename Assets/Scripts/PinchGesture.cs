@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 
 public class PinchGesture : MonoBehaviour
@@ -76,7 +77,11 @@ public class PinchGesture : MonoBehaviour
     public float squeezeRadius = 0.02f;
 
     // 握拳检测阈值
-    public float squeezeThreshold = 0.04f; // 根据实际情况调整
+    public float squeezeThresholdLow = 0.04f;
+
+    public float squeezeThresholdHigh = 0.06f;
+
+    public float squeeze_ratio = 0.5f;
 
     // Visualize the selection area while pinch translation and rotation
     private GameObject pinchSphere;
@@ -253,6 +258,8 @@ public class PinchGesture : MonoBehaviour
     {
         int curledFingers = 0;
 
+        float sumDistance = 0;
+
         for (int i = 0; i < squeezeFingerTips.Count; i++)
         {
             Transform tip = GetBoneTransform(squeezeFingerTips[i]);
@@ -263,19 +270,21 @@ public class PinchGesture : MonoBehaviour
 
             float distance = Vector3.Distance(tip.position, baseBone.position);
 
-            if (distance < squeezeThreshold)
-                curledFingers++;
-        }
+            sumDistance += distance;
 
+            curledFingers += distance < squeezeThresholdHigh ? 1 : 0;
+        }
+        float avarageDistance = sumDistance / curledFingers;
         // 假设握拳需要三个手指都弯曲
-        if (curledFingers >= 3 && !isSqueezing)
+        if (avarageDistance <= squeezeThresholdHigh && !isSqueezing)
         {
             isSqueezing = true;
+            squeeze_ratio = 1 - (avarageDistance - squeezeThresholdLow) / (squeezeThresholdHigh - squeezeThresholdLow);
             CalculateSqueezeDetails();
             CreateOrUpdateSqueezeSphere(squeezeCenter);
             CreateOrUpdateSqueezeCone(squeezeCenter, squeezeDirection);
         }
-        else if (curledFingers < 3 && isSqueezing)
+        else if (avarageDistance > squeezeThresholdHigh && isSqueezing)
         {
             isSqueezing = false;
             squeezeCenter = Vector3.zero;
@@ -286,6 +295,7 @@ public class PinchGesture : MonoBehaviour
 
         if (isSqueezing)
         {
+            squeeze_ratio = 1 - (avarageDistance - squeezeThresholdLow) / (squeezeThresholdHigh - squeezeThresholdLow);
             CalculateSqueezeDetails();
             CreateOrUpdateSqueezeSphere(squeezeCenter);
             CreateOrUpdateSqueezeCone(squeezeCenter, squeezeDirection);

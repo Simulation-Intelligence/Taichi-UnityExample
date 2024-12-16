@@ -35,7 +35,7 @@ public class Mpm3DMarching : MonoBehaviour
      _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi, _Kernel_substep_p2marching,
         _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_3dim1, _Kernel_copy_array_3dim3, _Kernel_copy_array_1dim1I, _Kernel_init_sample_gaussian_data, _Kernel_substep_update_dg,
         _Kernel_set_zero_1dim1, _Kernel_set_zero_1dim3,
-        _Kernel_substep_squeeze_particles, _Kernel_substep_squeeze_particles_square, _Kernel_substep_squeeze_particles_star;
+        _Kernel_substep_squeeze_particles_circle, _Kernel_substep_squeeze_particles_square, _Kernel_substep_squeeze_particles_star;
 
     public enum RenderType
     {
@@ -68,6 +68,13 @@ public class Mpm3DMarching : MonoBehaviour
     {
         NeoHookean,
         Kirchhoff
+    }
+
+    public enum SqueezeType
+    {
+        Circle,
+        Square,
+        Star
     }
     public enum ObstacleType
     {
@@ -181,7 +188,11 @@ public class Mpm3DMarching : MonoBehaviour
     private float pinchratio = 4.0f;
 
     [SerializeField]
-    private float squeeze_ratio = 0.5f;
+    private float squeeze_speed = 0.5f;
+
+    [SerializeField]
+
+    public SqueezeType squeezeType = SqueezeType.Star;
 
     [Header("Fix the Object in Place")]
     [SerializeField]
@@ -319,7 +330,7 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_init_sample_gaussian_data = kernels["init_sample_gaussian_data"];
             _Kernel_substep_update_dg = kernels["substep_update_dg"];
 
-            _Kernel_substep_squeeze_particles = kernels["substep_squeeze_particles"];
+            _Kernel_substep_squeeze_particles_circle = kernels["substep_squeeze_particles_circle"];
             _Kernel_substep_squeeze_particles_square = kernels["substep_squeeze_particles_square"];
             _Kernel_substep_squeeze_particles_star = kernels["substep_squeeze_particles_star"];
         }
@@ -935,26 +946,39 @@ public class Mpm3DMarching : MonoBehaviour
         {
             return;
         }
+        Kernel _kernel = _Kernel_substep_squeeze_particles_circle; ;
 
+        switch (squeezeType)
+        {
+            case SqueezeType.Circle:
+                _kernel = _Kernel_substep_squeeze_particles_circle;
+                break;
+            case SqueezeType.Star:
+                _kernel = _Kernel_substep_squeeze_particles_star;
+                break;
+            case SqueezeType.Square:
+                _kernel = _Kernel_substep_squeeze_particles_square;
+                break;
+        }
         Vector3 squeeze_center = transform.InverseTransformPoint(pinchGesture.squeezeCenter);
 
-        Vector3 squeeze_velocity = squeeze_ratio * transform.InverseTransformDirection(pinchGesture.squeezeDirection);
+        Vector3 squeeze_velocity = squeeze_speed * transform.InverseTransformDirection(pinchGesture.squeezeDirection);
 
-        float squeeze_radius = pinchGesture.squeezeRadius / transform.lossyScale.x;
+        float squeeze_radius = pinchGesture.squeezeRadius / transform.lossyScale.x * pinchGesture.squeeze_ratio;
 
         if (NParticles == squeeze_particle_index)
         {
             FillSqueezeParticles(100);
         }
 
-        int N_to_squeeze = (int)(math.PI * squeeze_radius * squeeze_radius * particle_per_grid * frame_time * squeeze_ratio * n_grid * n_grid * n_grid);
+        int N_to_squeeze = (int)(math.PI * squeeze_radius * squeeze_radius * particle_per_grid * frame_time * squeeze_speed * n_grid * n_grid * n_grid);
         N_to_squeeze = math.max(N_to_squeeze, 1);
         N_to_squeeze = math.min(N_to_squeeze, NParticles - squeeze_particle_index);
 
         if (N_to_squeeze > 0)
         {
             int end_index = squeeze_particle_index + N_to_squeeze;
-            _Kernel_substep_squeeze_particles_star.LaunchAsync(x, p_mass, v, _p_mass,
+            _kernel.LaunchAsync(x, p_mass, v, _p_mass,
             squeeze_center.x, squeeze_center.y, squeeze_center.z,
             squeeze_velocity.x, squeeze_velocity.y, squeeze_velocity.z,
             squeeze_radius, max_dt, squeeze_particle_index, end_index);

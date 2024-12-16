@@ -949,7 +949,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     # endregion
 
     @ti.kernel
-    def substep_squeeze_particles(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),target_p_mass:ti.f32,
+    def substep_squeeze_particles_circle(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),target_p_mass:ti.f32,
                           center_x:ti.f32, center_y:ti.f32, center_z:ti.f32,velocity_x:ti.f32, velocity_y:ti.f32, velocity_z:ti.f32, radius:ti.f32,dt:ti.f32,
                           starting_index:ti.i32, ending_index:ti.i32):
         
@@ -1151,7 +1151,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     
     def substep():
         substep_reset_grid(grid_v, grid_m,marching_m, min_x, max_x, min_y, max_y, min_z, max_z)
-        substep_squeeze_particles(x, p_mass, v,_p_mass, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.1,dt, 0, 1)
+        substep_squeeze_particles_circle(x, p_mass, v,_p_mass, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.1,dt, 0, 1)
         substep_squeeze_particles_square(x, p_mass, v,_p_mass, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.1,dt, 0, 1)
         substep_squeeze_particles_star(x, p_mass, v,_p_mass, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.1,dt, 0, 1)
         substep_p2g_multi(x, v, C,  dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, True,
@@ -1234,7 +1234,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(set_zero_1dim3, template_args={'x': x})
         mod.add_kernel(init_sample_gaussian_data, template_args={'x_gaussian': x, 'x': x})
 
-        mod.add_kernel(substep_squeeze_particles, template_args={'x': x, 'p_mass': p_mass, 'v': v})
+        mod.add_kernel(substep_squeeze_particles_circle, template_args={'x': x, 'p_mass': p_mass, 'v': v})
         mod.add_kernel(substep_squeeze_particles_square, template_args={'x': x, 'p_mass': p_mass, 'v': v})
         mod.add_kernel(substep_squeeze_particles_star, template_args={'x': x, 'p_mass': p_mass, 'v': v})
         
