@@ -503,7 +503,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                         v[p] = mat_velocities[min_primitive_idx, 0] * min_alpha + mat_velocities[min_primitive_idx, 1] * (1 - min_alpha)
                     else:
                         v[p] = mat_velocities[min_primitive_idx, 0] * min_alpha + mat_velocities[min_primitive_idx, 1] * min_beta + mat_velocities[min_primitive_idx, 2] * (1 - min_alpha - min_beta) 
-
+    
     @ti.kernel
     def substep_adjust_particle(x: ti.types.ndarray(ndim=1), 
                                 v: ti.types.ndarray(ndim=1),

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: rice-puddings-curved-plate-example
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 119405
+  m_BoundsMin: {x: 0.16196357, y: 0.68326706, z: 0.15772226}
+  m_BoundsMax: {x: 0.74255204, y: 0.9563857, z: 0.6560926}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: eeb4c28af7274a3152845b26c368533c
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 8cebfe8e4bb02d04e954b4bf4be0d91b, type: 3}
+  m_ColorData: {fileID: 4900000, guid: f9c62d43b72125d44814bd590a488b5a, type: 3}
+  m_OtherData: {fileID: 4900000, guid: fae29df947ebe054c8eaaaadb2774aa9, type: 3}
+  m_SHData: {fileID: 4900000, guid: bf93564404c17e046bf8548734304e17, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
