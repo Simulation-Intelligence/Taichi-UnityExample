@@ -74,9 +74,17 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 grid_m[I] = 0         # Reset mass
         for I in ti.grouped(marching_m):
             marching_m[I] = 0
-    
 
-    
+    @ti.kernel        
+    def set_zero_1dim3(x: ti.types.ndarray(ndim=1)):
+        for p in x:
+            x[p] = [0, 0, 0]
+
+    @ti.kernel        
+    def set_zero_1dim1(x: ti.types.ndarray(ndim=1)):
+        for p in x:
+            x[p] = 0
+
     @ti.kernel
     def substep_p2g_multi(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), C: ti.types.ndarray(ndim=1), 
                     dg: ti.types.ndarray(ndim=1), grid_v: ti.types.ndarray(ndim=3), grid_m: ti.types.ndarray(ndim=3),
@@ -944,40 +952,132 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def substep_squeeze_particles(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),target_p_mass:ti.f32,
                           center_x:ti.f32, center_y:ti.f32, center_z:ti.f32,velocity_x:ti.f32, velocity_y:ti.f32, velocity_z:ti.f32, radius:ti.f32,dt:ti.f32,
                           starting_index:ti.i32, ending_index:ti.i32):
-        # 计算圆柱高度（速度大小乘以dt）
-        velocity_norm = ti.Vector([velocity_x, velocity_y, velocity_z])
-        speed = velocity_norm.norm()
-        cylinder_height = speed * dt
-        if speed > 0:
-            velocity_norm = velocity_norm / speed
-        else:
-            velocity_norm = ti.Vector([0.0, 0.0, 1.0])  # 默认方向
+        
+        #如果center在边界内才进行操作
+        if center_x > 0.03 and center_x < 0.97 and center_y > 0.03 and center_y < 0.97 and center_z > 0.03 and center_z < 0.97:
+            # 计算圆柱高度（速度大小乘以dt）
+            velocity_norm = ti.Vector([velocity_x, velocity_y, velocity_z])
+            speed = velocity_norm.norm()
+            cylinder_height = speed * dt
+            if speed > 0:
+                velocity_norm = velocity_norm / speed
+            else:
+                velocity_norm = ti.Vector([0.0, 0.0, 1.0])  # 默认方向
 
-        # 构建正交基底
-        # 选择一个与 velocity_norm 不平行的向量
-        arbitrary = ti.Vector([1.0, 0.0, 0.0])
-        if ti.abs(velocity_norm.dot(arbitrary)) > 0.99:
-            arbitrary = ti.Vector([0.0, 1.0, 0.0])
-        x_axis = velocity_norm.cross(arbitrary).normalized()
-        y_axis = velocity_norm.cross(x_axis).normalized()
+            # 构建正交基底
+            # 选择一个与 velocity_norm 不平行的向量
+            arbitrary = ti.Vector([1.0, 0.0, 0.0])
+            if ti.abs(velocity_norm.dot(arbitrary)) > 0.99:
+                arbitrary = ti.Vector([0.0, 1.0, 0.0])
+            x_axis = velocity_norm.cross(arbitrary).normalized()
+            y_axis = velocity_norm.cross(x_axis).normalized()
 
-        for p in range(starting_index, ending_index):
-            p_mass[p] = target_p_mass
-            x_0 ,y_0, z_0 = 0.0, 0.0, 0.0
-            #粒子位置随机均匀分部在圆柱内,圆柱的底面与velocity方向垂直，圆柱的高度为速度大小乘以dt
-            while True:
+            for p in range(starting_index, ending_index):
+                p_mass[p] = target_p_mass
+                x_0 ,y_0, z_0 = 0.0, 0.0, 0.0
+                #粒子位置随机均匀分部在圆柱内,圆柱的底面与velocity方向垂直，圆柱的高度为速度大小乘以dt
+                while True:
+                    x_0 = ti.random() * 2 - 1
+                    y_0 = ti.random() * 2 - 1
+                    z_0= ti.random()
+                    if x_0 * x_0 + y_0 * y_0<=1:
+                        break
+                #将生成的点转到速度方向
+                x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0* cylinder_height 
+
+                #限制在边界内
+                x[p] = ti.Vector([min(max(x[p][i], 0.03), 0.97) for i in range(3)])
+                v[p] = velocity_norm * speed
+
+    @ti.kernel
+    def substep_squeeze_particles_square(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),target_p_mass:ti.f32,
+                          center_x:ti.f32, center_y:ti.f32, center_z:ti.f32,velocity_x:ti.f32, velocity_y:ti.f32, velocity_z:ti.f32, radius:ti.f32,dt:ti.f32,
+                          starting_index:ti.i32, ending_index:ti.i32):
+        
+        #如果center在边界内才进行操作
+        if center_x > 0.03 and center_x < 0.97 and center_y > 0.03 and center_y < 0.97 and center_z > 0.03 and center_z < 0.97:
+            # 计算圆柱高度（速度大小乘以dt）
+            velocity_norm = ti.Vector([velocity_x, velocity_y, velocity_z])
+            speed = velocity_norm.norm()
+            cylinder_height = speed * dt
+            if speed > 0:
+                velocity_norm = velocity_norm / speed
+            else:
+                velocity_norm = ti.Vector([0.0, 0.0, 1.0])  # 默认方向
+    
+            # 构建正交基底
+            # 选择一个与 velocity_norm 不平行的向量
+            arbitrary = ti.Vector([1.0, 0.0, 0.0])
+            if ti.abs(velocity_norm.dot(arbitrary)) > 0.99:
+                arbitrary = ti.Vector([0.0, 1.0, 0.0])
+            x_axis = velocity_norm.cross(arbitrary).normalized()
+            y_axis = velocity_norm.cross(x_axis).normalized()
+    
+            for p in range(starting_index, ending_index):
+                p_mass[p] = target_p_mass
+                x_0 ,y_0, z_0 = 0.0, 0.0, 0.0
+                #粒子位置随机均匀分部在方形内，高度为速度大小乘以dt
                 x_0 = ti.random() * 2 - 1
                 y_0 = ti.random() * 2 - 1
                 z_0= ti.random()
-                if x_0 * x_0 + y_0 * y_0<=1:
-                    break
-            #将生成的点转到速度方向
-            x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0* cylinder_height 
-            v[p] = velocity_norm * speed
 
-                
+                #将生成的点转到速度方向
+                x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0* cylinder_height 
+    
+                #限制在边界内
+                x[p] = ti.Vector([min(max(x[p][i], 0.03), 0.97) for i in range(3)])
+                v[p] = velocity_norm * speed                
 
-            
+    @ti.kernel
+    def substep_squeeze_particles_star(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),target_p_mass:ti.f32,
+                          center_x:ti.f32, center_y:ti.f32, center_z:ti.f32,velocity_x:ti.f32, velocity_y:ti.f32, velocity_z:ti.f32, radius:ti.f32,dt:ti.f32,
+                          starting_index:ti.i32, ending_index:ti.i32):
+        
+        #如果center在边界内才进行操作
+        if center_x > 0.03 and center_x < 0.97 and center_y > 0.03 and center_y < 0.97 and center_z > 0.03 and center_z < 0.97:
+            # 计算圆柱高度（速度大小乘以dt）
+            velocity_norm = ti.Vector([velocity_x, velocity_y, velocity_z])
+            speed = velocity_norm.norm()
+            cylinder_height = speed * dt
+            if speed > 0:
+                velocity_norm = velocity_norm / speed
+            else:
+                velocity_norm = ti.Vector([0.0, 0.0, 1.0])  # 默认方向
+    
+            # 构建正交基底
+            # 选择一个与 velocity_norm 不平行的向量
+            arbitrary = ti.Vector([1.0, 0.0, 0.0])
+            if ti.abs(velocity_norm.dot(arbitrary)) > 0.99:
+                arbitrary = ti.Vector([0.0, 1.0, 0.0])
+            x_axis = velocity_norm.cross(arbitrary).normalized()
+            y_axis = velocity_norm.cross(x_axis).normalized()
+    
+            for p in range(starting_index, ending_index):
+                p_mass[p] = target_p_mass
+                x_0 ,y_0, z_0 = 0.0, 0.0, 0.0
+                #粒子位置随机均匀分部在圆柱内,圆柱的底面与velocity方向垂直，圆柱的高度为速度大小乘以dt
+                while True:
+                    x_0 = ti.random() * 2 - 1
+                    y_0 = ti.random() * 2 - 1
+                    z_0= ti.random()
+
+                    theta = ti.atan2(y_0, x_0)
+
+                    #theta取与最近的坐标轴的夹角
+                    theta %= pi /2
+                    if theta > pi / 4:
+                        theta = pi / 2 - theta
+                    r= ti.sqrt(x_0 * x_0 + y_0 * y_0)
+                    max_r=ti.sin(pi/12)/ti.sin(theta+pi/12)
+                    if r<=max_r:
+                        break
+
+                #将生成的点转到速度方向
+                x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0* cylinder_height 
+    
+                #限制在边界内
+                x[p] = ti.Vector([min(max(x[p][i], 0.03), 0.97) for i in range(3)])
+                v[p] = velocity_norm * speed        
 
     # Medial Axis Transform (MAT) for Shape Appreximation
     mat_sdf = ti.ndarray(ti.f32, shape=(n_grid, n_grid, n_grid))
@@ -1052,6 +1152,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     def substep():
         substep_reset_grid(grid_v, grid_m,marching_m, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_squeeze_particles(x, p_mass, v,_p_mass, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.1,dt, 0, 1)
+        substep_squeeze_particles_square(x, p_mass, v,_p_mass, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.1,dt, 0, 1)
+        substep_squeeze_particles_star(x, p_mass, v,_p_mass, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.1,dt, 0, 1)
         substep_p2g_multi(x, v, C,  dg, grid_v, grid_m, E, nu, material, p_vol, p_mass, dx, dt, True,
                            min_x, max_x, min_y, max_y, min_z, max_z)
         substep_p2marching(x, point_color, marching_m, p_mass,True,
@@ -1128,9 +1230,13 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         mod.add_kernel(copy_array_1dim1I,template_args={'src': material, 'dst': material})
         mod.add_kernel(copy_array_3dim1, template_args={'src': sdf, 'dst': sdf})
         mod.add_kernel(copy_array_3dim3, template_args={'src': obstacle_normals, 'dst': obstacle_normals})
+        mod.add_kernel(set_zero_1dim1, template_args={'x': p_mass})
+        mod.add_kernel(set_zero_1dim3, template_args={'x': x})
         mod.add_kernel(init_sample_gaussian_data, template_args={'x_gaussian': x, 'x': x})
 
         mod.add_kernel(substep_squeeze_particles, template_args={'x': x, 'p_mass': p_mass, 'v': v})
+        mod.add_kernel(substep_squeeze_particles_square, template_args={'x': x, 'p_mass': p_mass, 'v': v})
+        mod.add_kernel(substep_squeeze_particles_star, template_args={'x': x, 'p_mass': p_mass, 'v': v})
         
         mod.archive("Assets/Resources/TaichiModules/mpm3DGaussian_part_mat.kernel.tcm")
         print("AOT done")

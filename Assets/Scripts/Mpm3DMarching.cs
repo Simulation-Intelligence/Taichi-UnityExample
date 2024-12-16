@@ -13,6 +13,7 @@ using UnityEngine.Experimental.Rendering;
 using MarchingCubes;
 using System.Xml;
 using Unity.Mathematics;
+using Oculus.Interaction.GrabAPI;
 
 public class Mpm3DMarching : MonoBehaviour
 {
@@ -33,7 +34,8 @@ public class Mpm3DMarching : MonoBehaviour
      _Kernel_init_dg, _Kernel_init_gaussian_data, _Kernel_substep_update_gaussian_data, _Kernel_scale_to_unit_cube, _Kernel_recenter_to_unit_cube, _Kernel_init_sphere, _Kernel_init_cylinder, _Kernel_init_torus,
      _Kernel_normalize_m, _Kernel_transform_and_merge, _Kernel_substep_fix_object, _Kernel_substep_p2g_multi, _Kernel_substep_p2marching,
         _Kernel_copy_array_1dim1, _Kernel_copy_array_1dim3, _Kernel_copy_array_3dim1, _Kernel_copy_array_3dim3, _Kernel_copy_array_1dim1I, _Kernel_init_sample_gaussian_data, _Kernel_substep_update_dg,
-        _Kernel_substep_squeeze_particles;
+        _Kernel_set_zero_1dim1, _Kernel_set_zero_1dim3,
+        _Kernel_substep_squeeze_particles, _Kernel_substep_squeeze_particles_square, _Kernel_substep_squeeze_particles_star;
 
     public enum RenderType
     {
@@ -163,12 +165,6 @@ public class Mpm3DMarching : MonoBehaviour
 
     private int squeeze_particle_index = 0;
 
-    public Vector3 squeeze_center = new Vector3(0.5f, 0.5f, 0.5f);
-
-    public Vector3 squeeze_velocity = new Vector3(0, 0, 0);
-
-    public float squeeze_radius = 0.1f;
-
     public bool squeeze_particles = false;
 
     [Header("Interaction Settings")]
@@ -183,6 +179,9 @@ public class Mpm3DMarching : MonoBehaviour
     public PinchGesture rightPinchGesture;
     [SerializeField]
     private float pinchratio = 4.0f;
+
+    [SerializeField]
+    private float squeeze_ratio = 0.5f;
 
     [Header("Fix the Object in Place")]
     [SerializeField]
@@ -314,10 +313,15 @@ public class Mpm3DMarching : MonoBehaviour
             _Kernel_copy_array_3dim1 = kernels["copy_array_3dim1"];
             _Kernel_copy_array_3dim3 = kernels["copy_array_3dim3"];
 
+            _Kernel_set_zero_1dim3 = kernels["set_zero_1dim3"];
+            _Kernel_set_zero_1dim1 = kernels["set_zero_1dim1"];
+
             _Kernel_init_sample_gaussian_data = kernels["init_sample_gaussian_data"];
             _Kernel_substep_update_dg = kernels["substep_update_dg"];
 
             _Kernel_substep_squeeze_particles = kernels["substep_squeeze_particles"];
+            _Kernel_substep_squeeze_particles_square = kernels["substep_squeeze_particles_square"];
+            _Kernel_substep_squeeze_particles_star = kernels["substep_squeeze_particles_star"];
         }
 
         var cgraphs = Mpm3DModule.GetAllComputeGrpahs().ToDictionary(x => x.Name);
@@ -426,6 +430,7 @@ public class Mpm3DMarching : MonoBehaviour
         }
         // Determine the number of particles based on the grid size, particle density, and volume
         NParticles = (int)(n_grid * n_grid * n_grid * particle_per_grid * volume);
+        squeeze_particle_index = NParticles;
         UnityEngine.Debug.Log("Number of particles: " + NParticles);
         Init_Particle_Data();
         // kernel initialization of different primitive shapes
@@ -760,8 +765,9 @@ public class Mpm3DMarching : MonoBehaviour
                 _Kernel_substep_calculate_mat_sdf.LaunchAsync(mat_primitives, mat_primitives_radius, mat_velocities, hand_sdf, obstacle_normals, obstacle_velocities, dx,
                 boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             }
-            if (squeeze_particles)
-                SqueezeParticles();
+
+            //SqueezeParticles(leftPinchGesture);
+            SqueezeParticles(rightPinchGesture);
             while (time_left > 0)
             {
                 time_left -= dt;
@@ -892,9 +898,9 @@ public class Mpm3DMarching : MonoBehaviour
     }
 
 
-    public void FillSqueezeParticles(float len)
+    public void FillSqueezeParticles(int grid_num)
     {
-        int N_to_fill = (int)(len * math.PI * squeeze_radius * squeeze_radius * particle_per_grid * n_grid * n_grid * n_grid);
+        int N_to_fill = (int)(grid_num * particle_per_grid);
         if (N_to_fill > 0)
         {
             NdArray<float> x_new, v_new, C_new, dg_new, p_mass_new;
@@ -904,9 +910,13 @@ public class Mpm3DMarching : MonoBehaviour
             C_new = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
             dg_new = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
             p_mass_new = new NdArrayBuilder<float>().Shape(NParticles).Build();
+            _Kernel_set_zero_1dim3.LaunchAsync(v_new);
+            _Kernel_set_zero_1dim3.LaunchAsync(x_new);
+            _Kernel_set_zero_1dim1.LaunchAsync(p_mass_new);
             _Kernel_copy_array_1dim3.LaunchAsync(x, x_new);
             _Kernel_copy_array_1dim3.LaunchAsync(v, v_new);
             _Kernel_copy_array_1dim1.LaunchAsync(p_mass, p_mass_new);
+            Runtime.Submit();
             Init_materials();
             Build_materials();
             Copy_materials();
@@ -919,16 +929,32 @@ public class Mpm3DMarching : MonoBehaviour
         }
     }
 
-    private void SqueezeParticles()
+    private void SqueezeParticles(PinchGesture pinchGesture)
     {
-        float squeeze_v_norm = squeeze_velocity.magnitude;
-        int N_to_squeeze = (int)(math.PI * squeeze_radius * squeeze_radius * particle_per_grid * frame_time * squeeze_v_norm * n_grid * n_grid * n_grid);
+        if (!squeeze_particles || pinchGesture == null || pinchGesture.isSqueezing == false)
+        {
+            return;
+        }
+
+        Vector3 squeeze_center = transform.InverseTransformPoint(pinchGesture.squeezeCenter);
+
+        Vector3 squeeze_velocity = squeeze_ratio * transform.InverseTransformDirection(pinchGesture.squeezeDirection);
+
+        float squeeze_radius = pinchGesture.squeezeRadius / transform.lossyScale.x;
+
+        if (NParticles == squeeze_particle_index)
+        {
+            FillSqueezeParticles(100);
+        }
+
+        int N_to_squeeze = (int)(math.PI * squeeze_radius * squeeze_radius * particle_per_grid * frame_time * squeeze_ratio * n_grid * n_grid * n_grid);
         N_to_squeeze = math.max(N_to_squeeze, 1);
         N_to_squeeze = math.min(N_to_squeeze, NParticles - squeeze_particle_index);
+
         if (N_to_squeeze > 0)
         {
             int end_index = squeeze_particle_index + N_to_squeeze;
-            _Kernel_substep_squeeze_particles.LaunchAsync(x, p_mass, v, _p_mass,
+            _Kernel_substep_squeeze_particles_star.LaunchAsync(x, p_mass, v, _p_mass,
             squeeze_center.x, squeeze_center.y, squeeze_center.z,
             squeeze_velocity.x, squeeze_velocity.y, squeeze_velocity.z,
             squeeze_radius, max_dt, squeeze_particle_index, end_index);

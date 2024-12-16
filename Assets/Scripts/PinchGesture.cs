@@ -22,6 +22,25 @@ public class PinchGesture : MonoBehaviour
     public OVRSkeleton.BoneId firstJointBone = OVRSkeleton.BoneId.Hand_Middle1;
     public OVRSkeleton.BoneId secondJointBone = OVRSkeleton.BoneId.Hand_Ring1;
 
+    // 握拳检测所需的指尖和关节
+    private List<OVRSkeleton.BoneId> squeezeFingerTips = new List<OVRSkeleton.BoneId>
+    {
+        OVRSkeleton.BoneId.Hand_ThumbTip,
+        OVRSkeleton.BoneId.Hand_IndexTip,
+        OVRSkeleton.BoneId.Hand_MiddleTip,
+        OVRSkeleton.BoneId.Hand_RingTip,
+        OVRSkeleton.BoneId.Hand_PinkyTip
+    };
+
+    private List<OVRSkeleton.BoneId> squeezeFingerBases = new List<OVRSkeleton.BoneId>
+    {
+        OVRSkeleton.BoneId.Hand_Thumb1,
+        OVRSkeleton.BoneId.Hand_Index1,
+        OVRSkeleton.BoneId.Hand_Middle1,
+        OVRSkeleton.BoneId.Hand_Ring1,
+        OVRSkeleton.BoneId.Hand_Pinky1
+    };
+
     [SerializeField]
     private SmoothHand smoothHand;
     private List<Transform> _handJointsData;
@@ -45,15 +64,38 @@ public class PinchGesture : MonoBehaviour
     [HideInInspector] public Vector3 initialDirectionJoint1;
     [HideInInspector] public Vector3 initialDirectionJoint2;
 
+    // 新增握拳检测相关变量
+    [HideInInspector] public bool isSqueezing = false;
+    [HideInInspector] public Vector3 squeezeCenter;
+    [HideInInspector] public Vector3 squeezeDirection;
+
     public float pinchThreshold = 0.02f;
     public float rotationThreshold = 0.03f;
     public float pinchRadius = 0.05f;
+
+    public float squeezeRadius = 0.02f;
+
+    // 握拳检测阈值
+    public float squeezeThreshold = 0.04f; // 根据实际情况调整
 
     // Visualize the selection area while pinch translation and rotation
     private GameObject pinchSphere;
     private GameObject rotationSphere;
     public bool RenderPinchSphere = true;
     public bool RenderRotationSphere = true;
+
+    // 可视化握拳中心和朝向
+    private GameObject squeezeSphere;
+    public bool RenderSqueezeSphere = true;
+
+    // 可视化握拳朝向的圆锥体
+    private GameObject squeezeCone;
+    public bool RenderSqueezeCone = true;
+    public float coneHeight = 0.1f;
+    public float coneRadius = 0.02f;
+
+    // 材质
+    private Material transparentMaterial;
 
     void Start()
     {
@@ -69,6 +111,8 @@ public class PinchGesture : MonoBehaviour
             oculus_skeleton = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightOVRHand").GetComponent<OVRSkeleton>();
             _handJointsData = smoothHand.SmoothRightHandJoints;
         }
+        CreateTransparentMaterial();
+
     }
 
     void Update()
@@ -77,9 +121,22 @@ public class PinchGesture : MonoBehaviour
         {
             DetectPinch();
             DetectRotation();
+            DetectSqueeze(); // 调用握拳检测方法
         }
     }
-
+    void CreateTransparentMaterial()
+    {
+        // 初始化透明材质
+        transparentMaterial = new Material(Shader.Find("Standard"));
+        transparentMaterial.SetFloat("_Mode", 3); // Transparent mode
+        transparentMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        transparentMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        transparentMaterial.SetInt("_ZWrite", 0);
+        transparentMaterial.DisableKeyword("_ALPHATEST_ON");
+        transparentMaterial.EnableKeyword("_ALPHABLEND_ON");
+        transparentMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        transparentMaterial.renderQueue = 3000;
+    }
     void DetectPinch()
     {
         Transform firstFingerTip = GetBoneTransform(firstPinchFinger);
@@ -192,6 +249,106 @@ public class PinchGesture : MonoBehaviour
         }
     }
 
+    void DetectSqueeze()
+    {
+        int curledFingers = 0;
+
+        for (int i = 0; i < squeezeFingerTips.Count; i++)
+        {
+            Transform tip = GetBoneTransform(squeezeFingerTips[i]);
+            Transform baseBone = GetBoneTransform(squeezeFingerBases[i]);
+
+            if (tip == null || baseBone == null)
+                continue;
+
+            float distance = Vector3.Distance(tip.position, baseBone.position);
+
+            if (distance < squeezeThreshold)
+                curledFingers++;
+        }
+
+        // 假设握拳需要三个手指都弯曲
+        if (curledFingers >= 3 && !isSqueezing)
+        {
+            isSqueezing = true;
+            CalculateSqueezeDetails();
+            CreateOrUpdateSqueezeSphere(squeezeCenter);
+            CreateOrUpdateSqueezeCone(squeezeCenter, squeezeDirection);
+        }
+        else if (curledFingers < 3 && isSqueezing)
+        {
+            isSqueezing = false;
+            squeezeCenter = Vector3.zero;
+            squeezeDirection = Vector3.zero;
+            DestroySqueezeSphere();
+            DestroySqueezeCone();
+        }
+
+        if (isSqueezing)
+        {
+            CalculateSqueezeDetails();
+            CreateOrUpdateSqueezeSphere(squeezeCenter);
+            CreateOrUpdateSqueezeCone(squeezeCenter, squeezeDirection);
+        }
+    }
+
+    void CalculateSqueezeDetails()
+    {
+        // 计算握拳的中心位置
+        Vector3 sum = Vector3.zero;
+        int count = 0;
+        foreach (var boneId in squeezeFingerTips)
+        {
+            Transform tip = GetBoneTransform(boneId);
+            if (tip != null)
+            {
+                sum += tip.position;
+                count++;
+            }
+        }
+
+        if (count > 0)
+        {
+            squeezeCenter = sum / count;
+        }
+        else
+        {
+            squeezeCenter = Vector3.zero;
+        }
+
+        // 计算握拳的朝向
+        // 用小拇指指尖减去食指指尖的位置来计算朝向
+        Transform pinkyTip = GetBoneTransform(OVRSkeleton.BoneId.Hand_PinkyTip);
+        Transform indexTip = GetBoneTransform(OVRSkeleton.BoneId.Hand_IndexTip);
+
+        if (pinkyTip != null && indexTip != null)
+        {
+            // 计算小指指尖到食指指尖的向量
+            Vector3 pinchDirection = pinkyTip.position - indexTip.position;
+
+            // 将该向量加到握拳的中心位置
+            squeezeCenter += pinchDirection.normalized * pinchDirection.magnitude; // 调整比例可以控制影响的大小
+        }
+
+        // 计算握拳的朝向
+        // 用小拇指指尖的位置减去食指指尖的位置来计算朝向
+        Transform pinky2 = GetBoneTransform(OVRSkeleton.BoneId.Hand_Pinky2);
+        Transform index2 = GetBoneTransform(OVRSkeleton.BoneId.Hand_Index2);
+
+        if (pinky2 != null && index2 != null)
+        {
+            // 计算朝向向量
+            squeezeDirection = (pinky2.position - index2.position).normalized;
+        }
+        else
+        {
+            // 如果无法获取到小拇指和食指的指尖位置，使用默认朝向
+            squeezeDirection = Vector3.down;
+        }
+    }
+
+
+
     Transform GetBoneTransform(OVRSkeleton.BoneId boneId)
     {
         if (!UseSmoothHand)
@@ -221,20 +378,11 @@ public class PinchGesture : MonoBehaviour
         {
             pinchSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             pinchSphere.transform.localScale = Vector3.one * (2 * pinchRadius);
+            pinchSphere.name = "PinchSphere";
 
-            // Create a transparent material
-            Material transparentMaterial = new Material(Shader.Find("Standard"));
-            transparentMaterial.color = new Color(0, 1, 0, 0.2f); // Semi-transparent green
-            transparentMaterial.SetFloat("_Mode", 3); // Enable transparency mode
-            transparentMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            transparentMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            transparentMaterial.SetInt("_ZWrite", 0);
-            transparentMaterial.DisableKeyword("_ALPHATEST_ON");
-            transparentMaterial.EnableKeyword("_ALPHABLEND_ON");
-            transparentMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            transparentMaterial.renderQueue = 3000;
-
-            pinchSphere.GetComponent<Renderer>().material = transparentMaterial;
+            // 创建一个透明材质
+            pinchSphere.GetComponent<Renderer>().material = new Material(transparentMaterial);
+            pinchSphere.GetComponent<Renderer>().material.color = new Color(0, 1, 0, 0.2f); // 半透明绿色
         }
 
         if (pinchSphere != null)
@@ -256,20 +404,11 @@ public class PinchGesture : MonoBehaviour
         {
             rotationSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             rotationSphere.transform.localScale = Vector3.one * (2 * pinchRadius);
+            rotationSphere.name = "RotationSphere";
 
-            // Create a transparent material
-            Material transparentMaterial = new Material(Shader.Find("Standard"));
-            transparentMaterial.color = new Color(0, 0, 1, 0.2f); // Semi-transparent blue
-            transparentMaterial.SetFloat("_Mode", 3); // Enable transparency mode
-            transparentMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            transparentMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            transparentMaterial.SetInt("_ZWrite", 0);
-            transparentMaterial.DisableKeyword("_ALPHATEST_ON");
-            transparentMaterial.EnableKeyword("_ALPHABLEND_ON");
-            transparentMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            transparentMaterial.renderQueue = 3000;
-
-            rotationSphere.GetComponent<Renderer>().material = transparentMaterial;
+            // 创建一个透明材质
+            rotationSphere.GetComponent<Renderer>().material = new Material(transparentMaterial);
+            rotationSphere.GetComponent<Renderer>().material.color = new Color(0, 0, 1, 0.2f); // 半透明蓝色
         }
         if (rotationSphere != null)
             rotationSphere.transform.position = position;
@@ -282,5 +421,132 @@ public class PinchGesture : MonoBehaviour
             Destroy(rotationSphere);
             rotationSphere = null;
         }
+    }
+
+    void CreateOrUpdateSqueezeSphere(Vector3 position)
+    {
+        if (!RenderSqueezeSphere)
+            return;
+
+        if (squeezeSphere == null)
+        {
+            squeezeSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            squeezeSphere.transform.localScale = Vector3.one * (2 * squeezeRadius);
+            squeezeSphere.name = "SqueezeSphere";
+
+            // 创建一个透明材质
+            squeezeSphere.GetComponent<Renderer>().material = new Material(transparentMaterial);
+            squeezeSphere.GetComponent<Renderer>().material.color = new Color(1, 0, 0, 0.2f); // 半透明红色
+        }
+
+        if (squeezeSphere != null)
+            squeezeSphere.transform.position = position;
+    }
+
+    void DestroySqueezeSphere()
+    {
+        if (squeezeSphere != null)
+        {
+            Destroy(squeezeSphere);
+            squeezeSphere = null;
+        }
+    }
+
+    void CreateOrUpdateSqueezeCone(Vector3 position, Vector3 direction)
+    {
+        if (!RenderSqueezeCone)
+            return;
+
+        if (squeezeCone == null)
+        {
+            // 创建一个圆锥体
+            squeezeCone = CreateCone(coneRadius, coneHeight, 20); // 20段
+            squeezeCone.name = "SqueezeCone";
+
+            // 设置材质
+            Renderer renderer = squeezeCone.GetComponent<Renderer>();
+            renderer.material = new Material(transparentMaterial);
+            renderer.material.color = new Color(1, 0, 0, 0.5f); // 半透明红色
+        }
+
+        if (squeezeCone != null)
+        {
+            // 设置位置
+            squeezeCone.transform.position = position;
+
+            // 设置朝向
+            if (direction != Vector3.zero)
+            {
+                squeezeCone.transform.rotation = Quaternion.LookRotation(direction);
+            }
+        }
+    }
+
+    void DestroySqueezeCone()
+    {
+        if (squeezeCone != null)
+        {
+            Destroy(squeezeCone);
+            squeezeCone = null;
+        }
+    }
+
+    /// <summary>
+    /// 创建一个圆锥体的 GameObject
+    /// </summary>
+    /// <param name="radius">圆锥底部半径</param>
+    /// <param name="height">圆锥高度</param>
+    /// <param name="segments">圆锥底部的细分段数</param>
+    /// <returns>圆锥体的 GameObject</returns>
+    GameObject CreateCone(float radius, float height, int segments)
+    {
+        GameObject cone = new GameObject("Cone");
+        MeshFilter mf = cone.AddComponent<MeshFilter>();
+        MeshRenderer mr = cone.AddComponent<MeshRenderer>();
+
+        Mesh mesh = new Mesh();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+
+        // 顶点
+        Vector3 tip = Vector3.zero;
+        vertices.Add(tip);
+
+        float angleStep = 360f / segments;
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = i * angleStep * Mathf.Deg2Rad;
+            float x = radius * Mathf.Cos(angle);
+            float y = radius * Mathf.Sin(angle);
+            Vector3 baseVertex = Vector3.back * height + new Vector3(x, y, 0);
+            vertices.Add(baseVertex);
+        }
+
+        // 三角形
+        for (int i = 1; i <= segments; i++)
+        {
+            triangles.Add(0); // Tip vertex
+            triangles.Add(i);
+            triangles.Add(i + 1);
+        }
+
+        // 创建底部
+        int baseCenterIndex = vertices.Count;
+        vertices.Add(Vector3.back * height);
+
+        for (int i = 1; i <= segments; i++)
+        {
+            triangles.Add(baseCenterIndex);
+            triangles.Add(i + 1);
+            triangles.Add(i);
+        }
+
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+
+        mf.mesh = mesh;
+
+        return cone;
     }
 }
