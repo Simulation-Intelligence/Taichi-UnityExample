@@ -21535,7 +21535,9 @@ MonoBehaviour:
   rotationThreshold: 0.03
   pinchRadius: 0.05
   squeezeRadius: 0.02
-  squeezeThreshold: 0.04
+  squeezeThresholdLow: 0.04
+  squeezeThresholdHigh: 0.06
+  squeeze_ratio: 0.5
   RenderPinchSphere: 1
   RenderRotationSphere: 1
   RenderSqueezeSphere: 1
@@ -52668,7 +52670,8 @@ MonoBehaviour:
   leftPinchGesture: {fileID: 887910930}
   rightPinchGesture: {fileID: 1825029097}
   pinchratio: 15
-  squeeze_ratio: 0.5
+  squeeze_speed: 0.5
+  squeezeType: 2
   FixObject: 0
   fix_radius: 0.05
   use_sticky_boundary: 1
@@ -54861,7 +54864,6 @@ MonoBehaviour:
   - {fileID: 1666157288}
   - {fileID: 212110198}
   - {fileID: 281521458}
-  - {fileID: 1747651682}
   - {fileID: 1747651682}
   - {fileID: 42006570}
   - {fileID: 39861174}
@@ -65309,7 +65311,9 @@ MonoBehaviour:
   rotationThreshold: 0.03
   pinchRadius: 0.05
   squeezeRadius: 0.02
-  squeezeThreshold: 0.04
+  squeezeThresholdLow: 0.04
+  squeezeThresholdHigh: 0.06
+  squeeze_ratio: 0.5
   RenderPinchSphere: 0
   RenderRotationSphere: 1
   RenderSqueezeSphere: 1
@@ -114146,7 +114150,8 @@ MonoBehaviour:
   leftPinchGesture: {fileID: 887910930}
   rightPinchGesture: {fileID: 1825029097}
   pinchratio: 15
-  squeeze_ratio: 0.5
+  squeeze_speed: 0.5
+  squeezeType: 2
   FixObject: 0
   fix_radius: 0.05
   use_sticky_boundary: 1
@@ -121864,7 +121869,8 @@ MonoBehaviour:
   leftPinchGesture: {fileID: 887910930}
   rightPinchGesture: {fileID: 1825029097}
   pinchratio: 15
-  squeeze_ratio: 0.5
+  squeeze_speed: 0.5
+  squeezeType: 2
   FixObject: 0
   fix_radius: 0.05
   use_sticky_boundary: 1
@@ -133737,7 +133743,9 @@ MonoBehaviour:
   rotationThreshold: 0.03
   pinchRadius: 0.05
   squeezeRadius: 0.02
-  squeezeThreshold: 0.04
+  squeezeThresholdLow: 0.04
+  squeezeThresholdHigh: 0.06
+  squeeze_ratio: 0.5
   RenderPinchSphere: 0
   RenderRotationSphere: 1
   RenderSqueezeSphere: 1
@@ -135638,7 +135646,8 @@ MonoBehaviour:
   leftPinchGesture: {fileID: 887910930}
   rightPinchGesture: {fileID: 1825029097}
   pinchratio: 15
-  squeeze_ratio: 0.5
+  squeeze_speed: 0.5
+  squeezeType: 2
   FixObject: 0
   fix_radius: 0.05
   use_sticky_boundary: 1
@@ -159783,7 +159792,8 @@ MonoBehaviour:
   leftPinchGesture: {fileID: 887910930}
   rightPinchGesture: {fileID: 1825029097}
   pinchratio: 15
-  squeeze_ratio: 0.5
+  squeeze_speed: 0.5
+  squeezeType: 2
   FixObject: 0
   fix_radius: 0.05
   use_sticky_boundary: 1
@@ -159832,7 +159842,7 @@ MonoBehaviour:
   gy: 0
   n_grid: 64
   bound: 3
-  render_n_grid: 128
+  render_n_grid: 64
   gaussian_simulate_ratio: 0.5
   use_gaussian_acceleration: 0
   lerp_tool: 1
@@ -159861,7 +159871,8 @@ MonoBehaviour:
   leftPinchGesture: {fileID: 887910930}
   rightPinchGesture: {fileID: 1825029097}
   pinchratio: 15
-  squeeze_ratio: 0.5
+  squeeze_speed: 0.5
+  squeezeType: 0
   FixObject: 0
   fix_radius: 0.05
   use_sticky_boundary: 1

@@ -102,6 +102,7 @@ MonoBehaviour:
   _builderCompute: {fileID: 7200000, guid: 9f19ed91e8aa34430ac0ea80fb20eead, type: 3}
   TargetValue: 0.1
   shouldUpdate: 0
+  _smoothingIterations: 0
 --- !u!1 &4961557796543792293
 GameObject:
   m_ObjectHideFlags: 0
@@ -419,7 +420,10 @@ MonoBehaviour:
   gaussian_simulate_ratio: 0.5
   use_gaussian_acceleration: 0
   lerp_tool: 1
+  use_grid_force: 0
+  use_standard_mpm_boundary: 1
   adjust_particle: 1
+  use_unified_material: 1
   smooth_iter: 10
   bounding_eps: 0.1
   max_dt: 0.0001
@@ -434,12 +438,15 @@ MonoBehaviour:
   torus_tube_radius: 0.05
   use_correct_cfl: 0
   rotate_speed: 0
+  squeeze_particles: 0
   hand_simulation_radius: 100
   UsePinchGestureLeft: 0
   UsePinchGestureRight: 0
   leftPinchGesture: {fileID: 0}
   rightPinchGesture: {fileID: 0}
   pinchratio: 15
+  squeeze_speed: 0.5
+  squeezeType: 2
   FixObject: 0
   fix_radius: 0.05
   use_sticky_boundary: 1
@@ -454,8 +461,6 @@ MonoBehaviour:
   _min_clamp: 0.1
   _max_clamp: 0.1
   friction_angle: 30
-  UseRecordDate: 0
-  filePath: HandMotionData.txt
 --- !u!114 &5082552851346888675
 MonoBehaviour:
   m_ObjectHideFlags: 0

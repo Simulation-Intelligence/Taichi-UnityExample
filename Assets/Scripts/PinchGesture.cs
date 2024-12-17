@@ -119,7 +119,7 @@ public class PinchGesture : MonoBehaviour
         CreateTransparentMaterial();
 
     }
-
+    
     void Update()
     {
         if (hand.IsTracked && oculus_skeleton != null)
@@ -356,8 +356,6 @@ public class PinchGesture : MonoBehaviour
             squeezeDirection = Vector3.down;
         }
     }
-
-
 
     Transform GetBoneTransform(OVRSkeleton.BoneId boneId)
     {

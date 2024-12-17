@@ -363,7 +363,7 @@ class UIManagerNew : MonoBehaviour
             removedObjectLists.Clear();
         }
     }
-
+    
     void HighlightSelectedObject()
     {
         if (prevSelectedObject != null && prevSelectedObject.transform.Find("Visuals") != null)

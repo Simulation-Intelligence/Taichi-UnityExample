@@ -957,7 +957,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 velocity_norm = velocity_norm / speed
             else:
                 velocity_norm = ti.Vector([0.0, 0.0, 1.0])  # 默认方向
-
+            
             # 构建正交基底
             # 选择一个与 velocity_norm 不平行的向量
             arbitrary = ti.Vector([1.0, 0.0, 0.0])
@@ -1171,7 +1171,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         copy_array_1dim1I(material, material)
         copy_array_3dim1(sdf, sdf)
         copy_array_3dim3(obstacle_normals, obstacle_normals)
-        normalize_m(marching_m,max_m)
+        normalize_m(marching_m, max_m)
         substep_calculate_mat_sdf(mat_primitives, mat_primitives_radius, mat_velocities, mat_sdf, obstacle_normals, obstacle_velocities, dx, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle_mat(x, v, mat_primitives, mat_primitives_radius, mat_velocities, min_x, max_x, min_y, max_y, min_z, max_z)
 
