@@ -62,6 +62,7 @@ class UIManagerNew : MonoBehaviour
     private OVRSkeleton[] oculus_skeletons;
     public GameObject mergePrompt;
     public GameObject valueAdjustGridSize;
+    public GameObject valueAdjustRenderGridSize;
     public GameObject valueAdjustSmoothness;
     public GameObject AdjustSmoothButtons;
     private bool isMerging = false;
@@ -816,6 +817,30 @@ class UIManagerNew : MonoBehaviour
                 valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
             }
         }
+        if (button.name == "Button_IncreaseRenderGridSize")
+        {
+            if (selectedObject != null)
+            {
+                int increaseValue = 8;
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.IncreaseRenderGridSize(increaseValue);
+                string initial_text = valueAdjustRenderGridSize.GetComponent<TMP_Text>().text;
+                string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + mpm3DSimulation.GetRenderGridSize().ToString();
+                valueAdjustRenderGridSize.GetComponent<TMP_Text>().text = new_text;
+            }
+        }
+        if (button.name == "Button_DecreaseRenderGridSize")
+        {
+            if (selectedObject != null)
+            {
+                int decreaseValue = 8;
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.DecreaseRenderGridSize(decreaseValue);
+                string initial_text = valueAdjustRenderGridSize.GetComponent<TMP_Text>().text;
+                string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + mpm3DSimulation.GetRenderGridSize().ToString();
+                valueAdjustRenderGridSize.GetComponent<TMP_Text>().text = new_text;
+            }
+        }
         if (button.name == "Button_HandSimulationRadius")
         {
             if (selectedObject != null)
@@ -1546,6 +1571,11 @@ class UIManagerNew : MonoBehaviour
                     int grid_size = mpm3DSimulation.GetGridSize(); // grid size
                     string new_text = initial_text.Substring(0, initial_text.IndexOf(":") + 2) + (grid_size).ToString();
                     valueAdjustGridSize.GetComponent<TMP_Text>().text = new_text;
+
+                    string initial_text_render = valueAdjustRenderGridSize.GetComponent<TMP_Text>().text;
+                    int render_grid_size = mpm3DSimulation.GetRenderGridSize();
+                    string new_text_render = initial_text_render.Substring(0, initial_text_render.IndexOf(":") + 2) + (render_grid_size).ToString();
+                    valueAdjustRenderGridSize.GetComponent<TMP_Text>().text = new_text_render;
 
                     // Update rendering smooth iterations in UI
                     string initial_text_smooth = valueAdjustSmoothness.GetComponent<Text>().text;
