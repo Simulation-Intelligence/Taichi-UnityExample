@@ -438,6 +438,7 @@ MonoBehaviour:
   torus_tube_radius: 0.05
   use_correct_cfl: 0
   rotate_speed: 0
+  squeeze_particles: 0
   hand_simulation_radius: 100
   UsePinchGestureLeft: 0
   UsePinchGestureRight: 0

@@ -261,8 +261,8 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 grid_v[I] *= ti.exp(-damping * dt)
                 if sdf[I] < 0:
                     d = -sdf[I] # Calculate penetration depth
-                    rel_v = grid_v[I] - obstacle_velocities[I] # Calculate relative velocity with respect to the obstacle
-                    normal_v_norm=rel_v.dot(obstacle_normals[I])
+                    rel_v = grid_v[I] - obstacle_velocities[I] # Calculate grid relative velocity with respect to the obstacle
+                    normal_v_norm = rel_v.dot(obstacle_normals[I])
                     normal_v = normal_v_norm * obstacle_normals[I] # Calculate the normal component of the relative velocity
                     if use_standard_mpm_boundary and normal_v_norm <= 0:
                         grid_v[I] = obstacle_velocities[I] # Set velocity to obstacle velocity
@@ -354,10 +354,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 sdf_lerp = 0.0 
                 obstacle_velocities_lerp = ti.Vector([0.0, 0.0, 0.0])
                 obstacle_normals_lerp = ti.Vector([0.0, 0.0, 0.0])
-                if  use_lerp:
-                    sdf_lerp =sdf_last[I]+(sdf[I]-sdf_last[I])*ratio
-                    obstacle_normals_lerp = obstacle_normals_last[I]+(obstacle_normals[I]-obstacle_normals_last[I])*ratio
-                    obstacle_velocities_lerp = obstacle_velocities_last[I]+(obstacle_velocities[I]-obstacle_velocities_last[I])*ratio
+                if use_lerp:
+                    sdf_lerp = sdf_last[I] + (sdf[I] - sdf_last[I]) * ratio
+                    obstacle_normals_lerp = obstacle_normals_last[I] + (obstacle_normals[I] - obstacle_normals_last[I]) * ratio
+                    obstacle_velocities_lerp = obstacle_velocities_last[I] + (obstacle_velocities[I] - obstacle_velocities_last[I]) * ratio
                 else:
                     sdf_lerp = sdf[I]
                     obstacle_normals_lerp = obstacle_normals[I]
@@ -370,7 +370,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 if sdf_lerp < 0:
                     d = -sdf_lerp # Calculate penetration depth
                     rel_v = grid_v[I] - obstacle_velocities_lerp # Calculate relative velocity with respect to the obstacle
-                    normal_v_norm=rel_v.dot(obstacle_normals_lerp)
+                    normal_v_norm = rel_v.dot(obstacle_normals_lerp)
                     normal_v = normal_v_norm * obstacle_normals_lerp # Calculate the normal component of the relative velocity
                     if use_standard_mpm_boundary and normal_v_norm <= 0:
                         grid_v[I] = obstacle_velocities_lerp
@@ -840,15 +840,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     max_val[1] = x[i][1]
                 if x[i][2] > max_val[2]:
                     max_val[2] = x[i][2]
-        
         center = (min_val + max_val) / 2.0
         size = max_val - min_val
-
         # Calculate the scaling factor based on the largest dimension
         scaleFactor = (1.0 - 2 * eps) / ti.max(size[0], size[1], size[2])
         # Define the center of the unit cube
         new_center = ti.Vector([0.5, 0.5, 0.5])
-        
         for i in x:
             # Scale and translate
             x[i] = (x[i] - center) * scaleFactor + new_center
@@ -878,15 +875,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     max_val[1] = x_gaussian[i][1]
                 if x_gaussian[i][2] > max_val[2]:
                     max_val[2] = x_gaussian[i][2]
-        
         center = (min_val + max_val) / 2.0
         size = max_val - min_val
-
         # Calculate the scaling factor based on the largest dimension
         scaleFactor = (1.0 - 2 * eps) / ti.max(size[0], size[1], size[2])
         # Define the center of the unit cube
         new_center = ti.Vector([0.5, 0.5, 0.5])
-        
         for i in x:
             # Scale and translate
             x[i] = (x[i] - center) * scaleFactor + new_center
@@ -935,7 +929,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                             x3: ti.types.ndarray(ndim=1), 
                             mat2: ti.types.ndarray(ndim=2), 
                             mat3: ti.types.ndarray(ndim=2)):
-
         n2 = x2.shape[0]
         n3 = x3.shape[0]
 
@@ -949,11 +942,12 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
     # endregion
 
     @ti.kernel
-    def substep_squeeze_particles_circle(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),target_p_mass:ti.f32,
-                          center_x:ti.f32, center_y:ti.f32, center_z:ti.f32,velocity_x:ti.f32, velocity_y:ti.f32, velocity_z:ti.f32, radius:ti.f32,dt:ti.f32,
-                          starting_index:ti.i32, ending_index:ti.i32):
-        
-        #如果center在边界内才进行操作
+    def substep_squeeze_particles_circle(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), target_p_mass: ti.f32,
+                                         center_x: ti.f32, center_y: ti.f32, center_z: ti.f32, 
+                                         velocity_x: ti.f32, velocity_y: ti.f32, velocity_z: ti.f32, 
+                                         radius: ti.f32, dt: ti.f32,
+                                         starting_index: ti.i32, ending_index: ti.i32):
+        # 如果center在边界内才进行操作
         if center_x > 0.03 and center_x < 0.97 and center_y > 0.03 and center_y < 0.97 and center_z > 0.03 and center_z < 0.97:
             # 计算圆柱高度（速度大小乘以dt）
             velocity_norm = ti.Vector([velocity_x, velocity_y, velocity_z])
@@ -963,7 +957,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                 velocity_norm = velocity_norm / speed
             else:
                 velocity_norm = ti.Vector([0.0, 0.0, 1.0])  # 默认方向
-
+            
             # 构建正交基底
             # 选择一个与 velocity_norm 不平行的向量
             arbitrary = ti.Vector([1.0, 0.0, 0.0])
@@ -975,26 +969,26 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             for p in range(starting_index, ending_index):
                 p_mass[p] = target_p_mass
                 x_0 ,y_0, z_0 = 0.0, 0.0, 0.0
-                #粒子位置随机均匀分部在圆柱内,圆柱的底面与velocity方向垂直，圆柱的高度为速度大小乘以dt
+                # 粒子位置随机均匀分部在圆柱内,圆柱的底面与velocity方向垂直，圆柱的高度为速度大小乘以dt
                 while True:
                     x_0 = ti.random() * 2 - 1
                     y_0 = ti.random() * 2 - 1
-                    z_0= ti.random()
-                    if x_0 * x_0 + y_0 * y_0<=1:
+                    z_0 = ti.random()
+                    if x_0 * x_0 + y_0 * y_0 <= 1:
                         break
-                #将生成的点转到速度方向
-                x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0* cylinder_height 
-
-                #限制在边界内
+                # 将生成的点转到速度方向
+                x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0 * cylinder_height 
+                # 限制在边界内
                 x[p] = ti.Vector([min(max(x[p][i], 0.03), 0.97) for i in range(3)])
                 v[p] = velocity_norm * speed
 
     @ti.kernel
-    def substep_squeeze_particles_square(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),target_p_mass:ti.f32,
-                          center_x:ti.f32, center_y:ti.f32, center_z:ti.f32,velocity_x:ti.f32, velocity_y:ti.f32, velocity_z:ti.f32, radius:ti.f32,dt:ti.f32,
-                          starting_index:ti.i32, ending_index:ti.i32):
-        
-        #如果center在边界内才进行操作
+    def substep_squeeze_particles_square(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), target_p_mass: ti.f32,
+                                         center_x: ti.f32, center_y: ti.f32, center_z: ti.f32, 
+                                         velocity_x: ti.f32, velocity_y: ti.f32, velocity_z: ti.f32, 
+                                         radius: ti.f32, dt: ti.f32,
+                                         starting_index: ti.i32, ending_index: ti.i32):
+        # 如果center在边界内才进行操作
         if center_x > 0.03 and center_x < 0.97 and center_y > 0.03 and center_y < 0.97 and center_z > 0.03 and center_z < 0.97:
             # 计算圆柱高度（速度大小乘以dt）
             velocity_norm = ti.Vector([velocity_x, velocity_y, velocity_z])
@@ -1016,23 +1010,22 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             for p in range(starting_index, ending_index):
                 p_mass[p] = target_p_mass
                 x_0 ,y_0, z_0 = 0.0, 0.0, 0.0
-                #粒子位置随机均匀分部在方形内，高度为速度大小乘以dt
+                # 粒子位置随机均匀分部在方形内，高度为速度大小乘以dt
                 x_0 = ti.random() * 2 - 1
                 y_0 = ti.random() * 2 - 1
-                z_0= ti.random()
-
-                #将生成的点转到速度方向
-                x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0* cylinder_height 
-    
-                #限制在边界内
+                z_0 = ti.random()
+                # 将生成的点转到速度方向
+                x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0 * cylinder_height 
+                # 限制在边界内
                 x[p] = ti.Vector([min(max(x[p][i], 0.03), 0.97) for i in range(3)])
                 v[p] = velocity_norm * speed                
-
+    
     @ti.kernel
-    def substep_squeeze_particles_star(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),target_p_mass:ti.f32,
-                          center_x:ti.f32, center_y:ti.f32, center_z:ti.f32,velocity_x:ti.f32, velocity_y:ti.f32, velocity_z:ti.f32, radius:ti.f32,dt:ti.f32,
-                          starting_index:ti.i32, ending_index:ti.i32):
-        
+    def substep_squeeze_particles_star(x: ti.types.ndarray(ndim=1), p_mass: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), target_p_mass: ti.f32,
+                                       center_x: ti.f32, center_y: ti.f32, center_z: ti.f32,
+                                       velocity_x: ti.f32, velocity_y: ti.f32, velocity_z: ti.f32,
+                                       radius: ti.f32, dt: ti.f32,
+                                       starting_index: ti.i32, ending_index: ti.i32):
         #如果center在边界内才进行操作
         if center_x > 0.03 and center_x < 0.97 and center_y > 0.03 and center_y < 0.97 and center_z > 0.03 and center_z < 0.97:
             # 计算圆柱高度（速度大小乘以dt）
@@ -1055,27 +1048,23 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
             for p in range(starting_index, ending_index):
                 p_mass[p] = target_p_mass
                 x_0 ,y_0, z_0 = 0.0, 0.0, 0.0
-                #粒子位置随机均匀分部在圆柱内,圆柱的底面与velocity方向垂直，圆柱的高度为速度大小乘以dt
+                # 粒子位置随机均匀分部在圆柱内,圆柱的底面与velocity方向垂直，圆柱的高度为速度大小乘以dt
                 while True:
                     x_0 = ti.random() * 2 - 1
                     y_0 = ti.random() * 2 - 1
-                    z_0= ti.random()
-
+                    z_0 = ti.random()
                     theta = ti.atan2(y_0, x_0)
-
-                    #theta取与最近的坐标轴的夹角
+                    # theta取与最近的坐标轴的夹角
                     theta %= pi /2
                     if theta > pi / 4:
                         theta = pi / 2 - theta
-                    r= ti.sqrt(x_0 * x_0 + y_0 * y_0)
+                    r = ti.sqrt(x_0 * x_0 + y_0 * y_0)
                     max_r=ti.sin(pi/12)/ti.sin(theta+pi/12)
-                    if r<=max_r:
+                    if r <= max_r:
                         break
-
-                #将生成的点转到速度方向
-                x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0* cylinder_height 
-    
-                #限制在边界内
+                # 将生成的点转到速度方向
+                x[p] = (x_0 * x_axis + y_0 * y_axis) * radius + ti.Vector([center_x, center_y, center_z]) + velocity_norm * z_0 * cylinder_height 
+                # 限制在边界内
                 x[p] = ti.Vector([min(max(x[p][i], 0.03), 0.97) for i in range(3)])
                 v[p] = velocity_norm * speed        
 
@@ -1182,7 +1171,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         copy_array_1dim1I(material, material)
         copy_array_3dim1(sdf, sdf)
         copy_array_3dim3(obstacle_normals, obstacle_normals)
-        normalize_m(marching_m,max_m)
+        normalize_m(marching_m, max_m)
         substep_calculate_mat_sdf(mat_primitives, mat_primitives_radius, mat_velocities, mat_sdf, obstacle_normals, obstacle_velocities, dx, min_x, max_x, min_y, max_y, min_z, max_z)
         substep_adjust_particle_mat(x, v, mat_primitives, mat_primitives_radius, mat_velocities, min_x, max_x, min_y, max_y, min_z, max_z)
 
