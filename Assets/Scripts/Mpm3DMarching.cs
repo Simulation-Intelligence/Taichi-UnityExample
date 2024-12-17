@@ -145,16 +145,15 @@ public class Mpm3DMarching : MonoBehaviour
 
     [SerializeField]
     public float gaussian_simulate_ratio = 0.5f;
-
     public bool use_gaussian_acceleration = false;
 
     public bool lerp_tool = false;
 
-
-    public bool use_grid_force = true;
-    public bool use_standard_mpm_boundary = false;
+    public bool use_grid_force = false;
+    public bool use_standard_mpm_boundary = true;
     public bool adjust_particle = true;
     public bool use_unified_material = true;
+    
     [SerializeField]
     private int smooth_iter = 0;
 
@@ -329,7 +328,8 @@ public class Mpm3DMarching : MonoBehaviour
 
             _Kernel_init_sample_gaussian_data = kernels["init_sample_gaussian_data"];
             _Kernel_substep_update_dg = kernels["substep_update_dg"];
-
+            
+            // Squzeeze particles
             _Kernel_substep_squeeze_particles_circle = kernels["substep_squeeze_particles_circle"];
             _Kernel_substep_squeeze_particles_square = kernels["substep_squeeze_particles_square"];
             _Kernel_substep_squeeze_particles_star = kernels["substep_squeeze_particles_star"];
@@ -412,7 +412,6 @@ public class Mpm3DMarching : MonoBehaviour
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
     }
-
     public void Init_Particle_Data_Gaussian()
     {
         x_gaussian = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(3).HostWrite(true).Build();
@@ -422,8 +421,8 @@ public class Mpm3DMarching : MonoBehaviour
     }
     void Init_Particles()
     {
+        // Volume of the initial shape
         float volume = 0;
-        // Determine the volume of the initial shape
         switch (initShape)
         {
             case InitShape.Cube:
@@ -439,11 +438,12 @@ public class Mpm3DMarching : MonoBehaviour
                 volume = 2 * Mathf.PI * Mathf.PI * Mathf.Pow(torus_tube_radius, 2) * torus_radius;
                 break;
         }
-        // Determine the number of particles based on the grid size, particle density, and volume
+        // Number of particles
         NParticles = (int)(n_grid * n_grid * n_grid * particle_per_grid * volume);
         squeeze_particle_index = NParticles;
         UnityEngine.Debug.Log("Number of particles: " + NParticles);
         Init_Particle_Data();
+        
         // kernel initialization of different primitive shapes
         if (initShape == InitShape.Cube)
             if (_Compute_Graph_g_init != null)
@@ -747,13 +747,11 @@ public class Mpm3DMarching : MonoBehaviour
         {
             // Simulation loop
             float dt = max_dt, time_left = frame_time;
-
-
+            
             if (tools.Count > 0)
                 UpdateCapsules();
             if (matTools.Count > 0)
                 UpdateMatPrimitives();
-
 
             if (tools.Count > 0)
             {
@@ -908,7 +906,6 @@ public class Mpm3DMarching : MonoBehaviour
         Runtime.Submit();
     }
 
-
     public void FillSqueezeParticles(int grid_num)
     {
         int N_to_fill = (int)(grid_num * particle_per_grid);
@@ -979,12 +976,14 @@ public class Mpm3DMarching : MonoBehaviour
         {
             int end_index = squeeze_particle_index + N_to_squeeze;
             _kernel.LaunchAsync(x, p_mass, v, _p_mass,
-            squeeze_center.x, squeeze_center.y, squeeze_center.z,
-            squeeze_velocity.x, squeeze_velocity.y, squeeze_velocity.z,
-            squeeze_radius, max_dt, squeeze_particle_index, end_index);
+                                squeeze_center.x, squeeze_center.y, squeeze_center.z,
+                                squeeze_velocity.x, squeeze_velocity.y, squeeze_velocity.z,
+                                squeeze_radius, max_dt, 
+                                squeeze_particle_index, end_index);
             squeeze_particle_index = end_index;
         }
     }
+
     public void MergeAndUpdate(Mpm3DMarching other)
     {
         if (other.renderType != renderType)
