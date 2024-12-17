@@ -172,7 +172,7 @@ public class Mpm3DMarching : MonoBehaviour
 
     private int squeeze_particle_index = 0;
 
-    public bool squeeze_particles = false;
+
 
     [Header("Interaction Settings")]
     [SerializeField]
@@ -184,6 +184,8 @@ public class Mpm3DMarching : MonoBehaviour
     public bool UsePinchGestureRight = false;
     public PinchGesture leftPinchGesture;
     public PinchGesture rightPinchGesture;
+
+    public bool squeeze_particles = false;
     [SerializeField]
     private float pinchratio = 4.0f;
 
@@ -1542,8 +1544,8 @@ public class Mpm3DMarching : MonoBehaviour
         other.max_clamp_host = new float[NMaterials];
         other.alpha_host = new float[NMaterials];
         other.p_vol_host = new float[NMaterials];
-        other.p_mass_host = new float[NParticles];
-        other.material_host = new int[NParticles];
+        other.p_mass_host = new float[NMaterials];
+        other.material_host = new int[NMaterials];
         other.point_color_host = new int[NParticles];
 
         E_host.CopyTo(other.E_host, 0);
