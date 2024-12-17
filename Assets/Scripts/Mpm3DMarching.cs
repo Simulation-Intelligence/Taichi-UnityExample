@@ -142,7 +142,7 @@ public class Mpm3DMarching : MonoBehaviour
     private float gy;
     [SerializeField]
     public int n_grid = 64, bound = 3, render_n_grid = 64;
-    
+
     [SerializeField]
     public float gaussian_simulate_ratio = 0.5f;
     public bool use_gaussian_acceleration = false;
@@ -153,7 +153,7 @@ public class Mpm3DMarching : MonoBehaviour
     public bool use_standard_mpm_boundary = true;
     public bool adjust_particle = true;
     public bool use_unified_material = true;
-    
+
     [SerializeField]
     private int smooth_iter = 0;
 
@@ -262,7 +262,10 @@ public class Mpm3DMarching : MonoBehaviour
             if (!loadfromfile)
                 Init_Particles();
             else
+            {
                 ImportData(file_path);
+                loadfromfile = false;
+            }
         }
         InitGrid();
 
@@ -274,7 +277,7 @@ public class Mpm3DMarching : MonoBehaviour
 
         Init_MarchingCubes();
     }
-    
+
     void Init_Kernels()
     {
         var kernels = Mpm3DModule.GetAllKernels().ToDictionary(x => x.Name);
@@ -330,7 +333,7 @@ public class Mpm3DMarching : MonoBehaviour
 
             _Kernel_init_sample_gaussian_data = kernels["init_sample_gaussian_data"];
             _Kernel_substep_update_dg = kernels["substep_update_dg"];
-            
+
             // Squzeeze particles
             _Kernel_substep_squeeze_particles_circle = kernels["substep_squeeze_particles_circle"];
             _Kernel_substep_squeeze_particles_square = kernels["substep_squeeze_particles_square"];
@@ -365,7 +368,7 @@ public class Mpm3DMarching : MonoBehaviour
         tool_primitives_radius = new float[totalPrimitives * 3];
         tool_primitives_velocity = new float[totalPrimitives * 9];
     }
-    
+
     public void Init_Tools()
     {
         if (tools.Count == 0)
@@ -408,7 +411,7 @@ public class Mpm3DMarching : MonoBehaviour
         _MeshRenderer.material = pointMaterial;
         bounds = new Bounds(_MeshFilter.transform.position + Vector3.one * 0.5f, Vector3.one);
     }
-    
+
     public void Init_Particle_Data()
     {
         x = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3).HostWrite(true).Build();
@@ -416,7 +419,7 @@ public class Mpm3DMarching : MonoBehaviour
         C = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
         dg = new NdArrayBuilder<float>().Shape(NParticles).ElemShape(3, 3).Build();
     }
-    
+
     public void Init_Particle_Data_Gaussian()
     {
         x_gaussian = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(3).HostWrite(true).Build();
@@ -424,7 +427,7 @@ public class Mpm3DMarching : MonoBehaviour
         C_gaussian = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(3, 3).Build();
         dg_gaussian = new NdArrayBuilder<float>().Shape(NParticles_gaussian).ElemShape(3, 3).Build();
     }
-    
+
     void Init_Particles()
     {
         float volume = 0;
@@ -447,7 +450,7 @@ public class Mpm3DMarching : MonoBehaviour
         squeeze_particle_index = NParticles;
         UnityEngine.Debug.Log("Number of particles: " + NParticles);
         Init_Particle_Data();
-        
+
         // Different primitive shapes
         if (initShape == InitShape.Cube)
             if (_Compute_Graph_g_init != null)
@@ -469,7 +472,7 @@ public class Mpm3DMarching : MonoBehaviour
         else if (initShape == InitShape.Torus)
             _Kernel_init_torus.LaunchAsync(x, dg, torus_radius, torus_tube_radius);
     }
-    
+
     private void Dispose_MarchingCubes()
     {
         for (int i = 0; i < marchingCubeVisualizers.Length; i++)
@@ -477,7 +480,7 @@ public class Mpm3DMarching : MonoBehaviour
             marchingCubeVisualizers[i].OnDestroy();
         }
     }
-    
+
     public void Init_MarchingCubes()
     {
         _p_vol = dx * dx * dx / particle_per_grid;
@@ -753,7 +756,7 @@ public class Mpm3DMarching : MonoBehaviour
         {
             // Simulation loop
             float dt = max_dt, time_left = frame_time;
-            
+
             if (tools.Count > 0)
                 UpdateCapsules();
             if (matTools.Count > 0)
@@ -941,7 +944,7 @@ public class Mpm3DMarching : MonoBehaviour
             p_mass = p_mass_new;
         }
     }
-    
+
     private void SqueezeParticles(PinchGesture pinchGesture)
     {
         if (!squeeze_particles || pinchGesture == null || pinchGesture.isSqueezing == false)
@@ -983,12 +986,12 @@ public class Mpm3DMarching : MonoBehaviour
             _kernel.LaunchAsync(x, p_mass, v, _p_mass,
                                 squeeze_center.x, squeeze_center.y, squeeze_center.z,
                                 squeeze_velocity.x, squeeze_velocity.y, squeeze_velocity.z,
-                                squeeze_radius, max_dt, 
+                                squeeze_radius, max_dt,
                                 squeeze_particle_index, end_index);
             squeeze_particle_index = end_index;
         }
     }
-    
+
     public void MergeAndUpdate(Mpm3DMarching other)
     {
         if (other.renderType != renderType)
@@ -1237,7 +1240,7 @@ public class Mpm3DMarching : MonoBehaviour
 
         _Kernel_init_dg.LaunchAsync(dg);
     }
-    
+
     private void MergeMaterials(Mpm3DMarching other)
     {
         if (!use_unified_material)
@@ -1598,7 +1601,7 @@ public class Mpm3DMarching : MonoBehaviour
             }
         }
     }
-    
+
     void OnDestroy()
     {
         Dispose();
