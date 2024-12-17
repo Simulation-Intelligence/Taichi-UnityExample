@@ -1379,8 +1379,7 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void SetRenderGridSize(int n)
     {
-        particle_per_grid = particle_per_grid * (render_n_grid * render_n_grid * render_n_grid) / (n * n * n);
-        max_density = particle_per_grid * _p_mass;
+        max_density = particle_per_grid * (render_n_grid * render_n_grid * render_n_grid) / (n * n * n) * _p_mass;
         render_n_grid = n;
 
         InitGrid();
