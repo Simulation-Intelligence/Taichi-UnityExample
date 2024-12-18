@@ -1386,9 +1386,9 @@ public class Mpm3DMarching : MonoBehaviour
     }
     public void SetRenderGridSize(int n)
     {
-        max_density = particle_per_grid * (render_n_grid * render_n_grid * render_n_grid) / (n * n * n) * _p_mass;
+        max_density = max_density * (render_n_grid * render_n_grid * render_n_grid) / (n * n * n);
         render_n_grid = n;
-        InitGrid();
+
         if (renderType == RenderType.MarchingCubes)
         {
             for (int i = 0; i < marchingCubeVisualizers.Length; i++)
@@ -1398,6 +1398,8 @@ public class Mpm3DMarching : MonoBehaviour
                 marchingCubeVisualizers[i].Init();
             }
         }
+        InitGrid();
+        SetSmoothingIterations(smooth_iter);
     }
     public int GetGridSize()
     {
