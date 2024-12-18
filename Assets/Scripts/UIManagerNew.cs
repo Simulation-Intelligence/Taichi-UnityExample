@@ -275,7 +275,7 @@ class UIManagerNew : MonoBehaviour
                 mpm3DSimulation.AdjustTextureColor(newColor);
         }
     }
-
+    
     void Update()
     {
         // Find the last grabbed object as the selected object for further manipulations
@@ -334,11 +334,16 @@ class UIManagerNew : MonoBehaviour
                 pinchGestureLeft.RenderRotationSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureLeft;
                 pinchGestureRight.RenderRotationSphere = selectedObject.GetComponent<Mpm3DMarching>().UsePinchGestureRight;
 
+                // Use only the right hand for squeezing
+                pinchGestureRight.RenderSqueezeSphere = selectedObject.GetComponent<Mpm3DMarching>().squeeze_particles;
+                pinchGestureRight.RenderSqueezeCone =  selectedObject.GetComponent<Mpm3DMarching>().squeeze_particles;
+
                 // Disable object grab when pinch gesture is enabled, avoiding unexpected rotation
                 if (EnableObjectGrab)
                 {
                     if ((pinchGestureLeft.RenderPinchSphere && pinchGestureLeft.isPinching) || (pinchGestureRight.RenderPinchSphere && pinchGestureRight.isPinching)
-                     || (pinchGestureLeft.RenderRotationSphere && pinchGestureLeft.isRotating) || (pinchGestureRight.RenderRotationSphere && pinchGestureRight.isRotating))
+                     || (pinchGestureLeft.RenderRotationSphere && pinchGestureLeft.isRotating) || (pinchGestureRight.RenderRotationSphere && pinchGestureRight.isRotating)
+                     || (pinchGestureRight.RenderSqueezeSphere && pinchGestureRight.RenderSqueezeCone && pinchGestureRight.isSqueezing))
                     {
                         var _grabbable = selectedObject.GetComponent<Grabbable>();
                         _grabbable.MaxGrabPoints = 0;
@@ -1058,10 +1063,10 @@ class UIManagerNew : MonoBehaviour
                             // Adjust UI background
                             RectTransform rectTransform_3 = bk3.GetComponent<RectTransform>();
                             Vector2 sizeDelta = rectTransform_3.sizeDelta;
-                            sizeDelta.y = 230;
+                            sizeDelta.y = 330;
                             rectTransform_3.sizeDelta = sizeDelta;
                             RectTransform rectTransform_4 = bk4.GetComponent<RectTransform>();
-                            rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, -470);
+                            rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, -570);
                         }
                     }
                 }
@@ -1075,10 +1080,10 @@ class UIManagerNew : MonoBehaviour
                     // Adjust UI background
                     RectTransform rectTransform_3 = bk3.GetComponent<RectTransform>();
                     Vector2 sizeDelta = rectTransform_3.sizeDelta;
-                    sizeDelta.y += 290;
+                    sizeDelta.y += 300;
                     rectTransform_3.sizeDelta = sizeDelta;
                     RectTransform rectTransform_4 = bk4.GetComponent<RectTransform>();
-                    rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, rectTransform_4.anchoredPosition.y - 290);
+                    rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, rectTransform_4.anchoredPosition.y - 300);
                 }
             }
             if (selectedObject != null)
@@ -1102,10 +1107,10 @@ class UIManagerNew : MonoBehaviour
                             // Adjust UI background
                             RectTransform rectTransform_3 = bk3.GetComponent<RectTransform>();
                             Vector2 sizeDelta = rectTransform_3.sizeDelta;
-                            sizeDelta.y = 230;
+                            sizeDelta.y = 330;
                             rectTransform_3.sizeDelta = sizeDelta;
                             RectTransform rectTransform_4 = bk4.GetComponent<RectTransform>();
-                            rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, -470);
+                            rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, -570);
                         }
                     }
                 }
@@ -1119,10 +1124,10 @@ class UIManagerNew : MonoBehaviour
                     // Adjust UI background
                     RectTransform rectTransform_3 = bk3.GetComponent<RectTransform>();
                     Vector2 sizeDelta = rectTransform_3.sizeDelta;
-                    sizeDelta.y += 290;
+                    sizeDelta.y += 300;
                     rectTransform_3.sizeDelta = sizeDelta;
                     RectTransform rectTransform_4 = bk4.GetComponent<RectTransform>();
-                    rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, rectTransform_4.anchoredPosition.y - 290);
+                    rectTransform_4.anchoredPosition = new Vector2(rectTransform_4.anchoredPosition.x, rectTransform_4.anchoredPosition.y - 300);
                 }
             }
             if (selectedObject != null)
@@ -1242,6 +1247,14 @@ class UIManagerNew : MonoBehaviour
             {
                 Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                 mpm3DSimulation.use_correct_cfl = toggle.isOn;
+            }
+        }
+        if (toggle.name == "Toggle_SquzzeParticles")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                mpm3DSimulation.squeeze_particles = toggle.isOn;
             }
         }
     }
@@ -1405,6 +1418,25 @@ class UIManagerNew : MonoBehaviour
                 else if (dropdown.options[value].text == "Scissor")
                 {
                     SelectTools(selectedObject, prevLeftHandTool, "MatTool_Scissor_Right");
+                }
+            }
+        }
+        if (dropdown.name == "Dropdown_SqueezeType")
+        {
+            if (selectedObject != null)
+            {
+                Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
+                if (dropdown.options[value].text == "Shapes (Circle)")
+                {
+                    mpm3DSimulation.squeezeType = Mpm3DMarching.SqueezeType.Circle;
+                }
+                else if (dropdown.options[value].text == "Star")
+                {
+                    mpm3DSimulation.squeezeType = Mpm3DMarching.SqueezeType.Star;
+                } 
+                else if (dropdown.options[value].text == "Square")
+                {
+                    mpm3DSimulation.squeezeType = Mpm3DMarching.SqueezeType.Square;
                 }
             }
         }
@@ -1602,6 +1634,10 @@ class UIManagerNew : MonoBehaviour
                         {
                             toggle.isOn = mpm3DSimulation.UsePinchGestureRight;
                         }
+                        if (toggle.name == "Toggle_SquzzeParticles")
+                        {
+                            toggle.isOn = mpm3DSimulation.squeeze_particles;
+                        }
                         if (toggle.name == "Toggle_StickyGround")
                         {
                             toggle.isOn = mpm3DSimulation.GetIsStickyBoundary();
@@ -1618,6 +1654,10 @@ class UIManagerNew : MonoBehaviour
 
                     foreach (TMP_Dropdown dropdown in dropdowns)
                     {
+                        if (dropdown.name == "Dropdown_SqueezeType")
+                        {
+                            dropdown.value = (int)mpm3DSimulation.squeezeType;
+                        }
                         if (dropdown.name == "Dropdown_MaterialType")
                         {
                             dropdown.value = (int)mpm3DSimulation.materialType;
@@ -1703,7 +1743,6 @@ class UIManagerNew : MonoBehaviour
             }
         }
     }
-
     void OnDestroy()
     {
 

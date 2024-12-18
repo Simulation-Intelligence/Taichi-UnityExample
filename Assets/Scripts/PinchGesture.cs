@@ -92,7 +92,6 @@ public class PinchGesture : MonoBehaviour
     // 可视化握拳中心和朝向
     private GameObject squeezeSphere;
     public bool RenderSqueezeSphere = true;
-
     // 可视化握拳朝向的圆锥体
     private GameObject squeezeCone;
     public bool RenderSqueezeCone = true;
@@ -257,7 +256,6 @@ public class PinchGesture : MonoBehaviour
     void DetectSqueeze()
     {
         int curledFingers = 0;
-
         float sumDistance = 0;
 
         for (int i = 0; i < squeezeFingerTips.Count; i++)

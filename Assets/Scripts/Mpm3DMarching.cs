@@ -69,12 +69,11 @@ public class Mpm3DMarching : MonoBehaviour
         NeoHookean,
         Kirchhoff
     }
-
     public enum SqueezeType
     {
         Circle,
-        Square,
-        Star
+        Star,
+        Square
     }
     public enum ObstacleType
     {
@@ -186,13 +185,10 @@ public class Mpm3DMarching : MonoBehaviour
 
     public bool squeeze_particles = false;
     [SerializeField]
-    private float pinchratio = 4.0f;
-
+    private float pinchratio = 15.0f;
     [SerializeField]
     private float squeeze_speed = 0.5f;
-
     [SerializeField]
-
     public SqueezeType squeezeType = SqueezeType.Star;
 
     [Header("Fix the Object in Place")]

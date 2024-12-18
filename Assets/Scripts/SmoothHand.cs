@@ -179,7 +179,6 @@ public class SmoothHand : MonoBehaviour
         File.AppendAllText(filePath, data + Environment.NewLine);
     }
 
-
     void LoadRecordedData()
     {
         if (cnt >= maxFrame)
