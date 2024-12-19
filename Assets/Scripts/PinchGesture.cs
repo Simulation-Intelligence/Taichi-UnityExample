@@ -124,10 +124,11 @@ public class PinchGesture : MonoBehaviour
         if (hand.IsTracked && oculus_skeleton != null)
         {
             DetectPinch();
-            DetectRotation();
+            // DetectRotation();
             DetectSqueeze(); // 调用握拳检测方法
         }
     }
+    
     void CreateTransparentMaterial()
     {
         // 初始化透明材质
@@ -141,6 +142,7 @@ public class PinchGesture : MonoBehaviour
         transparentMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
         transparentMaterial.renderQueue = 3000;
     }
+    
     void DetectPinch()
     {
         Transform firstFingerTip = GetBoneTransform(firstPinchFinger);
