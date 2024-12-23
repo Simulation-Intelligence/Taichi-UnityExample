@@ -416,7 +416,7 @@ MonoBehaviour:
   gy: 0
   n_grid: 32
   bound: 3
-  render_n_grid: 128
+  render_n_grid: 64
   gaussian_simulate_ratio: 0.5
   use_gaussian_acceleration: 0
   lerp_tool: 1
@@ -428,7 +428,7 @@ MonoBehaviour:
   bounding_eps: 0.1
   max_dt: 0.0001
   frame_time: 0.002
-  particle_per_grid: 16
+  particle_per_grid: 8
   allowed_cfl: 0.5
   damping: 200
   cube_size: 0.5
