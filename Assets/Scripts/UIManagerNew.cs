@@ -733,6 +733,7 @@ class UIManagerNew : MonoBehaviour
                     Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                     string export_file_path = export_folder_path + "/" + selectedObject.name + ".txt";
                     mpm3DSimulation.ExportData(export_file_path);
+                    ExportMpm3DMesh(mpm3DSimulation);
 
                     // Show file name in UI
                     foreach (Button _button in buttons)
