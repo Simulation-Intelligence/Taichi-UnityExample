@@ -266,10 +266,10 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     normal_v = normal_v_norm * obstacle_normals[I] # Calculate the normal component of the relative velocity
                     if use_standard_mpm_boundary and normal_v_norm <= 0:
                         grid_v[I] = obstacle_velocities[I] # Set velocity to obstacle velocity
-                    pressure_force = obstacle_normals[I] * d / dt * k - normal_v # Calculate the velocity correction due to collision
-                    tangent_direction = (rel_v - normal_v).normalized() # Determine the tangential direction of the relative velocity
-                    friction_force = friction_k * pressure_force # Calculate the frictional force
                     if use_grid_force:
+                        pressure_force = obstacle_normals[I] * d / dt * k - normal_v # Calculate the velocity correction due to collision
+                        tangent_direction = (rel_v - normal_v).normalized() # Determine the tangential direction of the relative velocity
+                        friction_force = friction_k * pressure_force # Calculate the frictional force
                         grid_v[I] += pressure_force - friction_force * tangent_direction # Apply both the collision correction and the frictional force to the velocity
                 # Enforce boundary conditions by setting velocity to zero if it points outside the grid at the boundaries
                 cond = (I < bound) & (grid_v[I] < 0) | (I > n_grid - bound) & (grid_v[I] > 0)

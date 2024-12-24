@@ -1,14 +1,12 @@
 using System;
 using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
+using System.Text;
 using Oculus.Interaction;
-
+using System.Linq;
 class UIManagerNew : MonoBehaviour
 {
     public GameObject Mpm3DObject;
@@ -45,7 +43,6 @@ class UIManagerNew : MonoBehaviour
     private GameObject prevSelectedObject;
     private string prefabName;
     public string export_folder_path;
-    private string export_file_path;
     private bool EnableObjectGrab = true;
 
     // UI Components
@@ -275,7 +272,7 @@ class UIManagerNew : MonoBehaviour
                 mpm3DSimulation.AdjustTextureColor(newColor);
         }
     }
-    
+
     void Update()
     {
         // Find the last grabbed object as the selected object for further manipulations
@@ -336,7 +333,7 @@ class UIManagerNew : MonoBehaviour
 
                 // Use only the right hand for squeezing
                 pinchGestureRight.RenderSqueezeSphere = selectedObject.GetComponent<Mpm3DMarching>().squeeze_particles;
-                pinchGestureRight.RenderSqueezeCone =  selectedObject.GetComponent<Mpm3DMarching>().squeeze_particles;
+                pinchGestureRight.RenderSqueezeCone = selectedObject.GetComponent<Mpm3DMarching>().squeeze_particles;
 
                 // Disable object grab when pinch gesture is enabled, avoiding unexpected rotation
                 if (EnableObjectGrab)
@@ -369,7 +366,7 @@ class UIManagerNew : MonoBehaviour
             removedObjectLists.Clear();
         }
     }
-    
+
     void HighlightSelectedObject()
     {
         if (prevSelectedObject != null && prevSelectedObject.transform.Find("Visuals") != null)
@@ -734,7 +731,7 @@ class UIManagerNew : MonoBehaviour
                 if (selectedObject != null)
                 {
                     Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
-                    export_file_path = export_folder_path + "/" + selectedObject.name + ".txt";
+                    string export_file_path = export_folder_path + "/" + selectedObject.name + ".txt";
                     mpm3DSimulation.ExportData(export_file_path);
 
                     // Show file name in UI
@@ -1433,7 +1430,7 @@ class UIManagerNew : MonoBehaviour
                 else if (dropdown.options[value].text == "Star")
                 {
                     mpm3DSimulation.squeezeType = Mpm3DMarching.SqueezeType.Star;
-                } 
+                }
                 else if (dropdown.options[value].text == "Square")
                 {
                     mpm3DSimulation.squeezeType = Mpm3DMarching.SqueezeType.Square;
@@ -1742,6 +1739,160 @@ class UIManagerNew : MonoBehaviour
                 }
             }
         }
+    }
+    public void ExportMpm3DMesh(Mpm3DMarching mpm3DSimulation)
+    {
+        if (mpm3DSimulation != null)
+        {
+            GameObject obj = mpm3DSimulation.gameObject;
+            string objPath = export_folder_path + "/" + obj.name + ".obj";
+            string mtlPath = export_folder_path + "/" + obj.name + ".mtl";
+            ExportMeshesToObj(obj, objPath, mtlPath);
+        }
+    }
+    public void ExportMeshesToObj(GameObject obj, string objPath, string mtlPath)
+    {
+        // 使用输入的路径
+        string exportObjPath = objPath ?? "Assets/ExportedMeshes.obj";  // 默认路径
+        string exportMtlPath = mtlPath ?? "Assets/ExportedMaterials.mtl";  // 默认路径
+
+        // 创建StringBuilder来保存整个.obj文件内容
+        StringBuilder objContent = new StringBuilder();
+        StringBuilder mtlContent = new StringBuilder();
+
+        // 创建材质ID映射
+        int materialIndex = 0;
+        var materialToIndex = new System.Collections.Generic.Dictionary<Material, int>();
+
+        // 初始化顶点偏移
+        int vertexOffset = 1;
+
+        // 遍历所有子物体
+        MeshFilter[] meshFilters = obj.GetComponentsInChildren<MeshFilter>();
+        foreach (MeshFilter meshFilter in meshFilters)
+        {
+            // 跳过名字不包含 "MarchingCubeVisualizer" 的子物体
+            if (!meshFilter.gameObject.name.Contains("MarchingCubeVisualizer"))
+            {
+                continue; // 如果名字不符合条件，则跳过此物体
+            }
+
+            Mesh mesh = meshFilter.sharedMesh;
+            if (mesh != null)
+            {
+                // 获取MeshRenderer组件的材质
+                MeshRenderer meshRenderer = meshFilter.GetComponent<MeshRenderer>();
+                if (meshRenderer != null)
+                {
+                    foreach (Material material in meshRenderer.sharedMaterials)
+                    {
+                        if (!materialToIndex.ContainsKey(material))
+                        {
+                            materialToIndex[material] = materialIndex++;
+
+                            // 在.mtl文件中写入材质信息
+                            mtlContent.AppendLine($"newmtl Material{materialToIndex[material]}");
+
+                            // 设置漫反射颜色 (Kd) 和环境光颜色 (Ka)
+                            mtlContent.AppendLine($"Kd {material.color.r} {material.color.g} {material.color.b}");
+                            mtlContent.AppendLine($"Ka {material.color.r} {material.color.g} {material.color.b}");
+                            mtlContent.AppendLine($"Ks 0 0 0");
+                            mtlContent.AppendLine();
+                        }
+
+                        // 在.obj文件中指定使用哪个材质
+                        objContent.AppendLine($"usemtl Material{materialToIndex[material]}");
+                    }
+                }
+
+                // 从GPU中读取顶点和索引数据
+                ReadGpuMeshData(meshFilter, objContent, ref vertexOffset);
+            }
+        }
+
+        // 保存.obj文件
+        File.WriteAllText(exportObjPath, objContent.ToString());
+        // 保存.mtl文件
+        File.WriteAllText(exportMtlPath, mtlContent.ToString());
+
+        Debug.Log("Mesh and Material export completed: " + exportObjPath);
+    }
+
+    // 从GPU中读取顶点和索引数据
+    void ReadGpuMeshData(MeshFilter meshFilter, StringBuilder objContent, ref int vertexOffset)
+    {
+        // 获取MeshRenderer组件的mesh
+        Mesh mesh = meshFilter.sharedMesh;
+
+        // 获取GPU上的顶点和索引缓冲区
+        GraphicsBuffer vertexBuffer = mesh.GetVertexBuffer(0);  // 获取第一个顶点缓冲区
+        GraphicsBuffer indexBuffer = mesh.GetIndexBuffer();     // 获取索引缓冲区
+
+        // 读取整个顶点缓冲区的数据（24 字节每个顶点，包含位置和法线）
+        VertexData[] vertexData = ReadVertexBuffer(vertexBuffer);
+
+        // 获取索引数据
+        int[] indices = ReadIndexBuffer(indexBuffer);
+
+        // 根据最大索引确定需要多少个顶点
+        int maxIndex = indices.Length > 0 ? indices.Max() : 0;
+        int vertexCount = maxIndex + 1;
+
+        // 截断索引数据
+        List<int> validIndices = new List<int>();
+        foreach (var index in indices)
+        {
+            if (index == 0)
+                break;
+            validIndices.Add(index);
+        }
+
+        // 当前Mesh的顶点编号，从vertexOffset开始
+        int currentVertexOffset = vertexOffset;
+
+        // 写入顶点数据（位置和法线）
+        foreach (var data in vertexData.Take(vertexCount))
+        {
+            objContent.AppendLine($"v {data.position.x} {data.position.y} {data.position.z}");
+            objContent.AppendLine($"vn {data.normal.x} {data.normal.y} {data.normal.z}");
+        }
+
+        // 写入有效的索引数据（面数据）
+        for (int i = 0; i < validIndices.Count; i += 3)
+        {
+            if (i + 2 < validIndices.Count)
+            {
+                // 为当前mesh的顶点添加偏移
+                objContent.AppendLine($"f {validIndices[i] + currentVertexOffset} {validIndices[i + 1] + currentVertexOffset} {validIndices[i + 2] + currentVertexOffset}");
+            }
+        }
+
+        // 更新全局vertexOffset，累加当前mesh的顶点数量
+        vertexOffset += vertexCount;
+    }
+
+    // 从GPU中的顶点缓冲区读取数据
+    VertexData[] ReadVertexBuffer(GraphicsBuffer vertexBuffer)
+    {
+        // 读取整个顶点缓冲区数据（位置和法线）
+        VertexData[] vertexData = new VertexData[vertexBuffer.count];  // 每个顶点包含位置和法线
+        vertexBuffer.GetData(vertexData);
+        return vertexData;
+    }
+
+    // 读取GPU中的索引数据
+    int[] ReadIndexBuffer(GraphicsBuffer indexBuffer)
+    {
+        int[] indices = new int[indexBuffer.count];
+        indexBuffer.GetData(indices);
+        return indices;
+    }
+
+    // 顶点数据结构，包含位置和法线
+    struct VertexData
+    {
+        public Vector3 position;
+        public Vector3 normal;
     }
     void OnDestroy()
     {

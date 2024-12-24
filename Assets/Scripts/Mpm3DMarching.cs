@@ -1389,6 +1389,7 @@ public class Mpm3DMarching : MonoBehaviour
         {
             for (int i = 0; i < marchingCubeVisualizers.Length; i++)
             {
+                marchingCubeVisualizers[i].OnDestroy();
                 marchingCubeVisualizers[i]._dimensions = new Vector3Int(render_n_grid, render_n_grid, render_n_grid);
                 marchingCubeVisualizers[i]._gridScale = (float)1.0 / render_n_grid;
                 marchingCubeVisualizers[i].Init();

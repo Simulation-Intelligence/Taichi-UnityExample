@@ -51,7 +51,7 @@ namespace MarchingCubes
 
         void Update()
         {
-            // _builder._smoothingIterations = _smoothingIterations;
+            //_builder._smoothingIterations = _smoothingIterations;
             if (!shouldUpdate)
             {
                 return;
