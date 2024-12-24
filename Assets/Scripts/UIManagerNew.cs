@@ -1761,6 +1761,10 @@ class UIManagerNew : MonoBehaviour
         StringBuilder objContent = new StringBuilder();
         StringBuilder mtlContent = new StringBuilder();
 
+        // 在.obj文件开头添加空行和mtllib
+        objContent.AppendLine();  // 空行
+        objContent.AppendLine($"mtllib {Path.GetFileName(mtlPath)}");  // 添加mtllib引用
+
         // 创建材质ID映射
         int materialIndex = 0;
         var materialToIndex = new System.Collections.Generic.Dictionary<Material, int>();
