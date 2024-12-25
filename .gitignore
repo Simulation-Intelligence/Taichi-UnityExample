@@ -83,5 +83,6 @@ model/
 sparse/
 Assets/GaussianAssets/*.bytes
 Assets/GaussianAssets/*.bytes.meta
+Assets/GaussianAssets/EditedGaussianPLYFiles/
 
 Assets/NeRFImages/

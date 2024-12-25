@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: green-leaves-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 265299
+  m_BoundsMin: {x: -1.2656958, y: -1.0452311, z: -0.61262584}
+  m_BoundsMax: {x: 1.1348763, y: 1.3864254, z: 1.6524941}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: ec3f61d01166ba8551d34032957ca2c4
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: b10c25f8a287eee4b8a168dce707f051, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 6347a081dcf89f74aaf0b253e55b4698, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 05e97a79b47cc9b498819c8d3a6592e2, type: 3}
+  m_SHData: {fileID: 4900000, guid: 5095df5167b67bd40bdbe333f26a8415, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
