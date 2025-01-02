@@ -425,7 +425,7 @@ MonoBehaviour:
   adjust_particle: 1
   use_unified_material: 0
   smooth_iter: 10
-  bounding_eps: 0.1
+  bounding_eps: 0.2
   max_dt: 0.0001
   frame_time: 0.002
   particle_per_grid: 8
