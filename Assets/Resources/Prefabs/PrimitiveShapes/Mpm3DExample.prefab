@@ -414,16 +414,16 @@ MonoBehaviour:
   initShape: 1
   g: {x: 0, y: 0, z: 0}
   gy: 0
-  n_grid: 32
+  n_grid: 64
   bound: 3
-  render_n_grid: 64
+  render_n_grid: 128
   gaussian_simulate_ratio: 0.5
   use_gaussian_acceleration: 0
   lerp_tool: 1
   use_grid_force: 0
   use_standard_mpm_boundary: 1
   adjust_particle: 1
-  use_unified_material: 1
+  use_unified_material: 0
   smooth_iter: 10
   bounding_eps: 0.1
   max_dt: 0.0001
@@ -434,8 +434,8 @@ MonoBehaviour:
   cube_size: 0.5
   cylinder_length: 0.8
   cylinder_radius: 0.05
-  torus_radius: 0.3
-  torus_tube_radius: 0.05
+  torus_radius: 0.22
+  torus_tube_radius: 0.08
   use_correct_cfl: 0
   rotate_speed: 0
   hand_simulation_radius: 100
@@ -455,7 +455,7 @@ MonoBehaviour:
   _E: 10000000
   _SigY: 1000000
   _nu: 0.1
-  colide_factor: 0.005
+  colide_factor: 0.002
   friction_k: 0.2
   p_rho: 1000
   _min_clamp: 0.1

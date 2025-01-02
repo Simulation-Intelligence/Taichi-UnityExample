@@ -124,7 +124,7 @@ public class PinchGesture : MonoBehaviour
         if (hand.IsTracked && oculus_skeleton != null)
         {
             DetectPinch();
-            DetectRotation();
+            // DetectRotation();
             DetectSqueeze(); // 调用握拳检测方法
         }
     }

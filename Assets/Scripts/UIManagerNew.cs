@@ -1479,6 +1479,15 @@ class UIManagerNew : MonoBehaviour
                     mpm3DSimulation.Copy_materials();
                     mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Drucker_Plasticity;
                 }
+                else if (dropdown.options[value].text == "Viscous Liquid")
+                {
+                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Drucker_Prager;
+                    mpm3DSimulation._E = 5e6f;
+                    mpm3DSimulation._SigY = 1e6f;
+                    mpm3DSimulation.Init_materials();
+                    mpm3DSimulation.Copy_materials();
+                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Viscous_Liquid;
+                }
                 ShowSelectedObjectInfo();
             }
         }
@@ -1692,7 +1701,7 @@ class UIManagerNew : MonoBehaviour
                         {
                             parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation._nu;
                         }
-                        if (parameter.name == "Parameter_ColideFactor")
+                        if (parameter.name == "Parameter_CollideFactor")
                         {
                             parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.colide_factor;
                         }

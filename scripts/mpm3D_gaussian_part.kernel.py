@@ -541,8 +541,6 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
                     # Update the particle's velocity to match the segment's velocity (with interpolation)
                     v[p] = skeleton_velocities[min_seg_idx, 0] * (1 - min_r) + skeleton_velocities[min_seg_idx, 1] * min_r
 
-    
-
     @ti.kernel
     def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), dg: ti.types.ndarray(ndim=1), cube_size:ti.f32):
         # Init a cube
@@ -583,7 +581,7 @@ def compile_mpm3D(arch, save_compute_graph, run=False):
         for i in range(x.shape[0]):
             rand_theta = ti.random() * 2 * pi
             rand_phi = ti.random() * 2 * pi
-            rand_r = torus_tube_radius * ti.cos(rand_phi) + torus_radius
+            rand_r = torus_tube_radius * (ti.random() * ti.cos(rand_phi)) + torus_radius  # Add random radial component
             x[i] = ti.Vector([rand_r * ti.cos(rand_theta) + 0.5, rand_r * ti.sin(rand_theta) + 0.5, torus_tube_radius * ti.sin(rand_phi) + 0.5])
             dg[i] = ti.Matrix.identity(float, dim)
 
