@@ -292,11 +292,11 @@ class UIManagerNew : MonoBehaviour
                             Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                             if (mpm3DSimulation != null)
                             {
+                                isMerging = false;
                                 mpm3DSimulation.MergeAndUpdate(objectToMerge.GetComponent<Mpm3DMarching>());
                                 Debug.Log("Merge object " + selectedObject.name + " with object " + objectToMerge.name);
-                                isMerging = false;
-                                mergePrompt.SetActive(false);
-                                //removedObjectLists.Add(objectToMerge); // Need to distroy the merged object
+                                // mergePrompt.SetActive(false);
+                                // removedObjectLists.Add(objectToMerge); // Need to distroy the merged object
                                 objectToMerge = null;
                                 foreach (Button button in buttons)
                                 {

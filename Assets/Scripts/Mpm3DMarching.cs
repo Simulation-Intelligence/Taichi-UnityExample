@@ -1031,7 +1031,8 @@ public class Mpm3DMarching : MonoBehaviour
         render.EditSetSplatCount(totalSplats);
         otherRender.EditCopySplatsInto(render, 0, copyDstOffset, otherRender.splatCount);
         splatManager.init_gaussians();
-        Init_gaussian();
+        // Init_gaussian();
+        Init_gaussian_new();
     }
 
     private void MergeMarchingCubes(Mpm3DMarching other)
