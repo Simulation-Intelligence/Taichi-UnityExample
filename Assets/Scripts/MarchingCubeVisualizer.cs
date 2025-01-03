@@ -31,6 +31,8 @@ namespace MarchingCubes
         public ComputeBuffer _voxelBuffer;
 
         public int _smoothingIterations = 0;
+
+        public bool use_own_smoothing = false;
         MeshBuilder _builder;
 
         #endregion
@@ -51,7 +53,10 @@ namespace MarchingCubes
 
         void Update()
         {
-            //_builder._smoothingIterations = _smoothingIterations;
+            if (use_own_smoothing)
+            {
+                _builder._smoothingIterations = _smoothingIterations;
+            }
             if (!shouldUpdate)
             {
                 return;

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: hobbyhorse-edit
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 112328
+  m_BoundsMin: {x: -1.5084847, y: -1.1749347, z: -0.23200805}
+  m_BoundsMax: {x: 1.4502577, y: 1.5401713, z: 0.9919493}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: bb6afed120ff74a06eb85578f37f0692
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: f9b64f2de2030c24cb023313303e5e74, type: 3}
+  m_ColorData: {fileID: 4900000, guid: e4b9a5abaeaa27f4bbfcb58b2a37f8de, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 2afe6b30765f32e40815a3bc969c1d6b, type: 3}
+  m_SHData: {fileID: 4900000, guid: f214a0ae53d1b804cb800faf244597eb, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

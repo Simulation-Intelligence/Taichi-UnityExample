@@ -931,6 +931,19 @@ public class Mpm3DMarching : MonoBehaviour
             Runtime.Submit();
             Init_materials();
             Build_materials();
+            int[] new_point_color_host = new int[NParticles];
+            for (int i = 0; i < NParticles; i++)
+            {
+                if (i < NParticles - N_to_fill)
+                {
+                    new_point_color_host[i] = point_color_host[i];
+                }
+                else
+                {
+                    new_point_color_host[i] = 0;
+                }
+            }
+            point_color_host = new_point_color_host;
             Copy_materials();
             _Kernel_init_dg.LaunchAsync(dg_new);
             x = x_new;
@@ -1153,7 +1166,7 @@ public class Mpm3DMarching : MonoBehaviour
 
         // 更新 NParticles
         NParticles = importedX.Count;
-
+        squeeze_particle_index = NParticles;
         // 初始化新的 NdArray
         Init_Particle_Data();
         point_color = new NdArrayBuilder<int>().Shape(NParticles).HostWrite(true).Build();

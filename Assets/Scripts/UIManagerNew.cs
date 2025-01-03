@@ -1843,14 +1843,27 @@ class UIManagerNew : MonoBehaviour
         int maxIndex = indices.Length > 0 ? indices.Max() : 0;
         int vertexCount = maxIndex + 1;
 
-        // 截断索引数据
+        // 截断索引数据 
+        //如果索引出现连续3个0，则后面的索引数据都不需要了
         List<int> validIndices = new List<int>();
-        foreach (var index in indices)
+        for (int i = 0; i < indices.Length; i += 3)
         {
-            if (index == 0)
+            if (indices[i] == 0 && indices[i + 1] == 0 && indices[i + 2] == 0)
+            {
                 break;
-            validIndices.Add(index);
+            }
+            validIndices.Add(indices[i]);
+            validIndices.Add(indices[i + 1]);
+            validIndices.Add(indices[i + 2]);
         }
+
+        // List<int> validIndices = new List<int>();
+        // foreach (var index in indices)
+        // {
+        //     if (index == 0)
+        //         break;
+        //     validIndices.Add(index);
+        // }
 
         // 当前Mesh的顶点编号，从vertexOffset开始
         int currentVertexOffset = vertexOffset;
