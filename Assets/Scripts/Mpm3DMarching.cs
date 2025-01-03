@@ -48,7 +48,8 @@ public class Mpm3DMarching : MonoBehaviour
         Default_Clay,
         Soft_Clay,
         Clamp_Plasticity,
-        Drucker_Plasticity
+        Drucker_Plasticity,
+        Viscous_Liquid
     }
     public enum InitShape
     {
@@ -439,7 +440,7 @@ public class Mpm3DMarching : MonoBehaviour
                 volume = Mathf.PI * Mathf.Pow(cylinder_radius, 2) * cylinder_length;
                 break;
             case InitShape.Torus:
-                volume = 2 * Mathf.PI * Mathf.PI * Mathf.Pow(torus_tube_radius, 2) * torus_radius;
+                volume = 4 * Mathf.PI * Mathf.PI * Mathf.Pow(torus_tube_radius, 2) * torus_radius;
                 break;
         }
         NParticles = (int)(n_grid * n_grid * n_grid * particle_per_grid * volume);
@@ -1043,7 +1044,8 @@ public class Mpm3DMarching : MonoBehaviour
         render.EditSetSplatCount(totalSplats);
         otherRender.EditCopySplatsInto(render, 0, copyDstOffset, otherRender.splatCount);
         splatManager.init_gaussians();
-        Init_gaussian();
+        // Init_gaussian();
+        Init_gaussian_new();
     }
 
     private void MergeMarchingCubes(Mpm3DMarching other)

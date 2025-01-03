@@ -1,5 +1,10 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/Exported3DModels/cake0.mtl.meta
 guid: 4fd300ad4a094fa4bb84a44b9d4d6b51
+========
+guid: a10ef0f8b6ec09444b90f9281ca11d8a
+folderAsset: yes
+>>>>>>>> 983e39af3ea788851d107e8925ddc54428742c0d:Assets/Materials/Tool_Materials.meta
 DefaultImporter:
   externalObjects: {}
   userData: 

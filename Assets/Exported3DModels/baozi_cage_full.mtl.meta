@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/Exported3DModels/baozi_cage_full.mtl.meta
 guid: 7d57f230f18216146aba4786a8031a42
+========
+guid: 5debb549139d34943a59f50a6bc66310
+>>>>>>>> 983e39af3ea788851d107e8925ddc54428742c0d:Assets/GaussianAssets/PLYFiles/hobbyhorse-edit.ply.meta
 DefaultImporter:
   externalObjects: {}
   userData: 

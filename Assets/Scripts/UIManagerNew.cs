@@ -292,11 +292,11 @@ class UIManagerNew : MonoBehaviour
                             Mpm3DMarching mpm3DSimulation = selectedObject.GetComponent<Mpm3DMarching>();
                             if (mpm3DSimulation != null)
                             {
+                                isMerging = false;
                                 mpm3DSimulation.MergeAndUpdate(objectToMerge.GetComponent<Mpm3DMarching>());
                                 Debug.Log("Merge object " + selectedObject.name + " with object " + objectToMerge.name);
-                                isMerging = false;
-                                mergePrompt.SetActive(false);
-                                //removedObjectLists.Add(objectToMerge); // Need to distroy the merged object
+                                // mergePrompt.SetActive(false);
+                                // removedObjectLists.Add(objectToMerge); // Need to distroy the merged object
                                 objectToMerge = null;
                                 foreach (Button button in buttons)
                                 {
@@ -538,74 +538,86 @@ class UIManagerNew : MonoBehaviour
         if (button.name == "SphereShape")
         {
             ShapeParameterObject_1.SetActive(true);
-            TMP_Text parameter_text = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
-            parameter_text.text = "Radius";
             ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.5f;
+            TMP_Text parameter_text = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
+            parameter_text.text = "Radius: " + ShapeParameterObject_1.GetComponentInChildren<Slider>().value.ToString("F2");
             prefabName = "Sphere";
 
             // Adjust UI background
             RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
             Vector2 sizeDelta = rectTransform_1.sizeDelta;
-            sizeDelta.y += 140;
-            rectTransform_1.sizeDelta = sizeDelta;
-            RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
-            rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 140);
+            if (sizeDelta.y == 500)
+            {
+                sizeDelta.y += 140;
+                rectTransform_1.sizeDelta = sizeDelta;
+                RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+                rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 140);
+            }
         }
         if (button.name == "CubeShape")
         {
             ShapeParameterObject_1.SetActive(true);
-            TMP_Text parameter_text = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
-            parameter_text.text = "Size";
             ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.5f;
+            TMP_Text parameter_text = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
+            parameter_text.text = "Size: " + ShapeParameterObject_1.GetComponentInChildren<Slider>().value.ToString("F2");
             prefabName = "Cube";
 
             // Adjust UI background
             RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
             Vector2 sizeDelta = rectTransform_1.sizeDelta;
-            sizeDelta.y += 140;
-            rectTransform_1.sizeDelta = sizeDelta;
-            RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
-            rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 140);
+            if (sizeDelta.y == 500)
+            {
+                sizeDelta.y += 140;
+                rectTransform_1.sizeDelta = sizeDelta;
+                RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+                rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 140);
+            }
         }
         if (button.name == "CylinderShape")
         {
             ShapeParameterObject_1.SetActive(true);
-            TMP_Text parameter_text_1 = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
-            parameter_text_1.text = "Cylinder Length";
             ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.8f;
+            TMP_Text parameter_text_1 = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
+            parameter_text_1.text = "Cylinder Length: " + ShapeParameterObject_1.GetComponentInChildren<Slider>().value.ToString("F2");
             ShapeParameterObject_2.SetActive(true);
-            TMP_Text parameter_text_2 = ShapeParameterObject_2.transform.Find("Name").GetComponent<TMP_Text>();
-            parameter_text_2.text = "Cylinder Radius";
             ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.05f;
+            TMP_Text parameter_text_2 = ShapeParameterObject_2.transform.Find("Name").GetComponent<TMP_Text>();
+            parameter_text_2.text = "Cylinder Radius: " + ShapeParameterObject_2.GetComponentInChildren<Slider>().value.ToString("F2");
             prefabName = "Cylinder";
 
             // Adjust UI background
             RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
             Vector2 sizeDelta = rectTransform_1.sizeDelta;
-            sizeDelta.y += 280;
-            rectTransform_1.sizeDelta = sizeDelta;
-            RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
-            rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 280);
+            if (sizeDelta.y == 500)
+            {
+                sizeDelta.y += 280;
+                rectTransform_1.sizeDelta = sizeDelta;
+                RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+                rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 280);
+            }
         }
         if (button.name == "TorusShape")
         {
             ShapeParameterObject_1.SetActive(true);
+            ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.22f;
             TMP_Text parameter_text_1 = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
-            parameter_text_1.text = "Torus Radius";
-            ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.3f;
+            parameter_text_1.text = "Torus Radius: " + ShapeParameterObject_1.GetComponentInChildren<Slider>().value.ToString("F2");
             ShapeParameterObject_2.SetActive(true);
+            ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.08f;
             TMP_Text parameter_text_2 = ShapeParameterObject_2.transform.Find("Name").GetComponent<TMP_Text>();
-            parameter_text_2.text = "Torus Tube Radius";
-            ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.05f;
+            parameter_text_2.text = "Torus Tube Radius: " + ShapeParameterObject_2.GetComponentInChildren<Slider>().value.ToString("F2");
             prefabName = "Torus";
 
             // Adjust UI background
             RectTransform rectTransform_1 = bk1.GetComponent<RectTransform>();
             Vector2 sizeDelta = rectTransform_1.sizeDelta;
-            sizeDelta.y += 280;
-            rectTransform_1.sizeDelta = sizeDelta;
-            RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
-            rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 280);
+            if (sizeDelta.y == 500)
+            {
+                sizeDelta.y += 280;
+                rectTransform_1.sizeDelta = sizeDelta;
+                RectTransform rectTransform_2 = bk2.GetComponent<RectTransform>();
+                rectTransform_2.anchoredPosition = new Vector2(rectTransform_2.anchoredPosition.x, rectTransform_2.anchoredPosition.y - 280);
+            }
         }
 
         // Create object based on shape parameters
@@ -1301,11 +1313,11 @@ class UIManagerNew : MonoBehaviour
                     ShapeParameterObject_1.SetActive(true);
                     TMP_Text parameter_text_1 = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
                     parameter_text_1.text = "Torus Radius";
-                    ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.3f;
+                    ShapeParameterObject_1.GetComponentInChildren<Slider>().value = 0.22f;
                     ShapeParameterObject_2.SetActive(true);
                     TMP_Text parameter_text_2 = ShapeParameterObject_2.transform.Find("Name").GetComponent<TMP_Text>();
                     parameter_text_2.text = "Torus Tube Radius";
-                    ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.05f;
+                    ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.08f;
                 }
             }
             // CreateMpm3DObjectFromPrefab(); 
@@ -1478,6 +1490,15 @@ class UIManagerNew : MonoBehaviour
                     mpm3DSimulation.Init_materials();
                     mpm3DSimulation.Copy_materials();
                     mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Drucker_Plasticity;
+                }
+                else if (dropdown.options[value].text == "Viscous Liquid")
+                {
+                    mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Drucker_Prager;
+                    mpm3DSimulation._E = 5e6f;
+                    mpm3DSimulation._SigY = 1e6f;
+                    mpm3DSimulation.Init_materials();
+                    mpm3DSimulation.Copy_materials();
+                    mpm3DSimulation.materialType = Mpm3DMarching.MaterialType.Viscous_Liquid;
                 }
                 ShowSelectedObjectInfo();
             }
@@ -1692,7 +1713,7 @@ class UIManagerNew : MonoBehaviour
                         {
                             parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation._nu;
                         }
-                        if (parameter.name == "Parameter_ColideFactor")
+                        if (parameter.name == "Parameter_CollideFactor")
                         {
                             parameter.GetComponentInChildren<Slider>().value = mpm3DSimulation.colide_factor;
                         }
