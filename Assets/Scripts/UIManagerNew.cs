@@ -147,10 +147,30 @@ class UIManagerNew : MonoBehaviour
             }
         }
 
+        // Update shape slider value in UI
+        TMP_Text shape_parameter_1_text = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
+        TMP_Text shape_parameter_2_text = ShapeParameterObject_2.transform.Find("Name").GetComponent<TMP_Text>();
+        Slider shape_parameter_1_slider = ShapeParameterObject_1.GetComponentInChildren<Slider>();
+        Slider shape_parameter_2_slider = ShapeParameterObject_2.GetComponentInChildren<Slider>();
+        string initial_text_2 = shape_parameter_2_text.text;
+        shape_parameter_1_slider.onValueChanged.AddListener((float value) =>
+        {
+            string initial_text = shape_parameter_1_text.text;
+            string initial_text_1 = initial_text.Substring(0, initial_text.IndexOf(":") + 2);
+            shape_parameter_1_text.text = initial_text_1 + value.ToString("F2");
+            shape_parameter_1_slider.value = (float)Math.Round(value, 2);
+        });
+        shape_parameter_2_slider.onValueChanged.AddListener((float value) =>
+        {
+            string initial_text = shape_parameter_2_text.text;
+            string initial_text_2 = initial_text.Substring(0, initial_text.IndexOf(":") + 2);
+            shape_parameter_2_text.text = initial_text_2 + value.ToString("F2");
+            shape_parameter_2_slider.value = (float)Math.Round(value, 2);
+        });
         InstantiateTools(); // Instantiate tools
         AddMpm3DObject();
     }
-
+    
     void AddMpm3DObject()
     {
         if (Mpm3DObject != null)
