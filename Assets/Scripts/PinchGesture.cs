@@ -380,7 +380,7 @@ public class PinchGesture : MonoBehaviour
         }
         return null;
     }
-
+    
     void CreateOrUpdatePinchSphere(Vector3 position)
     {
         if (pinchSphere == null && RenderPinchSphere)
