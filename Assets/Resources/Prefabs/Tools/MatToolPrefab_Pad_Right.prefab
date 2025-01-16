@@ -67,7 +67,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: 39f87a2d73277e048b3e215ee15e97ee, type: 2}
+      objectReference: {fileID: 2100000, guid: f04d1fa1b0d5c6c4083678f5c96600a9, type: 2}
     - target: {fileID: 919132149155446097, guid: 9a8023146067ded489c7204f0924b4ae, type: 3}
       propertyPath: m_Name
       value: MatToolPrefab_Pad_Right
@@ -105,9 +105,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   numPrimitives: 0
-  _rotationOffset: {x: 0, y: 1, z: 0, w: -0.00000004371139}
+  _rotationOffset: {x: -0.00000003090862, y: 0.70710677, z: -0.70710677, w: -0.00000003090862}
   handType: 1
-  smoothHand: {fileID: 564368888581146692, guid: b6961c79864eac8458df878ef6e40a4d, type: 3}
+  smoothHand: {fileID: 0}
   _handJointId: 6
 --- !u!114 &843065160590502256
 MonoBehaviour:

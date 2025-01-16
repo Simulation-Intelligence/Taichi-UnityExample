@@ -125,7 +125,7 @@ public class PinchGesture : MonoBehaviour
         if (hand.IsTracked && oculus_skeleton != null)
         {
             DetectPinch();
-            // DetectRotation();
+            DetectRotation();
             DetectSqueeze(); // 调用握拳检测方法
         }
     }
@@ -250,7 +250,7 @@ public class PinchGesture : MonoBehaviour
                 // 计算平均瞬时角速度
                 rotationSpeed = (angularVelocity1 + angularVelocity2) / 2.0f / 360.0f;
 
-                Debug.Log($"Rotation Speed: {rotationSpeed} degrees/second");
+                // Debug.Log($"Rotation Speed: {rotationSpeed} degrees/second");
             }
             CreateOrUpdateRotationSphere(initialRotatePosition);
         }

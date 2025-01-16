@@ -63,5 +63,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   matTool: {fileID: 7963736778159679625}
-  material: {fileID: 2100000, guid: 39f87a2d73277e048b3e215ee15e97ee, type: 2}
+  material: {fileID: 2100000, guid: 0a0c14738eff8dc44b75e699721b1cb7, type: 2}
   render_cylinder: 1
