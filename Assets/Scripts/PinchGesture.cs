@@ -81,6 +81,7 @@ public class PinchGesture : MonoBehaviour
 
     public float squeezeThresholdHigh = 0.06f;
 
+    [HideInInspector]
     public float squeeze_ratio = 0.5f;
 
     // Visualize the selection area while pinch translation and rotation
@@ -281,7 +282,7 @@ public class PinchGesture : MonoBehaviour
             isSqueezing = true;
             squeeze_ratio = 1 - (avarageDistance - squeezeThresholdLow) / (squeezeThresholdHigh - squeezeThresholdLow);
             CalculateSqueezeDetails();
-            CreateOrUpdateSqueezeSphere(squeezeCenter);
+            //CreateOrUpdateSqueezeSphere(squeezeCenter);
             CreateOrUpdateSqueezeCone(squeezeCenter, squeezeDirection);
         }
         else if (avarageDistance > squeezeThresholdHigh && isSqueezing)
@@ -289,7 +290,7 @@ public class PinchGesture : MonoBehaviour
             isSqueezing = false;
             squeezeCenter = Vector3.zero;
             squeezeDirection = Vector3.zero;
-            DestroySqueezeSphere();
+            //DestroySqueezeSphere();
             DestroySqueezeCone();
         }
 
@@ -297,7 +298,7 @@ public class PinchGesture : MonoBehaviour
         {
             squeeze_ratio = 1 - (avarageDistance - squeezeThresholdLow) / (squeezeThresholdHigh - squeezeThresholdLow);
             CalculateSqueezeDetails();
-            CreateOrUpdateSqueezeSphere(squeezeCenter);
+            //CreateOrUpdateSqueezeSphere(squeezeCenter);
             CreateOrUpdateSqueezeCone(squeezeCenter, squeezeDirection);
         }
     }
@@ -337,7 +338,7 @@ public class PinchGesture : MonoBehaviour
             Vector3 pinchDirection = pinkyTip.position - indexTip.position;
 
             // 将该向量加到握拳的中心位置
-            squeezeCenter += pinchDirection.normalized * pinchDirection.magnitude; // 调整比例可以控制影响的大小
+            squeezeCenter += pinchDirection.normalized * pinchDirection.magnitude * 2; // 调整比例可以控制影响的大小
         }
 
         // 计算握拳的朝向

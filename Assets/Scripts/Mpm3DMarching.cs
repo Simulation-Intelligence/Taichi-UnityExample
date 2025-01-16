@@ -192,6 +192,8 @@ public class Mpm3DMarching : MonoBehaviour
     [SerializeField]
     public SqueezeType squeezeType = SqueezeType.Star;
 
+    public int squeeze_color = 0;
+
     [Header("Fix the Object in Place")]
     [SerializeField]
     private bool FixObject = false;
@@ -781,7 +783,7 @@ public class Mpm3DMarching : MonoBehaviour
                 boundary_min[0], boundary_max[0], boundary_min[1], boundary_max[1], boundary_min[2], boundary_max[2]);
             }
 
-            //SqueezeParticles(leftPinchGesture);
+            SqueezeParticles(leftPinchGesture);
             SqueezeParticles(rightPinchGesture);
             while (time_left > 0)
             {
@@ -941,7 +943,7 @@ public class Mpm3DMarching : MonoBehaviour
                 }
                 else
                 {
-                    new_point_color_host[i] = 0;
+                    new_point_color_host[i] = squeeze_color;
                 }
             }
             point_color_host = new_point_color_host;
@@ -1065,6 +1067,7 @@ public class Mpm3DMarching : MonoBehaviour
                     m._dimensions = new Vector3Int(render_n_grid, render_n_grid, render_n_grid);
                     m._gridScale = (float)1.0 / render_n_grid;
                     m.Init();
+                    m.SetSmoothingIterations(smooth_iter);
                     marchingCubeVisualizers = marchingCubeVisualizers.Concat(new MarchingCubeVisualizer[] { m }).ToArray();
                     child.SetParent(transform, false);
                 }
