@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
-  m_Name: truss_wooden-pile-up-example2
+  m_Name: soft-capabary-eating-fat-example
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 702894
-  m_BoundsMin: {x: 0.38379598, y: 0.35594177, z: 0.14483204}
-  m_BoundsMax: {x: 0.9522227, y: 0.9518115, z: 0.533704}
+  m_SplatCount: 61868
+  m_BoundsMin: {x: 0.2597689, y: 0.16342998, z: 0.38825306}
+  m_BoundsMax: {x: 0.71165353, y: 0.843565, z: 0.84074414}
   m_DataHash:
     serializedVersion: 2
-    Hash: c5c9ef3e5d426a74f8133f43330dd0e1
+    Hash: fddf8fd3867bb40f66b9cff02a39d510
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: d7fcfc281203955439f6c3e24f969bab, type: 3}
-  m_ColorData: {fileID: 4900000, guid: de9b6d16506b0ec43bd150d721905b26, type: 3}
-  m_OtherData: {fileID: 4900000, guid: fcdab5debfc9a8d4abcbec6c282d3336, type: 3}
-  m_SHData: {fileID: 4900000, guid: 0021d65160abb2746b41d380f9f3a7b0, type: 3}
+  m_PosData: {fileID: 4900000, guid: cb49f8d42d481d9439d4e1450de582e7, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 7d3828d898922f7438d9ebf6e3189fbf, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 6aa411556e918ab4cbd62a1e0a73acd3, type: 3}
+  m_SHData: {fileID: 4900000, guid: 5bc6f56c0b8298041b6772823fb2b4d5, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []

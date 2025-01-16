@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
-  m_Name: manbo-eat
+  m_Name: manbo-melon
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 230787
-  m_BoundsMin: {x: 0.24569675, y: 0.15401222, z: 0.18017337}
-  m_BoundsMax: {x: 0.66949505, y: 0.9150781, z: 0.75558335}
+  m_SplatCount: 303659
+  m_BoundsMin: {x: 0.2360437, y: 0.10091871, z: 0.2868706}
+  m_BoundsMax: {x: 0.7646563, y: 0.90013033, z: 0.71269774}
   m_DataHash:
     serializedVersion: 2
-    Hash: 1aaaf10fe091c804a9f9e54e19d10f6e
+    Hash: e84f039d5ed88e58f9e3160c58647496
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: 4a6ef66d3cb4a914bb4e908182a3cc7b, type: 3}
-  m_ColorData: {fileID: 4900000, guid: 766138730fe2291468ee07a78e70ce4c, type: 3}
-  m_OtherData: {fileID: 4900000, guid: 4789e5e04ad6ac7489f3635ca67b64be, type: 3}
-  m_SHData: {fileID: 4900000, guid: 2289b24078184e84fa9c2cbc09e7f7d6, type: 3}
+  m_PosData: {fileID: 4900000, guid: 760e95484b8491a4fa12c791c8b73986, type: 3}
+  m_ColorData: {fileID: 4900000, guid: d645723936a833444a8c910bbfcd4c3c, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 63e026c26dc5d534c9f3e11bff918314, type: 3}
+  m_SHData: {fileID: 4900000, guid: 7928f81f07abaec46abefcab15e0777e, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []

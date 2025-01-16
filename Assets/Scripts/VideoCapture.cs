@@ -45,7 +45,8 @@ public class CameraVideoCapture : MonoBehaviour
         if (isCapturing)
         {
             // 让物体沿某一轴旋转（可以修改为任意轴）
-            objectToRotate.transform.Rotate(rotationAxis * rotationSpeed * Time.deltaTime); // 默认绕Y轴旋转
+            // objectToRotate.transform.Rotate(rotationAxis * rotationSpeed * Time.deltaTime, Space.World); // 默认绕世界坐标Y轴旋转
+            objectToRotate.transform.Rotate(rotationAxis * 360f / captureFrameCount, Space.World); // 默认绕世界坐标Y轴旋转
 
             // 每一帧生成一个图片
             CaptureFrame();
@@ -98,8 +99,9 @@ public class CameraVideoCapture : MonoBehaviour
     {
         // 定义FFmpeg命令的路径，确保你已安装FFmpeg，并将其添加到环境变量中
         string ffmpegPath = "ffmpeg"; // 如果FFmpeg已添加到系统路径，直接使用"ffmpeg"即可
+        // string ffmpegPath = @"D:\FFMPEG\ffmpeg\bin\ffmpeg.exe";
         string inputPattern = Path.Combine(savePath, "frame_%03d.png"); // 图像序列的路径
-        string outputVideo = Path.Combine(savePath, "output_video.mp4"); // 输出视频的路径
+        string outputVideo = Path.Combine(savePath, objectToRotate.name + "_video.mp4"); // 输出视频的路径
 
         // 创建FFmpeg命令
         string arguments = $"-framerate 30 -i \"{inputPattern}\" -c:v libx264 -pix_fmt yuv420p \"{outputVideo}\"";

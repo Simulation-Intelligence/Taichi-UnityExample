@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
-  m_Name: truss_wooden-improved-2
+  m_Name: truss_wooden-improved-3-multiple-leaves
   m_EditorClassIdentifier: 
   m_FormatVersion: 20231020
-  m_SplatCount: 1171490
-  m_BoundsMin: {x: 0.33635405, y: 0.5228495, z: 0.18744831}
-  m_BoundsMax: {x: 0.64411503, y: 0.85478646, z: 0.77510643}
+  m_SplatCount: 2232686
+  m_BoundsMin: {x: 0.3491116, y: 0.33206093, z: 0.2}
+  m_BoundsMax: {x: 0.6508883, y: 0.66793907, z: 0.8}
   m_DataHash:
     serializedVersion: 2
-    Hash: 86549675ccf091d59943655d83071571
+    Hash: a1f2fc74e45816dbf43cd3cae34a7af6
   m_PosFormat: 0
   m_ScaleFormat: 0
   m_SHFormat: 0
   m_ColorFormat: 0
-  m_PosData: {fileID: 4900000, guid: f310039004669314db690f932f00fba0, type: 3}
-  m_ColorData: {fileID: 4900000, guid: 52e455f95b0bd7a46a618ba7818caa69, type: 3}
-  m_OtherData: {fileID: 4900000, guid: 7f49b1d48d23d624fb5b4f4461197364, type: 3}
-  m_SHData: {fileID: 4900000, guid: 075173c7e728ed544a5a6940d8ed3b68, type: 3}
+  m_PosData: {fileID: 4900000, guid: 12e60410253861146aa523670f1fcd55, type: 3}
+  m_ColorData: {fileID: 4900000, guid: c291bf406bd5a214a914a6efeaa6b293, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 077b65ba0818d4f4f8796e722efede07, type: 3}
+  m_SHData: {fileID: 4900000, guid: 20ef2835684d8ed4aa3c8b6d6957fc9c, type: 3}
   m_ChunkData: {fileID: 0}
   m_Cameras: []

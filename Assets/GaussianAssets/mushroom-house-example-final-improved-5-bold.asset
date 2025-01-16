@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: mushroom-house-example-final-improved-5-bold
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 221712
+  m_BoundsMin: {x: 0.19996032, y: 0.27082184, z: 0.34277776}
+  m_BoundsMax: {x: 0.79974115, y: 0.730337, z: 0.65659446}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: a08ebe7e5f8225715ea1d65bfe43477e
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 92c384d8b786fb24296804a64595bab3, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 46d86558d7ff0e74c972751e618d719e, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 4ed1bb6c56dd7bd48967e48b970cdd23, type: 3}
+  m_SHData: {fileID: 4900000, guid: 031e29d5b8e19fe4b9759213bcc60fe6, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
