@@ -535,6 +535,19 @@ class UIManagerNew : MonoBehaviour
         mpm3DSimulation.Copy_materials();
     }
 
+    public void MergeObject()
+    {
+        if (selectedObject != null)
+        {
+            isMerging = true;
+        }
+    }
+
+    public void CancelMerge()
+    {
+        isMerging = false;
+    }
+
     void OnButtonClick(Button button)
     {
         Debug.Log(button.name + " was clicked!");
@@ -623,7 +636,7 @@ class UIManagerNew : MonoBehaviour
             TMP_Text parameter_text_1 = ShapeParameterObject_1.transform.Find("Name").GetComponent<TMP_Text>();
             parameter_text_1.text = "Torus Radius: " + ShapeParameterObject_1.GetComponentInChildren<Slider>().value.ToString("F2");
             ShapeParameterObject_2.SetActive(true);
-            ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.08f;
+            ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.07f;
             TMP_Text parameter_text_2 = ShapeParameterObject_2.transform.Find("Name").GetComponent<TMP_Text>();
             parameter_text_2.text = "Torus Tube Radius: " + ShapeParameterObject_2.GetComponentInChildren<Slider>().value.ToString("F2");
             prefabName = "Torus";
@@ -1337,7 +1350,7 @@ class UIManagerNew : MonoBehaviour
                     ShapeParameterObject_2.SetActive(true);
                     TMP_Text parameter_text_2 = ShapeParameterObject_2.transform.Find("Name").GetComponent<TMP_Text>();
                     parameter_text_2.text = "Torus Tube Radius";
-                    ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.08f;
+                    ShapeParameterObject_2.GetComponentInChildren<Slider>().value = 0.07f;
                 }
             }
             // CreateMpm3DObjectFromPrefab(); 
@@ -1514,7 +1527,7 @@ class UIManagerNew : MonoBehaviour
                 else if (dropdown.options[value].text == "Viscous Liquid")
                 {
                     mpm3DSimulation.plasticityType = Mpm3DMarching.PlasticityType.Drucker_Prager;
-                    mpm3DSimulation._E = 5e6f;
+                    mpm3DSimulation._E = 1e6f;
                     mpm3DSimulation._SigY = 1e6f;
                     mpm3DSimulation.Init_materials();
                     mpm3DSimulation.Copy_materials();

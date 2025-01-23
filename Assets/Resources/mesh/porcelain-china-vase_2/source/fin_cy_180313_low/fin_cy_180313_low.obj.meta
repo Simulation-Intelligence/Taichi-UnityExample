@@ -3,7 +3,12 @@ guid: a275ce920d897b045bc28ae041c64581
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: ciqi_low_bj1_ZBrushPolyMesh3DMat
+    second: {fileID: 2100000, guid: 364ffcffa37ce8f46ae21440464bec46, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: porcelain-bright-teaser-example
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 211063
+  m_BoundsMin: {x: 0.32246542, y: 0.1916376, z: 0.31680724}
+  m_BoundsMax: {x: 0.6886183, y: 0.8142695, z: 0.67256355}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 84aeaed9ee3fd9c710f4d72e09719cc1
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: b9ad11ee95a3ec241bb60e53110bcf9b, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 82c2847add12892429afc4b4e1a480b6, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 2c44582a8ddf83f4cb12164a398f073f, type: 3}
+  m_SHData: {fileID: 4900000, guid: 286eb642605332647afdc1c5dbb6a3bd, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

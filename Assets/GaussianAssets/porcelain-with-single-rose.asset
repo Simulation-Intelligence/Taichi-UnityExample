@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: porcelain-with-single-rose
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 302777
+  m_BoundsMin: {x: 0.38914484, y: 0.20000002, z: 0.39616477}
+  m_BoundsMax: {x: 0.61085516, y: 0.8, z: 0.6038352}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 3eab554588e295c3b3994836c1ac54e4
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 9ddd227668897964580635266c9666ad, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 64397fc37bec5744294d1543483e4c99, type: 3}
+  m_OtherData: {fileID: 4900000, guid: c3cf91fd0de4b644684499e14e269664, type: 3}
+  m_SHData: {fileID: 4900000, guid: d04bbb5b272f29a4994dc8adc291026d, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

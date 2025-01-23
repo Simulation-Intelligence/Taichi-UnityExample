@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: garden-merge-red-rose-2
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 1152919
+  m_BoundsMin: {x: 0.19999996, y: 0.3254053, z: 0.24242184}
+  m_BoundsMax: {x: 0.79999995, y: 0.6745947, z: 0.7575782}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: ba4caa59cea9b797c51b9da1809b4e20
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: 23140039986383148871249d17af9247, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 597cd26ac9c0e52469a5caaac8fc8b9e, type: 3}
+  m_OtherData: {fileID: 4900000, guid: ef897ca88bf66c44193d06b2d0f2d5ee, type: 3}
+  m_SHData: {fileID: 4900000, guid: d4a918e85a8d6174cab4433286a513bc, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

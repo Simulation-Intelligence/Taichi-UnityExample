@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: porcelain-with-single-rose-bending
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 302777
+  m_BoundsMin: {x: 0.27997407, y: 0.27179274, z: 0.3740809}
+  m_BoundsMax: {x: 0.6216827, y: 0.80892676, z: 0.60938776}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 56e658e217dd2e85309a266528589067
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: d6075abdda7cd204994e451410ed24e2, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 03f868753d488d0408e54449c9c6241f, type: 3}
+  m_OtherData: {fileID: 4900000, guid: d66cc521053e463488610217f5d5a1d2, type: 3}
+  m_SHData: {fileID: 4900000, guid: b89833c6c570bc94aad01cd8bdd23aed, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

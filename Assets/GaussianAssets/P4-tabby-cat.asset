@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: P4-tabby-cat
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 99246
+  m_BoundsMin: {x: 0.3069672, y: 0.19999997, z: 0.3125524}
+  m_BoundsMax: {x: 0.6930328, y: 0.8, z: 0.6874476}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: c19845464d037e5979d17a57c98c8abc
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: ea28f5364ac333a49bb8a075f6312508, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 2f5af561a13c73a4081fc78103b42f7c, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 125f6562cc623e449935002a1f36ea27, type: 3}
+  m_SHData: {fileID: 4900000, guid: 639a088eae0dd1f4cb35bba948428ab6, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33b71fae31e6c7d438e8566dc713e666, type: 3}
+  m_Name: mushroom-house-edit-half
+  m_EditorClassIdentifier: 
+  m_FormatVersion: 20231020
+  m_SplatCount: 221715
+  m_BoundsMin: {x: 0.20008606, y: 0.31523517, z: 0.317632}
+  m_BoundsMax: {x: 0.8, y: 0.6847649, z: 0.682368}
+  m_DataHash:
+    serializedVersion: 2
+    Hash: 68e2aa4de7ff8e2eaeb4f9ed5596496e
+  m_PosFormat: 0
+  m_ScaleFormat: 0
+  m_SHFormat: 0
+  m_ColorFormat: 0
+  m_PosData: {fileID: 4900000, guid: ff12a16123b20da4d8525fb983588fe0, type: 3}
+  m_ColorData: {fileID: 4900000, guid: 59be3e671d3de214f8d63389bc78c80b, type: 3}
+  m_OtherData: {fileID: 4900000, guid: 1c8b81558bab8be4bbb01436fac6d534, type: 3}
+  m_SHData: {fileID: 4900000, guid: dd42c929feebbb4428040b1d35a33f20, type: 3}
+  m_ChunkData: {fileID: 0}
+  m_Cameras: []
